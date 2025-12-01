@@ -44,6 +44,7 @@ setup(
             "mypy>=1.0.0",
             "isort>=5.12.0",
             "pytest>=7.0.0",
+            "types-requests>=2.31.0.0",
         ],
     },
     classifiers=[
