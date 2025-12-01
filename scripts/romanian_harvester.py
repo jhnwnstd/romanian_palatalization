@@ -108,7 +108,8 @@ ROMANIAN_SECTION_RE = re.compile(
 
 # POS headings: support EN + RO labels
 POS_HEAD_RE = re.compile(
-    r"^===\s*(Noun|Substantiv|Adjective|Adjectiv|Verb)\s*===\s*$" r"(.*?)(?=^===|\Z)",
+    r"^===\s*(Noun|Substantiv|Adjective|Adjectiv|Verb)\s*===\s*$"
+    r"(.*?)(?=^===|\Z)",
     re.MULTILINE | re.DOTALL | re.IGNORECASE,
 )
 
@@ -168,7 +169,8 @@ TABLE_ANY_PL_RE = re.compile(
 
 # Etymology language tag extraction
 ETYM_LANG_RE = re.compile(
-    r"\{\{\s*(?:bor|der|inh|lbor|calque)\s*\|\s*ro\s*\|\s*" r"([a-z]{2,3})\s*(?:\||}})",
+    r"\{\{\s*(?:bor|der|inh|lbor|calque)\s*\|\s*ro\s*\|\s*"
+    r"([a-z]{2,3})\s*(?:\||}})",
     re.I,
 )
 
@@ -183,7 +185,9 @@ AFFIX_ADJ_RE = re.compile(
     re.I,
 )
 
-UNCOUNTABLE_RE = re.compile(r"\{\{\s*(?:unc|uncountable)\s*(?:\|[^}]*)?\}\}", re.I)
+UNCOUNTABLE_RE = re.compile(
+    r"\{\{\s*(?:unc|uncountable)\s*(?:\|[^}]*)?\}\}", re.I
+)
 
 # Canary examples
 CANARY_LEMMAS = [
@@ -414,8 +418,12 @@ _PLURAL_TABLE_CACHE: dict[str, Optional[str]] = {}
 
 DENOMINAL_VERBS: DefaultDict[str, Set[str]] = defaultdict(set)
 DEADJECTIVAL_VERBS: DefaultDict[str, Set[str]] = defaultdict(set)
-DENOMINAL_ADJS: DefaultDict[str, Set[str]] = defaultdict(set)  # noun -> adjectives
-DEADJECTIVAL_ADJS: DefaultDict[str, Set[str]] = defaultdict(set)  # adj  -> adjectives
+DENOMINAL_ADJS: DefaultDict[str, Set[str]] = defaultdict(
+    set
+)  # noun -> adjectives
+DEADJECTIVAL_ADJS: DefaultDict[str, Set[str]] = defaultdict(
+    set
+)  # adj  -> adjectives
 
 
 @retry(
@@ -593,7 +601,13 @@ def is_candidate_title(t: str) -> bool:
     """Reject proper nouns, acronyms, multiword, foreign chars."""
     if not t:
         return False
-    if " " in t or t.count("-") > 1 or t.startswith("-") or t.endswith("-") or "'" in t:
+    if (
+        " " in t
+        or t.count("-") > 1
+        or t.startswith("-")
+        or t.endswith("-")
+        or "'" in t
+    ):
         return False
     if not t[0].islower():
         if not (t[0].isupper() and (len(t) == 1 or t[1:].islower())):
@@ -789,7 +803,9 @@ def augment_denominal_verbs_with_heuristics(
             continue
 
         # Derive candidate noun stems (with and without prefixes)
-        stem_candidates = _candidate_base_stems_for_verb(verb_lower, suffix_matched)
+        stem_candidates = _candidate_base_stems_for_verb(
+            verb_lower, suffix_matched
+        )
         if not stem_candidates:
             continue
 
@@ -1221,7 +1237,9 @@ def save_ipa_cache():
         print(f"Warning: failed to save IPA cache: {e}")
 
 
-def batch_fetch_wikitext(api: str, titles: list[str], cache: dict[str, str]) -> None:
+def batch_fetch_wikitext(
+    api: str, titles: list[str], cache: dict[str, str]
+) -> None:
     """Batch-fetch wikitext for multiple titles."""
     if not titles:
         return
@@ -1300,7 +1318,9 @@ def get_wikitext_cached(title: str) -> str:
 # ============================================================================
 
 
-def fetch_category_members(api: str, category: str, limit: int = 5000) -> list[str]:
+def fetch_category_members(
+    api: str, category: str, limit: int = 5000
+) -> list[str]:
     """Fetch all members of a Wiktionary category."""
     members: list[str] = []
     cmcontinue = None
@@ -1409,7 +1429,11 @@ def parse_romanian_entry(title: str, skip_ipa: bool = False) -> Optional[dict]:
         if plural:
             plural = clean_plural(plural)
         # Confirm via tables/templates if plural looks incomplete
-        if not plural or plural in ("-", "", "i", "e", "uri") or len(plural) < 3:
+        if (
+            not plural
+            or plural in ("-", "", "i", "e", "uri")
+            or len(plural) < 3
+        ):
             if not unc:
                 confirmed = confirm_plural_via_tables_or_templates(
                     title=title_normalized, block=block, tpl=tpl
@@ -1510,10 +1534,14 @@ def harvest_data() -> pd.DataFrame:
     seen = set()
     print("Discovering titles...")
     noun_titles_en = set(
-        fetch_category_members(WIKI_API_EN, "Category:Romanian nouns", limit=NOUN_LIMIT)
+        fetch_category_members(
+            WIKI_API_EN, "Category:Romanian nouns", limit=NOUN_LIMIT
+        )
     )
     verb_titles_en = set(
-        fetch_category_members(WIKI_API_EN, "Category:Romanian verbs", limit=VERB_LIMIT)
+        fetch_category_members(
+            WIKI_API_EN, "Category:Romanian verbs", limit=VERB_LIMIT
+        )
     )
     adj_titles_en = set(
         fetch_category_members(
@@ -1554,7 +1582,10 @@ def harvest_data() -> pd.DataFrame:
     title_set = set(all_titles)
     verb_title_set = (verb_titles_en | verb_titles_ro) & title_set
     noun_adj_title_set = (
-        ((noun_titles_en | noun_titles_ro | adj_titles_en | adj_titles_ro) & title_set)
+        (
+            (noun_titles_en | noun_titles_ro | adj_titles_en | adj_titles_ro)
+            & title_set
+        )
         | set(CANARY_LEMMAS)
         | set(STERIADE_EXAMPLES)
     )
@@ -1604,7 +1635,8 @@ def harvest_data() -> pd.DataFrame:
 
         # Normalized noun and verb lemma sets, restricted to candidate titles
         noun_lemmas_for_heuristic: Set[str] = {
-            normalize_unicode(t) for t in (noun_titles_en | noun_titles_ro) & title_set
+            normalize_unicode(t)
+            for t in (noun_titles_en | noun_titles_ro) & title_set
         }
         verb_lemmas_for_heuristic: Set[str] = {
             normalize_unicode(t) for t in verb_title_set
