@@ -110,9 +110,11 @@ def process_row(row: Dict[str, str]) -> Optional[Dict[str, str]]:
         norm_key="ipa_normalized_pl",
         tweak_fn=None,
     )
+
     result["pos"] = (result.get("pos") or "").strip().upper()
     if result["pos"] == "N" and not result.get("gender"):
         return None
+
     derive_stem_final_and_cluster(result)
     validate_plural_quality(result)
     derive_mutation_and_orth_change(result)
@@ -126,6 +128,7 @@ def process_row(row: Dict[str, str]) -> Optional[Dict[str, str]]:
     derive_nde_class(result)
     derive_exception_reason(result)
     derive_is_true_exception(result)
+
     return result
 
 

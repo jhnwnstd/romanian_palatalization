@@ -607,30 +607,33 @@ def explode_pipe_group(
     """
     Explode a row on `main_field` if it's pipe-separated, keeping
     `companion_fields` aligned. All other fields are duplicated.
-
-    Example:
-        main_field = "derived_verbs"
-        companion_fields = ["deriv_suffixes", "ipa_derived_verbs"]
     """
-    raw = (row.get(main_field, "") or "").strip()
-    if not raw:
-        return [row]
 
-    items = [x.strip() for x in raw.split(sep) if x.strip()]
-
-    def split_field(name: str) -> List[str]:
-        raw_val = (row.get(name, "") or "").strip()
+    def _split(raw_val: str) -> List[str]:
+        raw_val = (raw_val or "").strip()
         if not raw_val:
             return []
-        return [x.strip() for x in raw_val.split(sep)]
+        # Split on "|" and drop empty segments, normalize whitespace
+        return [seg.strip() for seg in raw_val.split(sep) if seg.strip()]
+
+    raw = row.get(main_field, "")
+    items = _split(raw)
+    if not items:
+        # Nothing to explode; just clean spacing on companions
+        for name in companion_fields:
+            vals = _split(row.get(name, ""))
+            row[name] = vals[0] if vals else ""
+        return [row]
+
+    def split_field(name: str) -> List[str]:
+        return _split(row.get(name, ""))
 
     companion_lists = [split_field(name) for name in companion_fields]
     n = len(items)
 
     # Normalize singleton case
     if n <= 1:
-        if items:
-            row[main_field] = items[0]
+        row[main_field] = items[0]
         for name, vals in zip(companion_fields, companion_lists):
             row[name] = vals[0] if vals else ""
         return [row]
@@ -641,7 +644,6 @@ def explode_pipe_group(
         return lst[:length]
 
     companion_lists = [pad_to(vals, n) for vals in companion_lists]
-
     exploded: List[Dict[str, str]] = []
     for idx, item in enumerate(items):
         new_row = dict(row)  # shallow copy
@@ -814,9 +816,10 @@ ORTH_TO_PALATAL_IPA = {
     "z→ji": "ʒ",
 }
 
+ORDERED_LEMMA_SUFFIXES = ["ică", "iști", "ice", "ist", "esc", "ic", "el"]
+
 LEMMA_SUFFIXES = [
-    unicodedata.normalize("NFC", suffix)
-    for suffix in ["ică", "iști", "ice", "ist", "esc", "ic", "el"]
+    unicodedata.normalize("NFC", suffix) for suffix in ORDERED_LEMMA_SUFFIXES
 ]
 
 
@@ -864,7 +867,7 @@ def derive_lemma_suffix(row: Dict[str, str]) -> None:
 
     lemma_normalized = _normalize_suffix(lemma)
 
-    for suffix in LEMMA_SUFFIXES:
+    for suffix in ORDERED_LEMMA_SUFFIXES:
         suffix_normalized = _normalize_suffix(suffix)
         if lemma_normalized.endswith(suffix_normalized):
             row["lemma_suffix"] = f"-{suffix}"
@@ -996,7 +999,7 @@ def derive_derived_verbs_fields(row: Dict[str, str]) -> None:
 
     row["derived_verbs"] = "|".join(clean_verbs)
     row["deriv_suffixes"] = "|".join(suffixes)
-    row["ipa_derived_verbs"] = " | ".join(ipa_list)
+    row["ipa_derived_verbs"] = "|".join(ipa_list)
 
 
 def derive_derived_adj_fields(row: Dict[str, str]) -> None:
@@ -1024,7 +1027,7 @@ def derive_derived_adj_fields(row: Dict[str, str]) -> None:
 
     # Normalize spacing in derived_adj itself
     row["derived_adj"] = "|".join(adj_list)
-    row["ipa_derived_adj"] = " | ".join(ipa_list)
+    row["ipa_derived_adj"] = "|".join(ipa_list)
 
 
 def derive_nde_class(row: Dict[str, str]) -> None:

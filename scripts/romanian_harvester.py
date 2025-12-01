@@ -108,8 +108,7 @@ ROMANIAN_SECTION_RE = re.compile(
 
 # POS headings: support EN + RO labels
 POS_HEAD_RE = re.compile(
-    r"^===\s*(Noun|Substantiv|Adjective|Adjectiv|Verb)\s*===\s*$"
-    r"(.*?)(?=^===|\Z)",
+    r"^===\s*(Noun|Substantiv|Adjective|Adjectiv|Verb)\s*===\s*$" r"(.*?)(?=^===|\Z)",
     re.MULTILINE | re.DOTALL | re.IGNORECASE,
 )
 
@@ -169,8 +168,7 @@ TABLE_ANY_PL_RE = re.compile(
 
 # Etymology language tag extraction
 ETYM_LANG_RE = re.compile(
-    r"\{\{\s*(?:bor|der|inh|lbor|calque)\s*\|\s*ro\s*\|\s*"
-    r"([a-z]{2,3})\s*(?:\||}})",
+    r"\{\{\s*(?:bor|der|inh|lbor|calque)\s*\|\s*ro\s*\|\s*" r"([a-z]{2,3})\s*(?:\||}})",
     re.I,
 )
 
@@ -185,9 +183,7 @@ AFFIX_ADJ_RE = re.compile(
     re.I,
 )
 
-UNCOUNTABLE_RE = re.compile(
-    r"\{\{\s*(?:unc|uncountable)\s*(?:\|[^}]*)?\}\}", re.I
-)
+UNCOUNTABLE_RE = re.compile(r"\{\{\s*(?:unc|uncountable)\s*(?:\|[^}]*)?\}\}", re.I)
 
 # Canary examples
 CANARY_LEMMAS = [
@@ -415,12 +411,8 @@ _HTML_CACHE_RO: dict[str, str] = {}
 
 DENOMINAL_VERBS: DefaultDict[str, Set[str]] = defaultdict(set)
 DEADJECTIVAL_VERBS: DefaultDict[str, Set[str]] = defaultdict(set)
-DENOMINAL_ADJS: DefaultDict[str, Set[str]] = defaultdict(
-    set
-)  # noun -> adjectives
-DEADJECTIVAL_ADJS: DefaultDict[str, Set[str]] = defaultdict(
-    set
-)  # adj  -> adjectives
+DENOMINAL_ADJS: DefaultDict[str, Set[str]] = defaultdict(set)  # noun -> adjectives
+DEADJECTIVAL_ADJS: DefaultDict[str, Set[str]] = defaultdict(set)  # adj  -> adjectives
 
 
 @retry(
@@ -483,15 +475,37 @@ def strip_wiki_markup(s: str) -> str:
 
 
 def clean_ipa_raw(ipa_str: str) -> str:
-    """Remove IPA delimiters, keep stress/syllable markers."""
+    """Remove IPA delimiters, HTML, percent-encoding; keep stress markers."""
     if not isinstance(ipa_str, str):
         return ""
     s = ipa_str.strip()
     if not s or s.lower() == "nan":
         return ""
+    # HTML decoding and cleanup
+    try:
+        from urllib.parse import unquote
+
+        s = unquote(s)
+    except (ImportError, ValueError, TypeError):
+        pass
+    # Remove HTML tags
+    s = re.sub(r"<[^>]+>", "", s)
+    s = re.sub(r'\b(?:title|href|class|id|lang|span)="[^"]*"', "", s)
+    s = re.sub(r"&[a-zA-Z]+;", " ", s)
+    s = s.replace(">", "").replace("<", "").replace('"', "")
     s = s.replace("[", "").replace("]", "").replace("/", "")
     s = re.sub(r"\s+", " ", s)
     s = re.sub(r"\s*\|\s*", " | ", s)
+    # Deduplicate: sometimes HTML has the same IPA twice (in title and content)
+    tokens = s.split()
+    seen = set()
+    deduped = []
+    for tok in tokens:
+        if tok not in seen:
+            seen.add(tok)
+            deduped.append(tok)
+    s = " ".join(deduped)
+
     return s.strip()
 
 
@@ -535,6 +549,38 @@ def normalize_gloss(gloss: str) -> tuple[str, list[str], list[str]]:
     return (s, [], [])
 
 
+def extract_best_gloss(block: str) -> str:
+    """Pick the first non-empty, non-inflectional gloss from a POS block."""
+    if not block:
+        return ""
+
+    for mg in GLOSS_LINE_RE.finditer(block):
+        raw = mg.group(1) or ""
+        # Strip simple link brackets early
+        raw = normalize_ws(re.sub(r"\[\[|\]\]", "", raw))
+        gloss_norm, _, _ = normalize_gloss(raw)
+        if not gloss_norm:
+            continue
+
+        low = gloss_norm.lower()
+        # Skip pure inflectional / meta definitions
+        if low.startswith(("wikipedia", "wiktionary")):
+            continue
+        if low.startswith(
+            (
+                "plural of",
+                "alternative form of",
+                "alternative spelling of",
+                "inflection of",
+            )
+        ):
+            continue
+
+        return gloss_norm
+
+    return ""
+
+
 # ============================================================================
 # TITLE VALIDATION
 # ============================================================================
@@ -544,13 +590,7 @@ def is_candidate_title(t: str) -> bool:
     """Reject proper nouns, acronyms, multiword, foreign chars."""
     if not t:
         return False
-    if (
-        " " in t
-        or t.count("-") > 1
-        or t.startswith("-")
-        or t.endswith("-")
-        or "'" in t
-    ):
+    if " " in t or t.count("-") > 1 or t.startswith("-") or t.endswith("-") or "'" in t:
         return False
     if not t[0].islower():
         if not (t[0].isupper() and (len(t) == 1 or t[1:].islower())):
@@ -746,9 +786,7 @@ def augment_denominal_verbs_with_heuristics(
             continue
 
         # Derive candidate noun stems (with and without prefixes)
-        stem_candidates = _candidate_base_stems_for_verb(
-            verb_lower, suffix_matched
-        )
+        stem_candidates = _candidate_base_stems_for_verb(verb_lower, suffix_matched)
         if not stem_candidates:
             continue
 
@@ -925,7 +963,7 @@ def fetch_html_section(api: str, title: str) -> str:
 
 
 def get_ipa_for_form(title: str) -> list[str]:
-    """Get IPA for a word form from HTML rendering."""
+    """Get IPA for a word form from EN/RO HTML rendering."""
     if not ENABLE_IPA_FETCH:
         return []
 
@@ -933,11 +971,19 @@ def get_ipa_for_form(title: str) -> list[str]:
     if title in _IPA_CACHE:
         return _IPA_CACHE[title]
 
-    # Fetch from EN Wiktionary
-    html = fetch_html_section(WIKI_API_EN, title)
-    ipas = extract_ipa_list_from_html(html)
+    ipas: list[str] = []
 
-    # Cache result
+    # EN Wiktionary first
+    html_en = fetch_html_section(WIKI_API_EN, title)
+    if html_en:
+        ipas = extract_ipa_list_from_html(html_en)
+
+    # Fallback to RO Wiktionary
+    if not ipas:
+        html_ro = fetch_html_section(WIKI_API_RO, title)
+        if html_ro:
+            ipas = extract_ipa_list_from_html(html_ro)
+
     _IPA_CACHE[title] = ipas
     return ipas
 
@@ -1121,16 +1167,33 @@ def save_disk_cache():
 
 
 def load_ipa_cache():
-    """Load IPA cache from disk."""
+    """Load IPA cache from disk and clean entries."""
     global _IPA_CACHE
 
     if os.path.exists(IPA_CACHE_PATH):
         try:
             with open(IPA_CACHE_PATH, "r", encoding="utf-8") as f:
-                _IPA_CACHE = json.load(f)
-            print(f"Loaded {len(_IPA_CACHE)} IPA cache entries")
+                raw_cache = json.load(f)
         except (json.JSONDecodeError, IOError):
             _IPA_CACHE = {}
+            return
+
+        cleaned: dict[str, list[str]] = {}
+        for form, ipas in raw_cache.items():
+            if not isinstance(ipas, list):
+                continue
+            new_list: list[str] = []
+            for ipa in ipas:
+                c = clean_ipa_raw(ipa)
+                if c:
+                    new_list.append(c)
+            if new_list:
+                cleaned[form] = new_list
+
+        _IPA_CACHE = cleaned
+        print(f"Loaded {len(_IPA_CACHE)} IPA cache entries (cleaned)")
+    else:
+        _IPA_CACHE = {}
 
 
 def save_ipa_cache():
@@ -1143,9 +1206,7 @@ def save_ipa_cache():
         print(f"Warning: failed to save IPA cache: {e}")
 
 
-def batch_fetch_wikitext(
-    api: str, titles: list[str], cache: dict[str, str]
-) -> None:
+def batch_fetch_wikitext(api: str, titles: list[str], cache: dict[str, str]) -> None:
     """Batch-fetch wikitext for multiple titles."""
     if not titles:
         return
@@ -1224,9 +1285,7 @@ def get_wikitext_cached(title: str) -> str:
 # ============================================================================
 
 
-def fetch_category_members(
-    api: str, category: str, limit: int = 5000
-) -> list[str]:
+def fetch_category_members(api: str, category: str, limit: int = 5000) -> list[str]:
     """Fetch all members of a Wiktionary category."""
     members: list[str] = []
     cmcontinue = None
@@ -1335,11 +1394,7 @@ def parse_romanian_entry(title: str, skip_ipa: bool = False) -> Optional[dict]:
         if plural:
             plural = clean_plural(plural)
         # Confirm via tables/templates if plural looks incomplete
-        if (
-            not plural
-            or plural in ("-", "", "i", "e", "uri")
-            or len(plural) < 3
-        ):
+        if not plural or plural in ("-", "", "i", "e", "uri") or len(plural) < 3:
             if not unc:
                 confirmed = confirm_plural_via_tables_or_templates(
                     title=title_normalized, block=block, tpl=tpl
@@ -1354,11 +1409,9 @@ def parse_romanian_entry(title: str, skip_ipa: bool = False) -> Optional[dict]:
         if plural and re.fullmatch(r"(?:i|ii|e|uri)", plural.strip(), re.I):
             plural = ""
         result["plural"] = plural
-    mg = GLOSS_LINE_RE.search(block)
-    if mg:
-        gloss_raw = normalize_ws(re.sub(r"\[\[|\]\]", "", mg.group(1)))
-        gloss_norm, _, _ = normalize_gloss(gloss_raw)
-        result["gloss"] = gloss_norm
+    gloss = extract_best_gloss(block)
+    if gloss:
+        result["gloss"] = gloss
     for em in ETYM_RE.finditer(ro):
         etym_text = em.group(1)
         ety_lang = extract_etym_language_tag(etym_text)
@@ -1442,14 +1495,10 @@ def harvest_data() -> pd.DataFrame:
     seen = set()
     print("Discovering titles...")
     noun_titles_en = set(
-        fetch_category_members(
-            WIKI_API_EN, "Category:Romanian nouns", limit=NOUN_LIMIT
-        )
+        fetch_category_members(WIKI_API_EN, "Category:Romanian nouns", limit=NOUN_LIMIT)
     )
     verb_titles_en = set(
-        fetch_category_members(
-            WIKI_API_EN, "Category:Romanian verbs", limit=VERB_LIMIT
-        )
+        fetch_category_members(WIKI_API_EN, "Category:Romanian verbs", limit=VERB_LIMIT)
     )
     adj_titles_en = set(
         fetch_category_members(
@@ -1490,10 +1539,7 @@ def harvest_data() -> pd.DataFrame:
     title_set = set(all_titles)
     verb_title_set = (verb_titles_en | verb_titles_ro) & title_set
     noun_adj_title_set = (
-        (
-            (noun_titles_en | noun_titles_ro | adj_titles_en | adj_titles_ro)
-            & title_set
-        )
+        ((noun_titles_en | noun_titles_ro | adj_titles_en | adj_titles_ro) & title_set)
         | set(CANARY_LEMMAS)
         | set(STERIADE_EXAMPLES)
     )
@@ -1543,8 +1589,7 @@ def harvest_data() -> pd.DataFrame:
 
         # Normalized noun and verb lemma sets, restricted to candidate titles
         noun_lemmas_for_heuristic: Set[str] = {
-            normalize_unicode(t)
-            for t in (noun_titles_en | noun_titles_ro) & title_set
+            normalize_unicode(t) for t in (noun_titles_en | noun_titles_ro) & title_set
         }
         verb_lemmas_for_heuristic: Set[str] = {
             normalize_unicode(t) for t in verb_title_set

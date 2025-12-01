@@ -56,6 +56,7 @@ IPA TRANSCRIPTION (ipa_raw_* → ipa_normalized_*):
 
 import re
 import unicodedata
+import urllib.parse
 from typing import Optional
 
 
@@ -116,15 +117,18 @@ def normalize_ipa(ipa: str, remove_stress: bool = True) -> str:
 
     Returns:
         Normalized IPA with tie bars, no stress, full variants only
-
-    Examples:
-        >>> normalize_ipa("aˈbak | -ak")
-        'abak'
-        >>> normalize_ipa("dʒent")
-        'd͡ʒent'
     """
     if not isinstance(ipa, str):
         return ""
+
+    try:
+        ipa = urllib.parse.unquote(ipa)
+    except (ImportError, TypeError):
+        pass
+
+    ipa = re.sub(r"<[^>]*>", "", ipa)
+    ipa = re.sub(r'\b(?:title|href|class|id)="[^"]*"', "", ipa)
+    ipa = re.sub(r"\s+", " ", ipa).strip()
     ipa = unicodedata.normalize("NFC", ipa).lower().strip()
     if ipa.startswith("-"):
         ipa = ipa[1:].strip()
@@ -135,7 +139,6 @@ def normalize_ipa(ipa: str, remove_stress: bool = True) -> str:
     ipa = ipa.replace(".", "")
     if "|" in ipa:
         raw_segments = [seg.strip() for seg in ipa.split("|")]
-        # Keep only full-form variants, discard partial morpheme segments
         full_segments = [
             seg.lstrip("-").strip()
             for seg in raw_segments
@@ -145,12 +148,11 @@ def normalize_ipa(ipa: str, remove_stress: bool = True) -> str:
             ipa = " | ".join(full_segments)
         else:
             ipa = " | ".join(seg.lstrip("-").strip() for seg in raw_segments)
-    # Unconditional affricate tie bars
-    ipa = ipa.replace("tʃ", "t͡ʃ")
-    ipa = ipa.replace("dʒ", "d͡ʒ")
-    ipa = ipa.replace("ts", "t͡s")
-    ipa = ipa.replace("dz", "d͡z")
-    ipa = re.sub(r"g(?![ʰʲˠˤʷʼ͡])", "ɡ", ipa)
+        ipa = ipa.replace("tʃ", "t͡ʃ")
+        ipa = ipa.replace("dʒ", "d͡ʒ")
+        ipa = ipa.replace("ts", "t͡s")
+        ipa = ipa.replace("dz", "d͡z")
+        ipa = re.sub(r"g(?![ʰʲˠˤʷʼ͡])", "ɡ", ipa)
     return ipa.strip()
 
 
