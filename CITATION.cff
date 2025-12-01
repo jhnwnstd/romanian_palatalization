@@ -1,0 +1,35 @@
+cff-version: "1.2.0"
+message: "If you use this software, please cite it as below."
+type: software
+title: "Romanian Palatalization Analysis"
+abstract: "Lexical dataset and analysis pipeline for studying palatalization patterns in Romanian, testing Steriade's (2008) avoidance hypothesis through corpus-based analysis of stem-final consonant mutation."
+authors:
+  - family-names: "Winstead"
+    given-names: "John"
+repository-code: "https://github.com/jhnwnstd/romanian_palatalization"
+keywords:
+  - Romanian
+  - palatalization
+  - morphophonology
+  - phonology
+license: MIT
+version: "1.0.0"
+date-released: "2024-11-30"
+references:
+  - type: chapter
+    authors:
+      - family-names: "Steriade"
+        given-names: "Donca"
+    title: "A pseudo-cyclic effect in Romanian morphophonology"
+    year: 2008
+    editors:
+      - family-names: "Bachrach"
+        given-names: "Asaf"
+      - family-names: "Nevins"
+        given-names: "Andrew"
+    collection-title: "Inflectional Identity"
+    publisher:
+      name: "Oxford University Press"
+    start: 313
+    end: 360
+    doi: "10.1093/oso/9780199219254.003.0010"

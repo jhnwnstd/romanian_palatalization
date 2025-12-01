@@ -1,7 +1,6 @@
 #!/usr/bin/Rscript
 
 # Romanian Palatalization Analysis
-# Analyzes nominal plural palatalization patterns in Romanian
 
 # Run styler::style_file("analysis/analyze_romanian_palatalization.R") after edits
 

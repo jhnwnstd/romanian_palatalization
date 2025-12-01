@@ -396,4 +396,4 @@ Entries with `mutation == "True"` are normal undergoers (including z→ji/je) an
 
 `source` is extracted from Wiktionary. It is the URL the lemma entry came from. It should always be present.
 
-`notes` is extracted from Wiktionary. It contains any editorial or usage notes associated with the lemma entry. This field may be empty for most entries but preserves valuable metadata when present. It is passed through unchanged from the extraction phase and is not used in any derivations.
+`notes` is derived from Wiktionary and DEX online data. It records which entries required plural or gender confirmation from DEX online due to missing or ambiguous Wiktionary data. If no such confirmation was needed, the field is left empty.
