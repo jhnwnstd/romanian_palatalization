@@ -108,7 +108,7 @@ If you use this code or dataset in your research, please cite:
 @software{romanian_palatalization,
   title  = {Romanian Palatalization Analysis},
   author = {John Winstead},
-  year   = {2024},
+  year   = {2025},
   url    = {https://github.com/jhnwnstd/romanian_palatalization}
 }
 ```
