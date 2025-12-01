@@ -94,7 +94,7 @@ detect_palatal_from_ipa <- function(stem_final, ipa_str) {
     stem_final == "c" ~ str_detect(ipa_str, "t͡ʃ|tʃ"),
     stem_final == "g" ~ str_detect(ipa_str, "d͡ʒ|dʒ"),
     stem_final == "t" ~ str_detect(ipa_str, "t͡s|ts"),
-    stem_final == "d" ~ str_detect(ipa_str, "z|dʒ|dʲ"),
+    stem_final == "d" ~ str_detect(ipa_str, "z|dʲ"),
     stem_final == "s" ~ str_detect(ipa_str, "ʃ"),
     stem_final == "z" ~ str_detect(ipa_str, "ʒ"),
     TRUE ~ NA
@@ -183,7 +183,7 @@ cat("Nouns in i/e domain with target segments:", nrow(nouns_opp), "\n\n")
 
 cat("DOWNSAMPLING (FREQUENCY-BASED) FOR TOLERANCE PRINCIPLE ANALYSIS\n")
 
-sample_tokens_vec <- c(5000L, 10000L, 20000L)
+sample_tokens_vec <- c(1000L, 2500L, 5000L, 10000)
 n_sims_per_size <- 50L
 base_seed_downsample <- 123L
 
