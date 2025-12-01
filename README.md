@@ -17,7 +17,7 @@ The pipeline:
 5. Attach corpus frequencies → `romanian_lexicon_with_freq.csv`
 6. Run statistical analysis (R)
 
-See `docs/data_dictionary.md` for full field definitions.
+See `docs/data_dict.md` for full field definitions.
 
 ## Quick Start
 

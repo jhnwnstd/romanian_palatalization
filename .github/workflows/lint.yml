@@ -7,9 +7,6 @@ on:
     branches: [ main, develop ]
   workflow_dispatch:
 
-permissions:
-  contents: write  
-
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -18,8 +15,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -32,20 +27,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install ".[dev]"
 
-      - name: Format with black
-        run: black scripts/ src/
+      - name: Check formatting with black
+        run: black --check scripts/ src/
 
-      - name: Sort imports with isort
-        run: isort --profile black scripts/ src/
-
-      - name: Commit formatting changes (push only)
-        if: github.event_name == 'push'
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "style: format Python code with black and isort"
-          file_pattern: |
-            scripts/**/*.py
-            src/**/*.py
+      - name: Check import sorting with isort
+        run: isort --check-only scripts/ src/
 
       - name: Lint with flake8
         run: flake8 scripts/ src/

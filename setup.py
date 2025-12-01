@@ -64,7 +64,6 @@ setup(
         "phonology",
         "morphophonology",
         "linguistics",
-        "corpus-analysis",
     ],
     project_urls={
         "Bug Tracker": "https://github.com/jhnwnstd/romanian_palatalization/issues",

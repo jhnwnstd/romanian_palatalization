@@ -149,9 +149,10 @@ def main():
     print(*(f"  - {cid}" for cid in corpus_ids), sep="\n")
     print(f"\nReading lexicon: {LEXICON_PATH}")
     n_rows = 0
-    with LEXICON_PATH.open("r", encoding="utf-8") as f_in, OUTPUT_PATH.open(
-        "w", encoding="utf-8", newline=""
-    ) as f_out:
+    with (
+        LEXICON_PATH.open("r", encoding="utf-8") as f_in,
+        OUTPUT_PATH.open("w", encoding="utf-8", newline="") as f_out,
+    ):
         reader = csv.DictReader(f_in)
         base_fieldnames: List[str] = list(reader.fieldnames or [])
         extra_cols = [

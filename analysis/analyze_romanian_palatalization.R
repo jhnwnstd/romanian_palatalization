@@ -309,7 +309,7 @@ count(nde_rows, nde_class) |> print()
 nde_ochi_pad <- filter(nde_rows, nde_class %in% nde_observable)
 nde_gimpe <- filter(nde_rows, nde_class == "gimpe")
 
-cat("\nNDE nouns of ochi/păduche type (observable DE exceptions per email):", nrow(nde_ochi_pad), "\n")
+cat("\nNDE nouns of ochi/păduche type (observable DE exceptions):", nrow(nde_ochi_pad), "\n")
 if (nrow(nde_ochi_pad) > 0) {
   nde_ochi_pad |>
     select(lemma, plural, stem_final, nde_class, opportunity) |>

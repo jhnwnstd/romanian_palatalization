@@ -413,7 +413,7 @@ _IPA_CACHE: dict[str, list[str]] = {}
 _HTML_CACHE_EN: dict[str, str] = {}
 _HTML_CACHE_RO: dict[str, str] = {}
 
-# Cache for extracted plural forms from HTML tables (avoids repeated BeautifulSoup parsing)
+# Avoids repeated BeautifulSoup parsing
 _PLURAL_TABLE_CACHE: dict[str, Optional[str]] = {}
 
 DENOMINAL_VERBS: DefaultDict[str, Set[str]] = defaultdict(set)
