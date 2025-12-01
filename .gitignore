@@ -55,11 +55,9 @@ venv.bak/
 
 # Data directory: keep the dir, ignore its contents
 data/*
-!data/.gitkeep
+!romanian_lexicon_raw.csv
 
 # Data files (large CSV and JSON caches)
-*.csv
-!romanian_lexicon_raw.csv
 *.json
 
 # Documentation directory: ignore contents but track data_dict.md
