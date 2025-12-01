@@ -24,7 +24,13 @@ See `docs/data_dict.md` for full field definitions.
 ### 1. Install dependencies
 
 ```bash
-pip install -r requirements.txt
+pip install .
+```
+
+For development (includes linting, type checking, and testing tools):
+
+```bash
+pip install -e .[dev]
 ```
 
 Optional sanity check:
@@ -69,7 +75,7 @@ Rscript analysis/analyze_romanian_palatalization.R
 ```text
 romanian_palatalization/
 ├── run_pipeline.sh              # pipeline orchestrator
-├── requirements.txt             # Python dependencies
+├── pyproject.toml               # package metadata and dependencies
 ├── scripts/                     # individual pipeline stages
 │   ├── romanian_harvester.py
 │   ├── download_leipzig.py
@@ -94,7 +100,7 @@ romanian_palatalization/
 * R packages used in `analysis/analyze_romanian_palatalization.R`
   (including `cmdstanr` and other Bayesian modeling dependencies)
 
-Python dependencies are listed in [`requirements.txt`](requirements.txt).
+Python dependencies are defined in [`pyproject.toml`](pyproject.toml).
 
 ## License
 

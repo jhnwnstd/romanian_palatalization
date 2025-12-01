@@ -17,6 +17,8 @@ REQUIRED_PACKAGES = {
 OPTIONAL_PACKAGES = {
     "black": "black",
     "flake8": "flake8",
+    "flake8-bugbear": "bugbear",
+    "flake8-comprehensions": "flake8_comprehensions",
     "mypy": "mypy",
     "isort": "isort",
 }
@@ -77,7 +79,9 @@ def main() -> int:
 
     print("Some required dependencies are missing.")
     print("Install them with:")
-    print("  pip install -r requirements.txt")
+    print("  pip install .")
+    print("Or for editable install with dev tools:")
+    print("  pip install -e .[dev]")
     return 1
 
 
