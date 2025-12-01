@@ -59,7 +59,8 @@ from wiktionary_normalizer import (  # noqa: E402
 # pylint: enable=wrong-import-position
 
 # Configure the library to use IPA normalizer
-# This keeps dependencies linear: main → lib and main → normalizer (not lib → normalizer)
+# This keeps dependencies linear: main → lib and main → normalizer
+# (not lib → normalizer)
 set_ipa_normalizer(lambda ipa: normalize_ipa(ipa, remove_stress=True))
 
 

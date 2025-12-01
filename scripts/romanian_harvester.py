@@ -2,8 +2,9 @@
 # -*- coding: utf-8 -*-
 """Romanian Wiktionary Data Harvester - Extraction Only.
 
-Extracts raw data from Romanian Wiktionary entries. Provides clean, normalized extracted fields
-for downstream processing by romanian_processor_main.py.
+Extracts raw data from Romanian Wiktionary entries. Provides clean,
+normalized extracted fields for downstream processing by
+romanian_processor_main.py.
 
 Output fields:
     - lemma, gloss, pos, gender, plural
@@ -728,8 +729,9 @@ def augment_denominal_verbs_with_heuristics(
         verb_norm = normalize_unicode(verb)
         verb_lower = verb_norm.lower()
 
-        # Optional: Restrict heuristic to verbs starting with a derivational prefix.
-        # To activate, uncomment the `continue` and delete `pass` below.
+        # Optional: Restrict heuristic to verbs starting with a
+        # derivational prefix. To activate, uncomment the `continue`
+        # and delete `pass` below.
         if not any(verb_lower.startswith(p) for p in DERIV_PREFIXES):
             # continue
             pass

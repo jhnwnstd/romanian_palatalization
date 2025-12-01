@@ -19,7 +19,8 @@ from difflib import SequenceMatcher
 from typing import Callable, Dict, List, Set, Tuple
 
 # IPA normalizer function to be injected from caller
-# Set this before calling derive_derived_verbs_fields or derive_derived_adj_fields
+# Set this before calling derive_derived_verbs_fields or
+# derive_derived_adj_fields
 _ipa_normalizer: Callable[[str], str] | None = None
 
 
@@ -978,7 +979,7 @@ def derive_derived_verbs_fields(row: Dict[str, str]) -> None:
         else:
             # Out-of-domain verb (e.g. ends in -e): drop it
             continue
-        
+
         clean_verbs.append(verb)
         suffixes.append(suf)
         # Generate IPA, then normalize so affricates get tie bars, etc.
@@ -1051,25 +1052,27 @@ def derive_nde_class(row: Dict[str, str]) -> None:
     # NDEs are non-mutating dorsal nouns with both forms present
     if pos != "N" or not lemma or not plural:
         return
-    
+
     if mutation == "True":
         return
-    
+
     if stem_final not in ("c", "g"):
         return
-    
+
     # (1) ochi-type: sg = pl, chi/ghi
     if lemma == plural and cluster in ("chi", "ghi"):
         row["nde_class"] = "ochi"
         return
-    
+
     # (2) paduchi-type: che/ghe → chi/ghi (optionally allow chiuri/ghiuri)
     if cluster in ("che", "ghe"):
         expected_cluster_pl = cluster[:-1] + "i"
-        if plural.endswith(expected_cluster_pl) or plural.endswith(expected_cluster_pl + "uri"):
+        if plural.endswith(expected_cluster_pl) or plural.endswith(
+            expected_cluster_pl + "uri"
+        ):
             row["nde_class"] = "paduchi"
             return
-        
+
     # (3) gimpe-type: sg = pl, final ci/ce/gi/ge, no velar-front cluster
     if not cluster:
         if lemma == plural and lemma.endswith(("ci", "ce", "gi", "ge")):

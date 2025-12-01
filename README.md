@@ -21,7 +21,7 @@ pip install -r requirements.txt
 python3 verify_dependencies.py
 
 # Run pipeline
-./run_pipeline.sh              # Run entire pipeline (skips harvesting step if data exists)
+./run_pipeline.sh              # Run entire pipeline (skips stages if outputs exist)
 ./run_pipeline.sh --force      # Re-harvest from scratch (slow)
 ```
 
@@ -76,6 +76,9 @@ romanian_palatalization/
 
 **Analysis:**
 - [analysis/analyze_romanian_palatalization.R](analysis/analyze_romanian_palatalization.R) - Statistical analysis
+
+**Documentation:**
+- [docs/data_dictionary.md](docs/data_dictionary.md) - Complete field definitions and derivation logic
 
 ## Citation
 Steriade, D. (2008). A pseudo-cyclic effect in Romanian morphophonology. In A. Bachrach & A. Nevins (Eds.), Inflectional identity (pp. 313–358). Oxford University Press.

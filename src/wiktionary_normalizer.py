@@ -208,7 +208,8 @@ def validate_lemma(lemma: str) -> tuple[bool, Optional[str]]:
         lemma: Lemma to validate
 
     Returns:
-        (is_valid, error_message): (True, None) if valid, (False, reason) otherwise
+        (is_valid, error_message): (True, None) if valid,
+        (False, reason) otherwise
 
     Examples:
         >>> validate_lemma("academie")
@@ -246,7 +247,8 @@ def validate_ipa(ipa: str) -> tuple[bool, Optional[str]]:
         ipa: IPA transcription to validate
 
     Returns:
-        (is_valid, error_message): (True, None) if valid, (False, reason) otherwise
+        (is_valid, error_message): (True, None) if valid,
+        (False, reason) otherwise
 
     Examples:
         >>> validate_ipa("abak")
