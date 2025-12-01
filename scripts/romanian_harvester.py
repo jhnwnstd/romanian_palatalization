@@ -409,6 +409,9 @@ _IPA_CACHE: dict[str, list[str]] = {}
 _HTML_CACHE_EN: dict[str, str] = {}
 _HTML_CACHE_RO: dict[str, str] = {}
 
+# Cache for extracted plural forms from HTML tables (avoids repeated BeautifulSoup parsing)
+_PLURAL_TABLE_CACHE: dict[str, Optional[str]] = {}
+
 DENOMINAL_VERBS: DefaultDict[str, Set[str]] = defaultdict(set)
 DEADJECTIVAL_VERBS: DefaultDict[str, Set[str]] = defaultdict(set)
 DENOMINAL_ADJS: DefaultDict[str, Set[str]] = defaultdict(set)  # noun -> adjectives
@@ -1066,22 +1069,34 @@ def confirm_plural_via_tables_or_templates(
             if is_valid_plural(cand):
                 return cand
 
+    # Check cache first to avoid repeated HTML parsing
+    if title in _PLURAL_TABLE_CACHE:
+        cached = _PLURAL_TABLE_CACHE[title]
+        return cached if cached else ""
+
     # Try HTML tables (EN then RO)
+    result = ""
     if HAS_BS4:
         html_en = fetch_html_section(WIKI_API_EN, title)
         cand_en = extract_plural_from_table(html_en)
         if cand_en:
             cand = clean_plural(cand_en)
             if is_valid_plural(cand):
-                return cand
+                result = cand
+                _PLURAL_TABLE_CACHE[title] = result
+                return result
 
         html_ro = fetch_html_section(WIKI_API_RO, title)
         cand_ro = extract_plural_from_table(html_ro)
         if cand_ro:
             cand = clean_plural(cand_ro)
             if is_valid_plural(cand):
-                return cand
+                result = cand
+                _PLURAL_TABLE_CACHE[title] = result
+                return result
 
+    # Cache negative result to avoid repeated lookups
+    _PLURAL_TABLE_CACHE[title] = None
     return ""
 
 
