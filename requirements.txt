@@ -1,0 +1,18 @@
+# Core dependencies for Romanian palatalization analysis
+
+# Data processing
+pandas>=1.5.0
+
+# Web scraping and API requests
+requests>=2.28.0
+beautifulsoup4>=4.11.0
+
+# Retry logic for network requests
+tenacity>=8.0.0
+urllib3>=1.26.0
+
+# Development dependencies (code quality and linting)
+black>=23.0.0
+flake8>=6.0.0
+mypy>=1.0.0
+isort>=5.12.0
