@@ -54,12 +54,12 @@ venv.bak/
 .Rproj.user
 *.Rproj
 
-# Data directory: keep the dir, ignore its contents
+# Data directory: ignore all contents except romanian_lexicon_raw.csv
 data/*
-!romanian_lexicon_raw.csv
+!data/romanian_lexicon_raw.csv
 
-# Data files (large CSV and JSON caches)
-*.json
+# Data files (large JSON caches in data directory)
+data/**/*.json
 
 # Documentation directory: ignore contents but track data_dict.md
 docs/*

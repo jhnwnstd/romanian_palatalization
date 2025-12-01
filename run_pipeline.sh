@@ -232,11 +232,15 @@ main() {
     else
         log_info "Running R statistical analysis..."
         log_info "This may take a few minutes..."
+        log_info "Output will be written to: $ANALYSIS_LOG"
+        echo ""
 
-        if Rscript "$R_SCRIPT" > /dev/null 2>&1; then
+        if Rscript "$R_SCRIPT"; then
             log_success "R analysis complete!"
+            log_info "Results saved to: $ANALYSIS_LOG"
         else
             log_error "R analysis failed"
+            log_error "Check error messages above for missing packages"
             exit 1
         fi
     fi

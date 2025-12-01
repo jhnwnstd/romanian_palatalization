@@ -10,26 +10,45 @@
 
 required_pkgs <- c(
   "dplyr", "readr", "stringr", "tidyr", "broom",
-  "brms", "posterior", "loo", "cmdstanr"
+  "brms", "posterior", "loo"
 )
 
-# For cmdstanr setup details, see:
-# Fruehwald, Josef. "Getting `Brms` and Stan Set Up."
-# https://lin611-2024.github.io/notes/side-notes/content/stan.html
-
+# Check and install missing packages
 missing_pkgs <- required_pkgs[
   !vapply(required_pkgs, requireNamespace, logical(1), quietly = TRUE)
 ]
 
 if (length(missing_pkgs) > 0) {
-  stop(
-    "Missing required packages: ",
-    paste(missing_pkgs, collapse = ", "),
-    ". Please install them before running this script."
-  )
+  cat("Installing missing packages:", paste(missing_pkgs, collapse = ", "), "\n")
+  install.packages(missing_pkgs, repos = "https://cloud.r-project.org")
 }
 
-suppressPackageStartupMessages(lapply(required_pkgs, library, character.only = TRUE))
+# For cmdstanr setup details, see:
+# Fruehwald, Josef. "Getting `Brms` and Stan Set Up."
+# https://lin611-2024.github.io/notes/side-notes/content/stan.html
+
+# cmdstanr requires special installation from r-universe
+cmdstan_repo <- "https://stan-dev.r-universe.dev"
+
+# Check and install cmdstanr separately (requires r-universe repo)
+if (!requireNamespace("cmdstanr", quietly = TRUE)) {
+  cat("Installing cmdstanr from r-universe...\n")
+  install.packages("cmdstanr", repos = c(cmdstan_repo, getOption("repos")))
+}
+
+# Check if CmdStan backend is installed
+# If installation fails, see: https://mc-stan.org/cmdstanr/articles/cmdstanr.html
+if (requireNamespace("cmdstanr", quietly = TRUE)) {
+  if (!dir.exists(cmdstanr::cmdstan_path())) {
+    cat("Installing CmdStan backend (this may take a few minutes)...\n")
+    cat("For troubleshooting, see:\n")
+    cat("  - https://mc-stan.org/cmdstanr/articles/cmdstanr.html\n")
+    cat("  - https://lin611-2024.github.io/notes/side-notes/content/stan.html\n")
+    cmdstanr::install_cmdstan()
+  }
+}
+
+suppressPackageStartupMessages(lapply(c(required_pkgs, "cmdstanr"), library, character.only = TRUE))
 options(dplyr.summarise.inform = FALSE)
 
 # =========================================================================
@@ -176,107 +195,6 @@ cat("BASIC COUNTS\n")
 cat("Total rows:", nrow(lex), "\n")
 cat("Nouns:", nrow(nouns), "\n")
 cat("Nouns in i/e domain with target segments:", nrow(nouns_opp), "\n\n")
-
-# =========================================================================
-# Frequency-Based Downsampling
-# =========================================================================
-
-cat("DOWNSAMPLING (FREQUENCY-BASED) FOR TOLERANCE PRINCIPLE ANALYSIS\n")
-
-sample_tokens_vec <- c(1000L, 2500L, 5000L, 10000)
-n_sims_per_size <- 50L
-base_seed_downsample <- 123L
-
-nouns_opp_freq <- nouns_opp |>
-  group_by(lemma) |>
-  summarise(lemma_freq = max(freq_ron_wikipedia_2021_1M, na.rm = TRUE), .groups = "drop") |>
-  mutate(lemma_freq = if_else(is.na(lemma_freq) | !is.finite(lemma_freq), 0, lemma_freq))
-
-nouns_opp_freq_pos <- filter(nouns_opp_freq, lemma_freq > 0)
-
-cat("Unique lemmas in i/e domain (all):", n_distinct(nouns_opp$lemma), "\n")
-cat("Unique lemmas with freq > 0:", nrow(nouns_opp_freq_pos), "\n\n")
-
-seg_tp_ie_ds_all <- NULL
-nouns_opp_down_single <- NULL
-
-if (nrow(nouns_opp_freq_pos) == 0L) {
-  cat("No positive-frequency lemmas in i/e domain; skipping frequency downsampling.\n\n")
-} else {
-  total_freq <- sum(nouns_opp_freq_pos$lemma_freq)
-  lemma_probs <- nouns_opp_freq_pos$lemma_freq / total_freq
-
-  seg_tp_ie_ds_list <- vector("list", length(sample_tokens_vec) * n_sims_per_size)
-  idx <- 1L
-
-  for (tokens in sample_tokens_vec) {
-    for (sim in seq_len(n_sims_per_size)) {
-      set.seed(base_seed_downsample + tokens * 1000L + sim)
-
-      sampled_idx <- sample(
-        seq_len(nrow(nouns_opp_freq_pos)),
-        size = tokens,
-        replace = TRUE,
-        prob = lemma_probs
-      )
-
-      sampled_lemmas <- unique(nouns_opp_freq_pos$lemma[sampled_idx])
-      nouns_opp_down <- filter(nouns_opp, lemma %in% sampled_lemmas)
-
-      if (is.null(nouns_opp_down_single)) {
-        nouns_opp_down_single <- nouns_opp_down
-        cat("Reference downsampled lexicon (first draw):\n")
-        cat("  sample_tokens:", tokens, "\n")
-        cat("  unique lemmas:", n_distinct(nouns_opp_down_single$lemma), "\n")
-        cat("  rows:", nrow(nouns_opp_down_single), "\n\n")
-      }
-
-      seg_tp_ie_ds_list[[idx]] <- nouns_opp_down |>
-        group_by(stem_final, opportunity) |>
-        summarise(
-          mutated = sum(mutation == TRUE, na.rm = TRUE),
-          non_mutated = sum(mutation == FALSE, na.rm = TRUE),
-          .groups = "drop"
-        ) |>
-        mutate(sample_tokens = tokens, sim = sim)
-
-      idx <- idx + 1L
-    }
-  }
-
-  seg_tp_ie_ds_all <- bind_rows(seg_tp_ie_ds_list) |>
-    mutate(
-      N = mutated + non_mutated,
-      rate = if_else(N > 0, mutated / N, NA_real_),
-      majority_mutates = case_when(
-        N == 0L ~ NA,
-        mutated == non_mutated ~ NA,
-        TRUE ~ mutated > non_mutated
-      ),
-      exceptions = case_when(
-        is.na(majority_mutates) ~ NA_real_,
-        majority_mutates ~ as.numeric(non_mutated),
-        !majority_mutates ~ as.numeric(mutated)
-      ),
-      theta_N = tp_threshold(N),
-      tolerated = if_else(is.na(exceptions) | is.na(theta_N), NA, exceptions <= theta_N)
-    )
-
-  seg_tp_ie_ds_summary <- seg_tp_ie_ds_all |>
-    group_by(sample_tokens, stem_final, opportunity) |>
-    summarise(
-      N_mean = mean(N),
-      rate_mean = mean(rate, na.rm = TRUE),
-      rate_sd = sd(rate, na.rm = TRUE),
-      prop_tolerated = mean(tolerated, na.rm = TRUE),
-      .groups = "drop"
-    ) |>
-    arrange(sample_tokens, stem_final, opportunity)
-
-  cat("Segment × opportunity mutation / TP summary across downsampled lexicons:\n")
-  print(seg_tp_ie_ds_summary, n = Inf, width = Inf)
-  cat("\n")
-}
 
 # =========================================================================
 # Quality Control
@@ -798,6 +716,89 @@ if (nrow(true_exc) > 0) {
     count(lemma_suffix, sort = TRUE) |>
     head(10) |>
     print()
+}
+
+# =========================================================================
+# Frequency-Based Downsampling
+# =========================================================================
+
+cat("DOWNSAMPLING (FREQUENCY-BASED) FOR TOLERANCE PRINCIPLE ANALYSIS\n")
+
+# Use the TOP N most frequent lemmas (deterministic, not random sampling)
+sample_lexeme_sizes <- c(1000L, 2500L, 5000L, 10000L)
+
+nouns_opp_freq <- nouns_opp |>
+  group_by(lemma) |>
+  summarise(lemma_freq = max(freq_ron_wikipedia_2021_1M, na.rm = TRUE), .groups = "drop") |>
+  mutate(lemma_freq = if_else(is.na(lemma_freq) | !is.finite(lemma_freq), 0, lemma_freq))
+
+nouns_opp_freq_pos <- filter(nouns_opp_freq, lemma_freq > 0)
+
+cat("Unique lemmas in i/e domain (all):", n_distinct(nouns_opp$lemma), "\n")
+cat("Unique lemmas with freq > 0:", nrow(nouns_opp_freq_pos), "\n\n")
+
+seg_tp_ie_ds_all <- NULL
+nouns_opp_down_single <- NULL
+
+if (nrow(nouns_opp_freq_pos) == 0L) {
+  cat("No positive-frequency lemmas in i/e domain; skipping frequency downsampling.\n\n")
+} else {
+  seg_tp_ie_ds_list <- vector("list", length(sample_lexeme_sizes))
+  idx <- 1L
+
+  for (n_lex in sample_lexeme_sizes) {
+    # Take the TOP N most frequent lemmas (deterministic)
+    target_n_lex <- min(n_lex, nrow(nouns_opp_freq_pos))
+
+    top_lemmas <- nouns_opp_freq_pos |>
+      arrange(desc(lemma_freq)) |>
+      slice_head(n = target_n_lex) |>
+      pull(lemma)
+
+    nouns_opp_down <- filter(nouns_opp, lemma %in% top_lemmas)
+
+    # Use the 1000 most frequent lemmas as the reference downsampled lexicon
+    if (is.null(nouns_opp_down_single) && n_lex == 1000L) {
+      nouns_opp_down_single <- nouns_opp_down
+      cat("Reference downsampled lexicon (top 1000 most frequent lemmas):\n")
+      cat("  target_lexemes:", n_lex, "\n")
+      cat("  unique lemmas:", n_distinct(nouns_opp_down_single$lemma), "\n")
+      cat("  rows:", nrow(nouns_opp_down_single), "\n\n")
+    }
+
+    seg_tp_ie_ds_list[[idx]] <- nouns_opp_down |>
+      group_by(stem_final, opportunity) |>
+      summarise(
+        mutated = sum(mutation == TRUE, na.rm = TRUE),
+        non_mutated = sum(mutation == FALSE, na.rm = TRUE),
+        .groups = "drop"
+      ) |>
+      mutate(sample_lexemes = n_lex)
+
+    idx <- idx + 1L
+  }
+
+  seg_tp_ie_ds_all <- bind_rows(seg_tp_ie_ds_list) |>
+    mutate(
+      N = mutated + non_mutated,
+      rate = if_else(N > 0, mutated / N, NA_real_),
+      majority_mutates = case_when(
+        N == 0L ~ NA,
+        mutated == non_mutated ~ NA,
+        TRUE ~ mutated > non_mutated
+      ),
+      exceptions = case_when(
+        is.na(majority_mutates) ~ NA_real_,
+        majority_mutates ~ as.numeric(non_mutated),
+        !majority_mutates ~ as.numeric(mutated)
+      ),
+      theta_N = tp_threshold(N),
+      tolerated = if_else(is.na(exceptions) | is.na(theta_N), NA, exceptions <= theta_N)
+    )
+
+  cat("Segment × opportunity mutation / TP summary across frequency-filtered lexicons (top N most frequent):\n")
+  print(seg_tp_ie_ds_all, n = Inf, width = Inf)
+  cat("\n")
 }
 
 # =========================================================================

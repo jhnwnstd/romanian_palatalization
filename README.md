@@ -21,7 +21,7 @@ See `docs/data_dict.md` for full field definitions.
 
 ## Quick Start
 
-### 1. Install dependencies
+### 1. Install Python dependencies
 
 ```bash
 pip install .
