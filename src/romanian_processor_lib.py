@@ -98,15 +98,15 @@ def ensure_ipa_fields(
 
     This function modifies the row in place, adding the normalized IPA field.
     It first checks if a raw IPA annotation exists; if so, it normalizes it.
-    Otherwise, it generates IPA via grapheme-to-phoneme conversion and optionally
-    applies a tweak function.
+    Otherwise, it generates IPA via grapheme-to-phoneme conversion and 
+    optionally applies a tweak function.
 
     Args:
         row: Dictionary representing a CSV row (modified in place)
         orth_key: Key for the orthographic form (e.g., "lemma")
         raw_key: Key for raw IPA annotation (e.g., "ipa_raw_lemma")
         norm_key: Key to store normalized IPA (e.g., "ipa_normalized_lemma")
-        tweak_fn: Optional function to adjust G2P output, takes (orth, ipa) -> ipa
+        tweak_fn: Optional function to adjust G2P output, (orth, ipa) -> ipa
 
     Requires:
         _ipa_normalizer must be set via set_ipa_normalizer() before calling
@@ -444,7 +444,7 @@ def detect_orth_change_dynamic(lemma: str, plural: str) -> str:
         plural_window = aligned_plural[start:end].replace("-", "")
         expanded_for_palatalization = True
 
-    # Vowel change with preceding target consonant (e.g., "ă" → "i" preceded by "c")
+    # Vowel change with preceding target consonant
     elif (
         lemma_window
         and plural_window
@@ -584,7 +584,8 @@ def derive_mutation_and_orth_change(row: Dict[str, str]) -> None:
         return
 
     # STEP 2: Classify as palatalization via exact or suffix matching
-    # Suffix matching: "ate→ăți" matches "te→ți" if "ate" ends with "te" AND "ăți" ends with "ți"
+    # Suffix matching: "ate→ăți" matches "te→ți" if "ate" ends 
+    # with "te" AND "ăți" ends with "ți"
     is_palatalization = False
 
     if orth_change in ORTH_TO_PALATAL_IPA:
@@ -607,7 +608,7 @@ def derive_mutation_and_orth_change(row: Dict[str, str]) -> None:
 
 
 def derive_opportunity(row: Dict[str, str]) -> None:
-    """Derive opportunity: does plural add front vowel (i/e) after stem_final?"""
+    """Derive opportunity: does plural add front vowel after stem_final?"""
     pos = row.get("pos", "")
     lemma = row.get("lemma", "")
     plural = row.get("plural", "")
@@ -896,7 +897,7 @@ LEMMA_SUFFIXES = [
 
 
 def derive_palatal_consonant_pl(row: Dict[str, str]) -> None:
-    """Derive palatal_consonant_pl from orth_change (only for mutation=True)."""
+    """Derive palatal_consonant_pl from orth_change only for mutation=True."""
     row["palatal_consonant_pl"] = ""
 
     mutation = row.get("mutation", "")
@@ -1000,7 +1001,7 @@ def derive_suffix_triggers_plural_mutation(row: Dict[str, str]) -> None:
 
 
 def derive_derived_verbs_fields(row: Dict[str, str]) -> None:
-    """Derive deriv_suffixes and ipa_derived_verbs (keep only -a/-i/-ui verbs)."""
+    """Derive deriv_suffixes and ipa_derived_verbs, keep only -a/-i/-ui verbs."""
     derived_verbs = (row.get("derived_verbs", "") or "").strip()
     row["deriv_suffixes"] = ""
     row["ipa_derived_verbs"] = ""
