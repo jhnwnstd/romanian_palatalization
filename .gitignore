@@ -30,6 +30,7 @@ MANIFEST
 .flake8_cache/
 .coverage
 htmlcov/
+lint.sh
 
 # Virtual environments
 venv/
@@ -55,11 +56,9 @@ venv.bak/
 *.Rproj
 
 # Data directory: ignore all contents except romanian_lexicon_raw.csv
+*.json
 data/*
 !data/romanian_lexicon_raw.csv
-
-# Data files (large JSON caches in data directory)
-data/**/*.json
 
 # Documentation directory: ignore contents but track data_dict.md
 docs/*

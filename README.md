@@ -44,9 +44,16 @@ python3 verify_dependencies.py
 Recommended:
 
 ```bash
-./run_pipeline.sh          # runs all stages, skips if harvest or DEX outputs exist
-./run_pipeline.sh --force  # re-run everything from scratch (slow)
+./run_pipeline.sh          # skips data collection stages if data exists
+./run_pipeline.sh --force  # re-run all stages 
 ```
+
+The pipeline resumes from existing data:
+- If raw harvest data exists → skips harvest (saves hours/days)
+- If DEX QC data exists → skips DEX QC
+- Always runs processing stages (stages 4-6)
+
+**Safety note**: `--force` re-runs stages by overwriting outputs, it does not delete existing data first. 
 
 Manual step-by-step (equivalent to the shell script):
 

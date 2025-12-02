@@ -12,8 +12,8 @@
 #   6. Run R statistical analysis
 #
 # Usage:
-#   ./run_pipeline.sh          # Run full pipeline (skips harvest if data exists)
-#   ./run_pipeline.sh --force  # Force re-harvest from scratch
+# ./run_pipeline.sh             # skips data collection stages if data exists
+# ./run_pipeline.sh --force     # re-run all stages 
 #
 
 set -euo pipefail
@@ -46,9 +46,9 @@ R_SCRIPT="$ANALYSIS_DIR/analyze_romanian_palatalization.R"
 ANALYSIS_LOG="$ANALYSIS_DIR/romanian_palatalization_analysis.txt"
 
 # Parse arguments
-FORCE_HARVEST=0
+FORCE_RUN=0
 if [[ "${1:-}" == "--force" ]]; then
-    FORCE_HARVEST=1
+    FORCE_RUN=1
 fi
 
 # Helper functions
@@ -102,20 +102,25 @@ main() {
     # ========================================
     log_stage "STAGE 1: Harvest Raw Data from Wiktionary"
 
-    # Check if we can skip harvesting entirely
-    if [[ -f "$DEX_QC_CSV" ]]; then
-        log_info "Skipping harvest (DEX QC output already exists)"
-        log_info "Use --force to re-harvest from scratch"
-    elif [[ -f "$RAW_CSV" ]] && [[ $FORCE_HARVEST -eq 0 ]]; then
-        log_info "Skipping harvest (raw data exists)"
-        log_info "Use --force to re-harvest from scratch"
-    else
-        if [[ $FORCE_HARVEST -eq 1 ]]; then
-            log_warning "Force mode: removing existing data files"
-            rm -f "$RAW_CSV" "$DEX_QC_CSV"
-        fi
+    if [[ -f "$RAW_CSV" ]]; then
+        if [[ $FORCE_RUN -eq 1 ]]; then
+            log_warning "Force mode: re-running harvest (existing data will be overwritten)"
+            log_info "Starting harvest (this may take several hours)..."
+            python3 "$SCRIPTS_DIR/romanian_harvester.py"
 
-        log_info "Starting harvest (this may take several hours)..."
+            if check_file "$RAW_CSV"; then
+                log_success "Harvest complete!"
+            else
+                log_error "Harvest failed - raw CSV not created"
+                exit 1
+            fi
+        else
+            log_info "Raw data already exists"
+            check_file "$RAW_CSV"
+            log_info "Skipping harvest (use --force to re-run)"
+        fi
+    else
+        log_info "Raw data not found - starting harvest (this may take several hours)..."
         python3 "$SCRIPTS_DIR/romanian_harvester.py"
 
         if check_file "$RAW_CSV"; then
@@ -131,13 +136,24 @@ main() {
     # ========================================
     log_stage "STAGE 2: Download Leipzig Frequency Data"
 
-    # Check for frequency CSVs
     FREQ_DIR="$DATA_DIR/leipzig/freq"
     if [[ -d "$FREQ_DIR" ]] && [[ -n "$(ls -A "$FREQ_DIR"/*.csv 2>/dev/null)" ]]; then
-        log_success "Leipzig frequency data already exists"
-        log_info "Skipping download (frequency data exists)"
-        log_info "Found frequency files:"
-        ls -lh "$FREQ_DIR"/*.csv | awk '{print "  - " $9 " (" $5 ")"}'
+        if [[ $FORCE_RUN -eq 1 ]]; then
+            log_warning "Force mode: re-downloading Leipzig corpora"
+            python3 "$SCRIPTS_DIR/download_leipzig.py"
+
+            if [[ -d "$FREQ_DIR" ]] && [[ -n "$(ls -A "$FREQ_DIR"/*.csv 2>/dev/null)" ]]; then
+                log_success "Leipzig frequency data ready"
+            else
+                log_error "Leipzig download failed - no frequency files found"
+                exit 1
+            fi
+        else
+            log_success "Leipzig frequency data already exists"
+            log_info "Found frequency files:"
+            ls -lh "$FREQ_DIR"/*.csv | awk '{print "  - " $9 " (" $5 ")"}'
+            log_info "Skipping download (use --force to re-run)"
+        fi
     else
         log_info "Downloading and processing Leipzig corpora..."
         python3 "$SCRIPTS_DIR/download_leipzig.py"
@@ -157,14 +173,40 @@ main() {
     # ========================================
     log_stage "STAGE 3: DEX Quality Control"
 
-    # Check if DEX QC output exists
-    if check_file "$DEX_QC_CSV"; then
-        log_info "Skipping DEX QC (output exists)"
-        if check_file "$AUDIT_CSV"; then
-            log_info "Audit report: $AUDIT_CSV"
-        fi
-        if check_file "$DISAGREEMENTS_CSV"; then
-            log_info "Disagreements: $DISAGREEMENTS_CSV"
+    if [[ -f "$DEX_QC_CSV" ]]; then
+        if [[ $FORCE_RUN -eq 1 ]]; then
+            # Check if we have the input (RAW_CSV)
+            if [[ ! -f "$RAW_CSV" ]]; then
+                log_error "Cannot run DEX QC: raw data not found ($RAW_CSV)"
+                log_error "Please run harvest first"
+                exit 1
+            fi
+
+            log_warning "Force mode: re-running DEX QC"
+            python3 "$SCRIPTS_DIR/dex_qc_main_csv.py"
+
+            if check_file "$DEX_QC_CSV"; then
+                log_success "DEX QC complete!"
+                if check_file "$AUDIT_CSV"; then
+                    log_info "Audit report: $AUDIT_CSV"
+                fi
+                if check_file "$DISAGREEMENTS_CSV"; then
+                    log_info "Disagreements: $DISAGREEMENTS_CSV"
+                fi
+            else
+                log_error "DEX QC failed - output not created"
+                exit 1
+            fi
+        else
+            log_info "DEX QC data already exists"
+            check_file "$DEX_QC_CSV"
+            if check_file "$AUDIT_CSV"; then
+                log_info "Audit report: $AUDIT_CSV"
+            fi
+            if check_file "$DISAGREEMENTS_CSV"; then
+                log_info "Disagreements: $DISAGREEMENTS_CSV"
+            fi
+            log_info "Skipping DEX QC (use --force to re-run)"
         fi
     else
         # DEX QC needs to run - check if we have the input (RAW_CSV)

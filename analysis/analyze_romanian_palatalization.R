@@ -58,10 +58,25 @@ options(dplyr.summarise.inform = FALSE)
 segments_of_interest <- c("c", "g", "t", "d", "s", "z")
 front_verb_suffixes <- c("-i", "-ui")
 suffix_interest <- c("-ic", "-ist", "-esc", "-ică", "-ice")
-nde_classes <- c("gimpe", "ochi", "paduchi")
-nde_observable <- c("ochi", "paduchi")
+
+# NDEB = non-derived exception base lemmas (gimpe / ochi / păduche patterns)
+ndeb_classes <- c("gimpe", "ochi", "paduchi")
+ndeb_observable <- c("ochi", "paduchi")
+
 plural_opportunities <- c("i", "e")
 plural_opportunities_all <- c("i", "e", "uri", "none")
+
+# =========================================================================
+# Analysis Constants
+# =========================================================================
+
+MIN_SAMPLE_SIZE_BAYESIAN <- 5L # minimum N for Bayesian TP
+SMALL_CELL_THRESHOLD <- 20L # flag small downsampled cells
+
+PRECISION_THETA <- 2L # e.g. theta_N
+PRECISION_PROB <- 4L # rates / probabilities
+
+CLUSTER_TYPES <- c("st", "sc", "ct") # clusters included in cluster TP
 
 # =========================================================================
 # Helper Functions
@@ -120,6 +135,110 @@ detect_palatal_from_ipa <- function(stem_final, ipa_str) {
   )
 }
 
+compute_segment_tp_tables <- function(data, label_suffix = "", group_var = stem_final) {
+  group_var_name <- rlang::as_name(rlang::enquo(group_var))
+
+  # By opportunity (i vs e)
+  by_opp <- data |>
+    group_by({{ group_var }}, opportunity) |>
+    summarise(
+      mutated     = sum(mutation, na.rm = TRUE),
+      non_mutated = sum(!mutation, na.rm = TRUE),
+      .groups     = "drop"
+    ) |>
+    mutate(
+      type = paste0("<", .data[[group_var_name]], "> + <-", opportunity, "> plural", label_suffix)
+    ) |>
+    tp_table(type, mutated, non_mutated)
+
+  # Combined i+e
+  combined <- data |>
+    group_by({{ group_var }}) |>
+    summarise(
+      mutated     = sum(mutation, na.rm = TRUE),
+      non_mutated = sum(!mutation, na.rm = TRUE),
+      .groups     = "drop"
+    ) |>
+    mutate(
+      type = paste0("<", .data[[group_var_name]], "> + <-i, -e> plural", label_suffix)
+    ) |>
+    tp_table(type, mutated, non_mutated)
+
+  bind_rows(by_opp, combined) |>
+    arrange(type)
+}
+
+run_bayesian_tp <- function(data, subset_label, seed_value = 123L) {
+  if (is.null(data) || nrow(data) == 0L) {
+    return(list())
+  }
+
+  results <- list()
+
+  for (seg in segments_of_interest) {
+    for (opp in plural_opportunities) {
+      seg_data <- data |>
+        filter(
+          stem_final == seg,
+          opportunity == opp,
+          !is.na(mutation)
+        )
+
+      if (nrow(seg_data) < MIN_SAMPLE_SIZE_BAYESIAN) next
+
+      N <- nrow(seg_data)
+      theta_N <- tp_threshold(N)
+      tolerance_rate <- theta_N / N
+
+      cat(sprintf("  Fitting <%s> + <-%s> (%s)...\n", seg, opp, subset_label))
+
+      invisible(capture.output(
+        {
+          model_tp <- brm(
+            mutation ~ 1,
+            data = seg_data,
+            family = bernoulli(link = "logit"),
+            prior = prior(normal(0, 1.5), class = "Intercept"),
+            chains = 4, iter = 2000, warmup = 1000, cores = 4,
+            backend = "cmdstanr",
+            seed = seed_value,
+            refresh = 0,
+            silent = 2
+          )
+        },
+        type = "output"
+      ))
+
+      post_samples <- as_draws_df(model_tp)
+      p_mutate <- plogis(post_samples$b_Intercept)
+      p_nonmutate <- 1 - p_mutate
+
+      sum_mut <- sum(seg_data$mutation, na.rm = TRUE)
+      sum_non <- sum(!seg_data$mutation, na.rm = TRUE)
+      majority <- sum_mut > sum_non
+
+      p_exception <- if (majority) p_nonmutate else p_mutate
+      prob_intolerable <- mean(p_exception > tolerance_rate)
+
+      results[[paste(seg, opp, subset_label, sep = "_")]] <- data.frame(
+        segment = seg,
+        opportunity = opp,
+        subset = subset_label,
+        majority_mutates = majority,
+        N = N,
+        theta_N = round(theta_N, PRECISION_THETA),
+        tolerance_rate = round(tolerance_rate, PRECISION_PROB),
+        median_p_mutate = round(median(p_mutate), PRECISION_PROB),
+        ci_lower = round(quantile(p_mutate, 0.025), PRECISION_PROB),
+        ci_upper = round(quantile(p_mutate, 0.975), PRECISION_PROB),
+        prob_exceeds_tol = round(prob_intolerable, PRECISION_PROB)
+      )
+    }
+  }
+
+  results
+}
+
 # =========================================================================
 # Data Input
 # =========================================================================
@@ -168,6 +287,20 @@ lex <- read_csv(
       str_ends(plural, "i") ~ "i",
       str_ends(plural, "e") ~ "e",
       TRUE ~ "other"
+    ),
+    # TP-specific opportunity that includes NDEB lemmas in the i/e domain
+    opportunity_tp = case_when(
+      nde_class %in% ndeb_classes &
+        opportunity == "none" &
+        plural_ending %in% c("i", "e") ~ plural_ending,
+
+      # NDEB with plural in -uri: treat as i-type for TP purposes
+      nde_class %in% ndeb_classes &
+        opportunity == "none" &
+        plural_ending == "uri" ~ "i",
+
+      # everyone else: keep the original opportunity value
+      TRUE ~ opportunity
     )
   )
 
@@ -175,21 +308,28 @@ nouns <- filter(lex, pos == "N")
 
 nouns_opp <- nouns |>
   filter(
-    opportunity %in% plural_opportunities,
+    opportunity_tp %in% plural_opportunities,
     !is.na(stem_final),
     stem_final %in% segments_of_interest
   ) |>
   mutate(
+    # Use TP-opportunity for all downstream grouping (includes NDEB)
+    opportunity = opportunity_tp,
+    cluster_simple = if_else(
+      cluster %in% CLUSTER_TYPES,
+      cluster,
+      NA_character_
+    ),
     exception_category = case_when(
       mutation ~ "undergoes",
-      nde_class %in% nde_classes ~ paste0("NDE_", nde_class),
+      nde_class %in% ndeb_classes ~ paste0("NDEB_", nde_class),
       lemma_suffix %in% suffix_interest ~ paste0("suffix_", lemma_suffix),
       is_true_exception ~ "true_exception",
       TRUE ~ "other_non_undergoer"
     )
   )
 
-nde_rows <- filter(nouns, nde_class %in% nde_classes)
+ndeb_rows <- filter(nouns, nde_class %in% ndeb_classes)
 
 cat("BASIC COUNTS\n")
 cat("Total rows:", nrow(lex), "\n")
@@ -220,22 +360,22 @@ if (nrow(bad_mut_opp) > 0) {
     print()
 }
 
-cat("\nQC: NDE ITEMS AND OPPORTUNITY\n")
-cat("Total NDE nouns:", nrow(nde_rows), "\n")
-count(nde_rows, nde_class) |> print()
+cat("\nQC: NDEB ITEMS AND OPPORTUNITY\n")
+cat("Total NDEB nouns:", nrow(ndeb_rows), "\n")
+count(ndeb_rows, nde_class) |> print()
 
-nde_ochi_pad <- filter(nde_rows, nde_class %in% nde_observable)
-nde_gimpe <- filter(nde_rows, nde_class == "gimpe")
+ndeb_ochi_pad <- filter(ndeb_rows, nde_class %in% ndeb_observable)
+ndeb_gimpe <- filter(ndeb_rows, nde_class == "gimpe")
 
-cat("\nNDE nouns of ochi/păduche type (observable DE exceptions):", nrow(nde_ochi_pad), "\n")
-if (nrow(nde_ochi_pad) > 0) {
-  nde_ochi_pad |>
+cat("\nNDEB nouns of ochi/păduche type (observable DE exceptions):", nrow(ndeb_ochi_pad), "\n")
+if (nrow(ndeb_ochi_pad) > 0) {
+  ndeb_ochi_pad |>
     select(lemma, plural, stem_final, nde_class, opportunity) |>
     arrange(nde_class, stem_final, lemma) |>
     print(n = Inf, width = Inf)
 }
 
-cat("\nNDE nouns of gimpe type (unobservable as DE; excluded from exception counts):", nrow(nde_gimpe), "\n")
+cat("\nNDEB nouns of gimpe type (unobservable as DE; excluded from exception counts):", nrow(ndeb_gimpe), "\n")
 
 cat("\nQC: OPPORTUNITY VS PLURAL ENDING\n")
 nouns |>
@@ -610,7 +750,7 @@ non_under_summary <- nouns_opp |>
 print(non_under_summary, n = Inf, width = Inf)
 
 cat("\nNDE DISTRIBUTION BY SEGMENT\n")
-nde_by_seg <- nde_rows |>
+nde_by_seg <- ndeb_rows |>
   group_by(nde_class, stem_final) |>
   summarise(N = n(), .groups = "drop") |>
   arrange(nde_class, stem_final)
@@ -672,14 +812,14 @@ if (nrow(suffix_diff) > 0) {
   cat("All tracked suffix rows are also marked as targets.\n")
 }
 
-cat("\nTRUE EXCEPTIONS IN I/E DOMAIN (NON-NDE)\n")
+cat("\nTRUE EXCEPTIONS IN I/E DOMAIN (NON-NDEB)\n")
 true_exc <- nouns |>
   filter(
     opportunity %in% plural_opportunities,
     !mutation,
-    !(nde_class %in% nde_classes)
+    !(nde_class %in% ndeb_classes)
   )
-cat("Non-mutating, non-NDE nouns:", nrow(true_exc), "\n")
+cat("Non-mutating, non-NDEB nouns:", nrow(true_exc), "\n")
 
 true_exc_by_seg <- true_exc |>
   group_by(stem_final) |>
@@ -687,18 +827,17 @@ true_exc_by_seg <- true_exc |>
   arrange(stem_final)
 print(true_exc_by_seg, n = Inf, width = Inf)
 
-cat("\nNDE EXCEPTIONS OF OCHI/PĂDUCHE TYPE (OUTSIDE ALIGNMENT-BASED I/E OPPORTUNITY)\n")
-nde_observable <- c("ochi", "paduchi")
-nde_exc_ochi_pad <- nouns |>
+cat("\nNDEB EXCEPTIONS OF OCHI/PĂDUCHE TYPE (OUTSIDE ALIGNMENT-BASED I/E OPPORTUNITY)\n")
+ndeb_exc_ochi_pad <- nouns |>
   filter(
-    nde_class %in% nde_observable,
+    nde_class %in% ndeb_observable,
     !mutation
   )
 
-cat("Non-mutating NDE nouns of ochi/păduche type:", nrow(nde_exc_ochi_pad), "\n")
+cat("Non-mutating NDEB nouns of ochi/păduche type:", nrow(ndeb_exc_ochi_pad), "\n")
 
-if (nrow(nde_exc_ochi_pad) > 0) {
-  nde_exc_ochi_pad |>
+if (nrow(ndeb_exc_ochi_pad) > 0) {
+  ndeb_exc_ochi_pad |>
     select(lemma, plural, stem_final, opportunity, nde_class, lemma_suffix, notes) |>
     arrange(nde_class, stem_final, lemma) |>
     print(n = Inf, width = Inf)
@@ -724,7 +863,7 @@ if (nrow(true_exc) > 0) {
 
 cat("DOWNSAMPLING (FREQUENCY-BASED) FOR TOLERANCE PRINCIPLE ANALYSIS\n")
 
-# Use the TOP N most frequent lemmas (deterministic, not random sampling)
+# Use the TOP N most frequent lemmas
 sample_lexeme_sizes <- c(1000L, 2500L, 5000L, 10000L)
 
 nouns_opp_freq <- nouns_opp |>
@@ -733,6 +872,9 @@ nouns_opp_freq <- nouns_opp |>
   mutate(lemma_freq = if_else(is.na(lemma_freq) | !is.finite(lemma_freq), 0, lemma_freq))
 
 nouns_opp_freq_pos <- filter(nouns_opp_freq, lemma_freq > 0)
+
+nouns_opp_with_freq <- nouns_opp |>
+  left_join(nouns_opp_freq_pos, by = "lemma")
 
 cat("Unique lemmas in i/e domain (all):", n_distinct(nouns_opp$lemma), "\n")
 cat("Unique lemmas with freq > 0:", nrow(nouns_opp_freq_pos), "\n\n")
@@ -747,7 +889,7 @@ if (nrow(nouns_opp_freq_pos) == 0L) {
   idx <- 1L
 
   for (n_lex in sample_lexeme_sizes) {
-    # Take the TOP N most frequent lemmas (deterministic)
+    # Take the TOP N most frequent lemmas
     target_n_lex <- min(n_lex, nrow(nouns_opp_freq_pos))
 
     top_lemmas <- nouns_opp_freq_pos |>
@@ -755,13 +897,16 @@ if (nrow(nouns_opp_freq_pos) == 0L) {
       slice_head(n = target_n_lex) |>
       pull(lemma)
 
-    nouns_opp_down <- filter(nouns_opp, lemma %in% top_lemmas)
+    nouns_opp_down <- nouns_opp_with_freq |>
+      filter(lemma %in% top_lemmas) |>
+      arrange(desc(lemma_freq), lemma, plural) |>
+      distinct(lemma, .keep_all = TRUE)
 
     # Use the 1000 most frequent lemmas as the reference downsampled lexicon
     if (is.null(nouns_opp_down_single) && n_lex == 1000L) {
       nouns_opp_down_single <- nouns_opp_down
       cat("Reference downsampled lexicon (top 1000 most frequent lemmas):\n")
-      cat("  target_lexemes:", n_lex, "\n")
+      cat("  target_lexemes:", target_n_lex, "\n")
       cat("  unique lemmas:", n_distinct(nouns_opp_down_single$lemma), "\n")
       cat("  rows:", nrow(nouns_opp_down_single), "\n\n")
     }
@@ -769,8 +914,8 @@ if (nrow(nouns_opp_freq_pos) == 0L) {
     seg_tp_ie_ds_list[[idx]] <- nouns_opp_down |>
       group_by(stem_final, opportunity) |>
       summarise(
-        mutated = sum(mutation == TRUE, na.rm = TRUE),
-        non_mutated = sum(mutation == FALSE, na.rm = TRUE),
+        mutated = sum(mutation, na.rm = TRUE),
+        non_mutated = sum(!mutation, na.rm = TRUE),
         .groups = "drop"
       ) |>
       mutate(sample_lexemes = n_lex)
@@ -807,29 +952,40 @@ if (nrow(nouns_opp_freq_pos) == 0L) {
 
 cat("\nTOLERANCE PRINCIPLE: SEGMENT-LEVEL PATTERNS (FULL DATA)\n")
 
-seg_tp_ie_raw <- nouns_opp |>
-  group_by(stem_final, opportunity) |>
-  summarise(
-    mutated = sum(mutation, na.rm = TRUE),
-    non_mutated = sum(!mutation, na.rm = TRUE),
-    .groups = "drop"
-  ) |>
-  mutate(type = paste0("<", stem_final, "> + <-", opportunity, "> plural"))
-
-seg_tp_ie <- tp_table(seg_tp_ie_raw, type, mutated, non_mutated)
-
-seg_tp_comb <- nouns_opp |>
-  group_by(stem_final) |>
-  summarise(
-    mutated = sum(mutation, na.rm = TRUE),
-    non_mutated = sum(!mutation, na.rm = TRUE),
-    .groups = "drop"
-  ) |>
-  mutate(type = paste0("<", stem_final, "> + <-i, -e> plural")) |>
-  tp_table(type, mutated, non_mutated)
-
-seg_tp_all <- bind_rows(seg_tp_ie, seg_tp_comb) |> arrange(type)
+seg_tp_all <- compute_segment_tp_tables(nouns_opp)
 print(seg_tp_all, n = Inf, width = Inf)
+
+cat("\nTOLERANCE PRINCIPLE: SEGMENT-LEVEL PATTERNS (FULL DATA, NO NDEB)\n")
+
+nouns_opp_no_ndeb <- nouns_opp |>
+  filter(!(nde_class %in% ndeb_classes))
+
+seg_tp_all_no_ndeb <- compute_segment_tp_tables(nouns_opp_no_ndeb, label_suffix = " (no NDEB)")
+print(seg_tp_all_no_ndeb, n = Inf, width = Inf)
+
+# =========================================================================
+# NDEB CONTRIBUTION PER TYPE (FULL LEXICON & DOWNSAMPLED)
+# =========================================================================
+
+cat("\nTOLERANCE PRINCIPLE: NDEB CONTRIBUTION PER TYPE (FULL LEXICON)\n")
+
+nouns_opp_ndeb <- nouns_opp |>
+  filter(nde_class %in% ndeb_classes)
+
+seg_tp_all_ndeb <- compute_segment_tp_tables(nouns_opp_ndeb, label_suffix = " (NDEB)")
+print(seg_tp_all_ndeb, n = Inf, width = Inf)
+
+cat("\nTOLERANCE PRINCIPLE: NDEB CONTRIBUTION PER TYPE (REFERENCE DOWNSAMPLED LEXICON)\n")
+
+if (!is.null(nouns_opp_down_single) && nrow(nouns_opp_down_single) > 0L) {
+  nouns_opp_down_ndeb <- nouns_opp_down_single |>
+    filter(nde_class %in% ndeb_classes)
+
+  seg_tp_all_ds_ndeb <- compute_segment_tp_tables(nouns_opp_down_ndeb, label_suffix = " (downsampled, NDEB)")
+  print(seg_tp_all_ds_ndeb, n = Inf, width = Inf)
+} else {
+  cat("No reference downsampled lexicon available; skipping NDEB-by-type counts (downsampled).\n")
+}
 
 # =========================================================================
 # Tolerance Principle: Downsampled Data
@@ -838,36 +994,33 @@ print(seg_tp_all, n = Inf, width = Inf)
 if (!is.null(nouns_opp_down_single) && nrow(nouns_opp_down_single) > 0L) {
   cat("\nTOLERANCE PRINCIPLE: SEGMENT-LEVEL PATTERNS (REFERENCE DOWNSAMPLED LEXICON)\n")
 
-  seg_tp_ie_ds_raw <- nouns_opp_down_single |>
-    group_by(stem_final, opportunity) |>
-    summarise(
-      mutated = sum(mutation, na.rm = TRUE),
-      non_mutated = sum(!mutation, na.rm = TRUE),
-      .groups = "drop"
-    ) |>
-    mutate(type = paste0("<", stem_final, "> + <-", opportunity, "> plural (downsampled)"))
-
-  seg_tp_ie_ds <- tp_table(seg_tp_ie_ds_raw, type, mutated, non_mutated)
-
-  seg_tp_comb_ds <- nouns_opp_down_single |>
-    group_by(stem_final) |>
-    summarise(
-      mutated = sum(mutation, na.rm = TRUE),
-      non_mutated = sum(!mutation, na.rm = TRUE),
-      .groups = "drop"
-    ) |>
-    mutate(type = paste0("<", stem_final, "> + <-i, -e> plural (downsampled)")) |>
-    tp_table(type, mutated, non_mutated)
-
-  seg_tp_all_ds <- bind_rows(seg_tp_ie_ds, seg_tp_comb_ds) |> arrange(type)
+  seg_tp_all_ds <- compute_segment_tp_tables(nouns_opp_down_single, label_suffix = " (downsampled)")
   print(seg_tp_all_ds, n = Inf, width = Inf)
 
+  cat("\nTOLERANCE PRINCIPLE: SEGMENT-LEVEL PATTERNS (REFERENCE DOWNSAMPLED, NO NDEB)\n")
+
+  nouns_opp_down_single_no_ndeb <- nouns_opp_down_single |>
+    filter(!(nde_class %in% ndeb_classes))
+
+  seg_tp_all_ds_no_ndeb <- compute_segment_tp_tables(nouns_opp_down_single_no_ndeb, label_suffix = " (downsampled, no NDEB)")
+  print(seg_tp_all_ds_no_ndeb, n = Inf, width = Inf)
+
   cat("\nTOLERANCE PRINCIPLE: SEGMENT-LEVEL COMPARISON (I VS E; FULL VS DOWNSAMPLED)\n")
-  seg_tp_ie_compare <- seg_tp_ie_raw |>
+
+  # Generate raw counts for comparison
+  seg_tp_ie_raw_full <- nouns_opp |>
+    group_by(stem_final, opportunity) |>
+    summarise(mutated = sum(mutation, na.rm = TRUE), non_mutated = sum(!mutation, na.rm = TRUE), .groups = "drop")
+
+  seg_tp_ie_raw_ds <- nouns_opp_down_single |>
+    group_by(stem_final, opportunity) |>
+    summarise(mutated = sum(mutation, na.rm = TRUE), non_mutated = sum(!mutation, na.rm = TRUE), .groups = "drop")
+
+  seg_tp_ie_compare <- seg_tp_ie_raw_full |>
     select(stem_final, opportunity, mutated, non_mutated) |>
     rename(mutated_full = mutated, non_mutated_full = non_mutated) |>
     left_join(
-      seg_tp_ie_ds_raw |>
+      seg_tp_ie_raw_ds |>
         select(stem_final, opportunity, mutated, non_mutated) |>
         rename(mutated_ds = mutated, non_mutated_ds = non_mutated),
       by = c("stem_final", "opportunity")
@@ -881,9 +1034,9 @@ if (!is.null(nouns_opp_down_single) && nrow(nouns_opp_down_single) > 0L) {
     arrange(stem_final, opportunity)
   print(seg_tp_ie_compare, n = Inf, width = Inf)
 
-  small_ds <- filter(seg_tp_ie_compare, !is.na(N_ds), N_ds < 20)
+  small_ds <- filter(seg_tp_ie_compare, !is.na(N_ds), N_ds < SMALL_CELL_THRESHOLD)
   if (nrow(small_ds) > 0) {
-    cat("\nCells with N_ds < 20 in segment × opportunity (downsampled):\n")
+    cat(sprintf("\nCells with N_ds < %d in segment × opportunity (downsampled):\n", SMALL_CELL_THRESHOLD))
     select(small_ds, stem_final, opportunity, N_ds, rate_ds) |> print()
   }
 } else {
@@ -896,189 +1049,86 @@ if (!is.null(nouns_opp_down_single) && nrow(nouns_opp_down_single) > 0L) {
 
 cat("\nTOLERANCE PRINCIPLE: CLUSTER PATTERNS (FULL DATA)\n")
 
-cluster_tp_ie <- nouns_opp |>
-  mutate(cluster_simple = if_else(cluster %in% c("st", "sc", "ct"), cluster, NA_character_)) |>
-  filter(!is.na(cluster_simple)) |>
-  group_by(cluster_simple, opportunity) |>
-  summarise(
-    mutated = sum(mutation, na.rm = TRUE),
-    non_mutated = sum(!mutation, na.rm = TRUE),
-    .groups = "drop"
-  ) |>
-  mutate(type = paste0("<", cluster_simple, "> + <-", opportunity, "> plural")) |>
-  tp_table(type, mutated, non_mutated)
+nouns_opp_clusters <- nouns_opp |>
+  filter(!is.na(cluster_simple))
 
-cluster_tp_comb <- nouns_opp |>
-  mutate(cluster_simple = if_else(cluster %in% c("st", "sc", "ct"), cluster, NA_character_)) |>
-  filter(!is.na(cluster_simple)) |>
-  group_by(cluster_simple) |>
-  summarise(
-    mutated = sum(mutation, na.rm = TRUE),
-    non_mutated = sum(!mutation, na.rm = TRUE),
-    .groups = "drop"
-  ) |>
-  mutate(type = paste0("<", cluster_simple, "> + <-i, -e> plural")) |>
-  tp_table(type, mutated, non_mutated)
-
-cluster_tp_all <- bind_rows(cluster_tp_ie, cluster_tp_comb) |> arrange(type)
+cluster_tp_all <- compute_segment_tp_tables(nouns_opp_clusters, group_var = cluster_simple)
 print(cluster_tp_all, n = Inf, width = Inf)
 
 cat("\nTOLERANCE PRINCIPLE: CLUSTER PATTERNS (REFERENCE DOWNSAMPLED LEXICON)\n")
 
 if (!is.null(nouns_opp_down_single) && nrow(nouns_opp_down_single) > 0L) {
-  cluster_tp_ie_ds <- nouns_opp_down_single |>
-    mutate(cluster_simple = if_else(cluster %in% c("st", "sc", "ct"), cluster, NA_character_)) |>
-    filter(!is.na(cluster_simple)) |>
-    group_by(cluster_simple, opportunity) |>
-    summarise(
-      mutated = sum(mutation, na.rm = TRUE),
-      non_mutated = sum(!mutation, na.rm = TRUE),
-      .groups = "drop"
-    ) |>
-    mutate(type = paste0("<", cluster_simple, "> + <-", opportunity, "> plural (downsampled)")) |>
-    tp_table(type, mutated, non_mutated)
+  nouns_opp_down_clusters <- nouns_opp_down_single |>
+    filter(!is.na(cluster_simple))
 
-  cluster_tp_comb_ds <- nouns_opp_down_single |>
-    mutate(cluster_simple = if_else(cluster %in% c("st", "sc", "ct"), cluster, NA_character_)) |>
-    filter(!is.na(cluster_simple)) |>
-    group_by(cluster_simple) |>
-    summarise(
-      mutated = sum(mutation, na.rm = TRUE),
-      non_mutated = sum(!mutation, na.rm = TRUE),
-      .groups = "drop"
-    ) |>
-    mutate(type = paste0("<", cluster_simple, "> + <-i, -e> plural (downsampled)")) |>
-    tp_table(type, mutated, non_mutated)
-
-  cluster_tp_all_ds <- bind_rows(cluster_tp_ie_ds, cluster_tp_comb_ds) |> arrange(type)
+  cluster_tp_all_ds <- compute_segment_tp_tables(nouns_opp_down_clusters, label_suffix = " (downsampled)", group_var = cluster_simple)
   print(cluster_tp_all_ds, n = Inf, width = Inf)
 } else {
   cat("No reference downsampled lexicon available; skipping cluster TP (downsampled).\n")
 }
 
 # =========================================================================
+# Tolerance Principle: NDEB Counts
+# =========================================================================
+
+cat("\nNDEB BY CLASS (FULL LEXICON AND REFERENCE DOWNSAMPLED)\n")
+
+# Helper to label rows the way you want in the spreadsheet
+ndeb_label <- function(x) {
+  dplyr::case_when(
+    x == "gimpe"   ~ "gimpe type",
+    x == "ochi"    ~ "ochi-ochi type",
+    x == "paduchi" ~ "paduche-paduchi type",
+    TRUE           ~ x
+  )
+}
+
+ndeb_tp_full <- nouns_opp |>
+  filter(nde_class %in% ndeb_classes) |>
+  group_by(nde_class) |>
+  summarise(
+    mutated     = sum(mutation, na.rm = TRUE),
+    non_mutated = sum(!mutation, na.rm = TRUE),
+    .groups     = "drop"
+  ) |>
+  mutate(type = ndeb_label(nde_class)) |>
+  tp_table(type, mutated, non_mutated) |>
+  mutate(subset = "full")
+
+ndeb_tp_ds <- if (!is.null(nouns_opp_down_single) &&
+                  nrow(nouns_opp_down_single) > 0L) {
+  nouns_opp_down_single |>
+    filter(nde_class %in% ndeb_classes) |>
+    group_by(nde_class) |>
+    summarise(
+      mutated     = sum(mutation, na.rm = TRUE),
+      non_mutated = sum(!mutation, na.rm = TRUE),
+      .groups     = "drop"
+    ) |>
+    mutate(type = ndeb_label(nde_class)) |>
+    tp_table(type, mutated, non_mutated) |>
+    mutate(subset = "downsampled")
+} else {
+  tibble()  # empty, safe for bind_rows()
+}
+
+ndeb_tp_all <- bind_rows(ndeb_tp_full, ndeb_tp_ds) |>
+  arrange(subset, type)
+
+print(ndeb_tp_all, n = Inf, width = Inf)
+
+# =========================================================================
 # Bayesian Tolerance Principle
 # =========================================================================
 
 cat("\nBAYESIAN TOLERANCE PRINCIPLE: SEGMENT × OPPORTUNITY (FULL DATA)\n")
-
-tolerance_bayesian_results <- list()
-
-for (seg in segments_of_interest) {
-  for (opp in plural_opportunities) {
-    seg_data <- filter(nouns_opp, stem_final == seg, opportunity == opp, !is.na(mutation))
-    if (nrow(seg_data) < 5) next
-
-    N <- nrow(seg_data)
-    theta_N <- tp_threshold(N)
-    tolerance_rate <- theta_N / N
-
-    cat(sprintf("  Fitting <%s> + <-%s>...\n", seg, opp))
-
-    invisible(capture.output(
-      {
-        model_tp <- brm(
-          mutation ~ 1,
-          data = seg_data,
-          family = bernoulli(link = "logit"),
-          prior = prior(normal(0, 1.5), class = "Intercept"),
-          chains = 4, iter = 2000, warmup = 1000, cores = 4,
-          backend = "cmdstanr",
-          seed = 123,
-          refresh = 0,
-          silent = 2
-        )
-      },
-      type = "output"
-    ))
-
-    post_samples <- as_draws_df(model_tp)
-    p_mutate <- plogis(post_samples$b_Intercept)
-    p_nonmutate <- 1 - p_mutate
-
-    sum_mut <- sum(seg_data$mutation, na.rm = TRUE)
-    sum_non <- sum(!seg_data$mutation, na.rm = TRUE)
-    majority <- sum_mut > sum_non
-
-    p_exception <- if (majority) p_nonmutate else p_mutate
-    prob_intolerable <- mean(p_exception > tolerance_rate)
-
-    tolerance_bayesian_results[[paste(seg, opp, "full", sep = "_")]] <- data.frame(
-      segment = seg,
-      opportunity = opp,
-      subset = "full",
-      majority_mutates = majority,
-      N = N,
-      theta_N = round(theta_N, 2),
-      tolerance_rate = round(tolerance_rate, 4),
-      median_p_mutate = round(median(p_mutate), 4),
-      ci_lower = round(quantile(p_mutate, 0.025), 4),
-      ci_upper = round(quantile(p_mutate, 0.975), 4),
-      prob_exceeds_tol = round(prob_intolerable, 4)
-    )
-  }
-}
+tolerance_bayesian_results <- run_bayesian_tp(nouns_opp, subset_label = "full", seed_value = 123L)
 
 cat("\nBAYESIAN TOLERANCE PRINCIPLE: SEGMENT × OPPORTUNITY (REFERENCE DOWNSAMPLED)\n")
-
-tolerance_bayesian_results_ds <- list()
-
 if (!is.null(nouns_opp_down_single) && nrow(nouns_opp_down_single) > 0L) {
-  for (seg in segments_of_interest) {
-    for (opp in plural_opportunities) {
-      seg_data_ds <- filter(nouns_opp_down_single, stem_final == seg, opportunity == opp, !is.na(mutation))
-      if (nrow(seg_data_ds) < 5) next
-
-      N_ds <- nrow(seg_data_ds)
-      theta_N_ds <- tp_threshold(N_ds)
-      tolerance_rate_ds <- theta_N_ds / N_ds
-
-      cat(sprintf("  Fitting <%s> + <-%s> (downsampled)...\n", seg, opp))
-
-      invisible(capture.output(
-        {
-          model_tp_ds <- brm(
-            mutation ~ 1,
-            data = seg_data_ds,
-            family = bernoulli(link = "logit"),
-            prior = prior(normal(0, 1.5), class = "Intercept"),
-            chains = 4, iter = 2000, warmup = 1000, cores = 4,
-            backend = "cmdstanr",
-            seed = 456,
-            refresh = 0,
-            silent = 2
-          )
-        },
-        type = "output"
-      ))
-
-      post_samples_ds <- as_draws_df(model_tp_ds)
-      p_mutate_ds <- plogis(post_samples_ds$b_Intercept)
-      p_nonmutate_ds <- 1 - p_mutate_ds
-
-      sum_mut_ds <- sum(seg_data_ds$mutation, na.rm = TRUE)
-      sum_non_ds <- sum(!seg_data_ds$mutation, na.rm = TRUE)
-      majority_ds <- sum_mut_ds > sum_non_ds
-
-      p_exception_ds <- if (majority_ds) p_nonmutate_ds else p_mutate_ds
-      prob_intolerable_ds <- mean(p_exception_ds > tolerance_rate_ds)
-
-      tolerance_bayesian_results_ds[[paste(seg, opp, "downsampled", sep = "_")]] <- data.frame(
-        segment = seg,
-        opportunity = opp,
-        subset = "downsampled",
-        majority_mutates = majority_ds,
-        N = N_ds,
-        theta_N = round(theta_N_ds, 2),
-        tolerance_rate = round(tolerance_rate_ds, 4),
-        median_p_mutate = round(median(p_mutate_ds), 4),
-        ci_lower = round(quantile(p_mutate_ds, 0.025), 4),
-        ci_upper = round(quantile(p_mutate_ds, 0.975), 4),
-        prob_exceeds_tol = round(prob_intolerable_ds, 4)
-      )
-    }
-  }
+  tolerance_bayesian_results_ds <- run_bayesian_tp(nouns_opp_down_single, subset_label = "downsampled", seed_value = 456L)
 } else {
+  tolerance_bayesian_results_ds <- list()
   cat("No reference downsampled lexicon available; skipping Bayesian TP for downsampled subset.\n")
 }
 
@@ -1155,6 +1205,59 @@ cat(sprintf(
   or_ci[2]
 ))
 cat("  (OR < 1 ⇒ dorsals more likely to palatalize)\n")
+
+
+cat("\nQC: INCONSISTENT MUTATION FLAGS WITHIN SAME STEM_FINAL + PLURAL\n")
+
+qc_same_plural_mut <- lex |>
+  filter(
+    pos == "N",
+    !is.na(stem_final),
+    stem_final %in% segments_of_interest
+  ) |>
+  group_by(stem_final, plural) |>
+  # if you want to ignore NA mutation values, uncomment the next line:
+  # filter(!is.na(mutation)) |>
+  filter(n_distinct(mutation) > 1) |>
+  arrange(stem_final, plural, lemma) |>
+  ungroup() |>
+  select(
+    lemma, stem_final, plural, mutation, orth_change,
+    palatal_consonant_pl, ipa_normalized_lemma, ipa_normalized_pl
+  )
+
+print(qc_same_plural_mut, n = Inf, width = Inf)
+
+# Save to CSV for manual review
+readr::write_csv(
+  qc_same_plural_mut,
+  file.path("analysis", "qc_mutation_inconsistent_same_plural.csv")
+)
+
+cat("\nQC: IPA-BASED PALATALIZATION VS MUTATION FLAG\n")
+
+qc_ipa_vs_flag <- lex |>
+  filter(
+    pos == "N",
+    stem_final %in% segments_of_interest,
+    opportunity %in% c("i", "e")
+  ) |>
+  mutate(mut_ipa = detect_palatal_from_ipa(stem_final, ipa_normalized_pl)) |>
+  filter(!is.na(mut_ipa), mut_ipa != mutation) |>
+  arrange(stem_final, plural, lemma) |>
+  select(
+    lemma, plural, stem_final, opportunity,
+    mutation, mut_ipa, palatal_consonant_pl,
+    ipa_normalized_lemma, ipa_normalized_pl
+  )
+
+print(qc_ipa_vs_flag, n = Inf, width = Inf)
+
+readr::write_csv(
+  qc_ipa_vs_flag,
+  file.path("analysis", "qc_mutation_vs_ipa.csv")
+)
+
 
 cat("\nANALYSIS FINISHED\n")
 
