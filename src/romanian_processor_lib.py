@@ -217,34 +217,35 @@ def derive_stem_final_and_cluster(row: Dict[str, str]) -> None:
     Identify the target consonant for palatalization and any
     associated cluster (chi/che/ghi/ghe/st/sc/ct).
     """
-    lemma = row.get("lemma", "")
+    lemma = row.get("lemma", "") or ""
     if not lemma:
         row["stem_final"] = ""
         row["cluster"] = ""
         return
 
+    lemma_l = lemma.lower()
+
     # 1) Velar front clusters like "chi/che/ghi/ghe" at word edge
     for seq, consonant in VELAR_FRONT_SEQUENCES.items():
-        if lemma.endswith(seq):
+        if lemma_l.endswith(seq):
             row["stem_final"] = consonant
-            row["cluster"] = seq
+            row["cluster"] = lemma[-len(seq):]  # keep original orth
             return
 
     # 2) Final clusters like -st, -sc, -ct (after stripping final vowel)
-    stem = strip_final_vowel(lemma)
+    stem = strip_final_vowel(lemma_l)
     for cluster, consonant in FINAL_CLUSTERS.items():
         if stem.endswith(cluster):
             row["stem_final"] = consonant
-            row["cluster"] = cluster
+            row["cluster"] = lemma[-len(cluster)- (len(lemma_l) - len(stem)) : len(lemma)]
             return
 
     # 3) Bare single consonant target at the very right edge of the stem
+    #    Only if there is no other consonant to its right in the stem.
     for i in range(len(stem) - 1, -1, -1):
         ch = stem[i]
         if ch in TARGET_CONSONANTS:
-            trailing = stem[i + 1 :]
-            # Only accept this as stem_final if there is no other
-            # consonant to its right in the stem.
+            trailing = stem[i + 1:]
             if any(c in ROMANIAN_CONSONANTS for c in trailing):
                 continue
             row["stem_final"] = ch
@@ -441,28 +442,63 @@ def _canonical_orth_change(
     Try to collapse noisy alignment windows (e.g. 'ico→ici' vs 'co→ci')
     into a stable orthographic pattern anchored on stem_final.
 
+    For dorsals (c/g), we additionally shrink the window so that we keep
+    the target consonant plus just the minimal segment that actually
+    differs after it. This avoids patterns like 'gie→gii' and instead
+    gives 'ge→gi'.
+
     Returns a string like 'co→ci', 'che→chi', or '' if no meaningful change.
     """
     if not lemma_sub or not plural_sub or lemma_sub == plural_sub:
         return ""
+
     lemma_sub = lemma_sub.lower()
     plural_sub = plural_sub.lower()
     stem_final = (stem_final or "").lower()
+
+    # Anchor a tail at the last occurrence of the target consonant; if
+    # that fails, fall back to a short right-edge window.
     idx = lemma_sub.rfind(stem_final) if stem_final else -1
     if idx != -1:
         lemma_tail = lemma_sub[idx:]
         plural_tail = (
             plural_sub[idx:]
             if idx < len(plural_sub)
-            else plural_sub[-len(lemma_tail) :]
+            else plural_sub[-len(lemma_tail):]
         )
     else:
         base_len = max(len(stem_final), 1)
-        tail_len = min(max(base_len + 1, 2), len(lemma_sub), len(plural_sub))
+        tail_len = min(
+            max(base_len + 1, 2),
+            len(lemma_sub),
+            len(plural_sub),
+        )
         lemma_tail = lemma_sub[-tail_len:]
         plural_tail = plural_sub[-tail_len:]
+
     if lemma_tail == plural_tail:
         return ""
+
+    # For dorsals, strip off any shared material *after* the consonant
+    # so that we keep: stem_final + minimal differing segment.
+    if stem_final in {"c", "g"} and len(lemma_tail) >= 2 and len(plural_tail) >= 2:
+        max_i = min(len(lemma_tail), len(plural_tail))
+        diff_start = 1  # never strip the consonant itself
+
+        # Move diff_start to the first position where lemma_tail and
+        # plural_tail differ (after the consonant).
+        while diff_start < max_i and lemma_tail[diff_start] == plural_tail[diff_start]:
+            diff_start += 1
+
+        # Only shrink if there is actually some difference in the tail
+        # (length or character-wise).
+        if diff_start < len(lemma_tail) or diff_start < len(plural_tail):
+            lemma_tail = lemma_tail[0] + lemma_tail[diff_start:]
+            plural_tail = plural_tail[0] + plural_tail[diff_start:]
+
+    if lemma_tail == plural_tail:
+        return ""
+
     return f"{lemma_tail}→{plural_tail}"
 
 
@@ -489,33 +525,34 @@ def derive_mutation_and_orth_change(row: Dict[str, str]) -> None:
     cluster = row.get("cluster", "")
     row["mutation"] = "False"
     row["orth_change"] = ""
+
     if pos not in {"N", "ADJ"} or not lemma or not plural or not stem_final:
         return
+
     # Use alignment to find the local change window
-    lemma_sub, plural_sub = get_change_window(
-        lemma, plural, stem_final, cluster
-    )
+    lemma_sub, plural_sub = get_change_window(lemma, plural, stem_final, cluster)
+
     # No detectable change → explicitly no mutation
     if not lemma_sub or not plural_sub or lemma_sub == plural_sub:
         row["mutation"] = "False"
         return
+
     # Default: canonicalized local window (for non-palatal changes)
-    row["orth_change"] = _canonical_orth_change(
-        lemma_sub, plural_sub, stem_final
-    )
+    row["orth_change"] = _canonical_orth_change(lemma_sub, plural_sub, stem_final)
+
     # If this consonant is not in our mutation inventory, we're done
     if stem_final not in MUTATION_PATTERNS:
         row["mutation"] = "False"
         return
+
     # Try to recognize one of the abstract palatalization patterns
     for lemma_pattern, plural_pattern in MUTATION_PATTERNS[stem_final]:
-        if lemma_sub.endswith(lemma_pattern) and plural_sub.endswith(
-            plural_pattern
-        ):
+        if lemma_sub.endswith(lemma_pattern) and plural_sub.endswith(plural_pattern):
             if plural_pattern and plural_pattern[-1] in "ie":
                 row["mutation"] = "True"
                 row["orth_change"] = f"{lemma_pattern}→{plural_pattern}"
                 return
+
     # No palatalization pattern matched
     row["mutation"] = "False"
 
