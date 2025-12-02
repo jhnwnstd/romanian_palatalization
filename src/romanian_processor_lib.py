@@ -63,6 +63,85 @@ ROMANIAN_CONSONANTS: Set[str] = set("bcdfghjklmnpqrstvwxyzșşţțțţ")
 
 
 # ============================================================================
+# ROW FILTERING
+# ============================================================================
+
+
+def should_process_row(row: Dict[str, str]) -> bool:
+    """
+    Determine if a row should be processed based on whether it contains
+    at least one target consonant in the lemma.
+
+    This filters out rows that cannot possibly undergo palatalization,
+    improving processing efficiency.
+
+    Args:
+        row: Dictionary representing a CSV row
+
+    Returns:
+        True if the row should be processed, False otherwise
+    """
+    lemma = row.get("lemma", "") or ""
+    if not lemma:
+        return False
+
+    # Normalize to lowercase for checking
+    lemma_lower = lemma.lower()
+
+    # Check if lemma contains at least one target consonant
+    for consonant in TARGET_CONSONANTS:
+        if consonant in lemma_lower:
+            return True
+
+    return False
+
+
+def ensure_ipa_fields(
+    row: Dict[str, str],
+    orth_key: str,
+    raw_key: str,
+    norm_key: str,
+    tweak_fn: Callable[[str, str], str] | None = None,
+) -> None:
+    """
+    Ensure IPA field is populated in the row, either from raw IPA or via G2P.
+
+    This function modifies the row in place, adding the normalized IPA field.
+    It first checks if a raw IPA annotation exists; if so, it normalizes it.
+    Otherwise, it generates IPA via grapheme-to-phoneme conversion and optionally
+    applies a tweak function.
+
+    Args:
+        row: Dictionary representing a CSV row (modified in place)
+        orth_key: Key for the orthographic form (e.g., "lemma")
+        raw_key: Key for raw IPA annotation (e.g., "ipa_raw_lemma")
+        norm_key: Key to store normalized IPA (e.g., "ipa_normalized_lemma")
+        tweak_fn: Optional function to adjust G2P output, takes (orth, ipa) -> ipa
+
+    Requires:
+        _ipa_normalizer must be set via set_ipa_normalizer() before calling
+    """
+    if _ipa_normalizer is None:
+        raise RuntimeError(
+            "IPA normalizer not set. Call set_ipa_normalizer() first."
+        )
+
+    # Check if raw IPA is provided
+    raw_val = row.get(raw_key)
+    if raw_val:
+        row[norm_key] = _ipa_normalizer(raw_val)
+        return
+
+    # Otherwise, generate IPA via G2P
+    orth_val = row.get(orth_key, "")
+    if orth_val:
+        ipa = to_ipa(orth_val)
+        if tweak_fn is not None:
+            ipa = tweak_fn(orth_val, ipa)
+        row[norm_key] = _ipa_normalizer(ipa)
+
+
+# ============================================================================
 # STRING UTILITIES
 # ============================================================================
 
@@ -229,7 +308,7 @@ def derive_stem_final_and_cluster(row: Dict[str, str]) -> None:
     for seq, consonant in VELAR_FRONT_SEQUENCES.items():
         if lemma_l.endswith(seq):
             row["stem_final"] = consonant
-            row["cluster"] = lemma[-len(seq):]  # keep original orth
+            row["cluster"] = lemma[-len(seq) :]  # keep original orth
             return
 
     # 2) Final clusters like -st, -sc, -ct (after stripping final vowel)
@@ -237,7 +316,9 @@ def derive_stem_final_and_cluster(row: Dict[str, str]) -> None:
     for cluster, consonant in FINAL_CLUSTERS.items():
         if stem.endswith(cluster):
             row["stem_final"] = consonant
-            row["cluster"] = lemma[-len(cluster)- (len(lemma_l) - len(stem)) : len(lemma)]
+            row["cluster"] = lemma[
+                -len(cluster) - (len(lemma_l) - len(stem)) : len(lemma)
+            ]
             return
 
     # 3) Bare single consonant target at the very right edge of the stem
@@ -245,7 +326,7 @@ def derive_stem_final_and_cluster(row: Dict[str, str]) -> None:
     for i in range(len(stem) - 1, -1, -1):
         ch = stem[i]
         if ch in TARGET_CONSONANTS:
-            trailing = stem[i + 1:]
+            trailing = stem[i + 1 :]
             if any(c in ROMANIAN_CONSONANTS for c in trailing):
                 continue
             row["stem_final"] = ch
@@ -439,15 +520,18 @@ def _canonical_orth_change(
     lemma_sub: str, plural_sub: str, stem_final: str
 ) -> str:
     """
-    Try to collapse noisy alignment windows (e.g. 'ico→ici' vs 'co→ci')
-    into a stable orthographic pattern anchored on stem_final.
+    Collapse the local alignment window into a small orthographic
+    pattern anchored on stem_final.
 
-    For dorsals (c/g), we additionally shrink the window so that we keep
-    the target consonant plus just the minimal segment that actually
-    differs after it. This avoids patterns like 'gie→gii' and instead
-    gives 'ge→gi'.
+    We:
+      - anchor on the last occurrence of stem_final in lemma_sub
+      - take the tail from that consonant to the end in both strings
+      - if those tails differ, return `lemma_tail→plural_tail`
 
-    Returns a string like 'co→ci', 'che→chi', or '' if no meaningful change.
+    Importantly, we no longer try to strip shared material *after*
+    the consonant for dorsals. That logic was collapsing patterns
+    like 'că→căe' into 'c→ce', i.e. falsely looking like dorsal
+    palatalization.
     """
     if not lemma_sub or not plural_sub or lemma_sub == plural_sub:
         return ""
@@ -456,15 +540,15 @@ def _canonical_orth_change(
     plural_sub = plural_sub.lower()
     stem_final = (stem_final or "").lower()
 
-    # Anchor a tail at the last occurrence of the target consonant; if
-    # that fails, fall back to a short right-edge window.
+    # Anchor a tail at the last occurrence of the target consonant;
+    # if that fails, fall back to a short right-edge window.
     idx = lemma_sub.rfind(stem_final) if stem_final else -1
     if idx != -1:
         lemma_tail = lemma_sub[idx:]
         plural_tail = (
             plural_sub[idx:]
             if idx < len(plural_sub)
-            else plural_sub[-len(lemma_tail):]
+            else plural_sub[-len(lemma_tail) :]
         )
     else:
         base_len = max(len(stem_final), 1)
@@ -475,26 +559,6 @@ def _canonical_orth_change(
         )
         lemma_tail = lemma_sub[-tail_len:]
         plural_tail = plural_sub[-tail_len:]
-
-    if lemma_tail == plural_tail:
-        return ""
-
-    # For dorsals, strip off any shared material *after* the consonant
-    # so that we keep: stem_final + minimal differing segment.
-    if stem_final in {"c", "g"} and len(lemma_tail) >= 2 and len(plural_tail) >= 2:
-        max_i = min(len(lemma_tail), len(plural_tail))
-        diff_start = 1  # never strip the consonant itself
-
-        # Move diff_start to the first position where lemma_tail and
-        # plural_tail differ (after the consonant).
-        while diff_start < max_i and lemma_tail[diff_start] == plural_tail[diff_start]:
-            diff_start += 1
-
-        # Only shrink if there is actually some difference in the tail
-        # (length or character-wise).
-        if diff_start < len(lemma_tail) or diff_start < len(plural_tail):
-            lemma_tail = lemma_tail[0] + lemma_tail[diff_start:]
-            plural_tail = plural_tail[0] + plural_tail[diff_start:]
 
     if lemma_tail == plural_tail:
         return ""
@@ -530,7 +594,9 @@ def derive_mutation_and_orth_change(row: Dict[str, str]) -> None:
         return
 
     # Use alignment to find the local change window
-    lemma_sub, plural_sub = get_change_window(lemma, plural, stem_final, cluster)
+    lemma_sub, plural_sub = get_change_window(
+        lemma, plural, stem_final, cluster
+    )
 
     # No detectable change → explicitly no mutation
     if not lemma_sub or not plural_sub or lemma_sub == plural_sub:
@@ -538,7 +604,9 @@ def derive_mutation_and_orth_change(row: Dict[str, str]) -> None:
         return
 
     # Default: canonicalized local window (for non-palatal changes)
-    row["orth_change"] = _canonical_orth_change(lemma_sub, plural_sub, stem_final)
+    row["orth_change"] = _canonical_orth_change(
+        lemma_sub, plural_sub, stem_final
+    )
 
     # If this consonant is not in our mutation inventory, we're done
     if stem_final not in MUTATION_PATTERNS:
@@ -547,7 +615,9 @@ def derive_mutation_and_orth_change(row: Dict[str, str]) -> None:
 
     # Try to recognize one of the abstract palatalization patterns
     for lemma_pattern, plural_pattern in MUTATION_PATTERNS[stem_final]:
-        if lemma_sub.endswith(lemma_pattern) and plural_sub.endswith(plural_pattern):
+        if lemma_sub.endswith(lemma_pattern) and plural_sub.endswith(
+            plural_pattern
+        ):
             if plural_pattern and plural_pattern[-1] in "ie":
                 row["mutation"] = "True"
                 row["orth_change"] = f"{lemma_pattern}→{plural_pattern}"

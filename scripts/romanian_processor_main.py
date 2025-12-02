@@ -43,8 +43,10 @@ from romanian_processor_lib import (  # noqa: E402
     derive_stem_final_and_cluster,
     derive_suffix_triggers_plural_mutation,
     derive_target_is_suffix,
+    ensure_ipa_fields,
     explode_derived_verbs_row,
     set_ipa_normalizer,
+    should_process_row,
     to_ipa,
     tweak_nominal_ipa,
     validate_plural_quality,
@@ -75,46 +77,50 @@ def process_row(row: Dict[str, str]) -> Optional[Dict[str, str]]:
         Processed row with all derived fields added, or None if row
         should be skipped
     """
+    # Early filter: skip rows without target consonants
+    if not should_process_row(row):
+        return None
+
     result = row.copy()
+
+    # Normalize orthographic fields
     for field in ("lemma", "plural", "gloss", "etym_lang"):
         value = result.get(field)
         if value:
             result[field] = normalize_orthography(value)
 
-    def _ensure_ipa(
-        orth_key: str,
-        raw_key: str,
-        norm_key: str,
-        tweak_fn=None,
-    ) -> None:
-        raw_val = result.get(raw_key)
-        if raw_val:
-            result[norm_key] = normalize_ipa(raw_val, remove_stress=True)
-            return
-        orth_val = result.get(orth_key, "")
-        if orth_val:
-            ipa = to_ipa(orth_val)
-            if tweak_fn is not None:
-                ipa = tweak_fn(orth_val, ipa)
-            result[norm_key] = normalize_ipa(ipa, remove_stress=True)
-
-    _ensure_ipa(
+    # Ensure IPA fields are populated
+    ensure_ipa_fields(
+        result,
         orth_key="lemma",
         raw_key="ipa_raw_lemma",
         norm_key="ipa_normalized_lemma",
         tweak_fn=tweak_nominal_ipa,
     )
-    _ensure_ipa(
+    ensure_ipa_fields(
+        result,
         orth_key="plural",
         raw_key="ipa_raw_pl",
         norm_key="ipa_normalized_pl",
         tweak_fn=None,
     )
 
+    # G2P fallback for plural IPA if still missing
+    if not result.get("ipa_normalized_pl"):
+        plural = result.get("plural", "")
+        if plural:
+            result["ipa_normalized_pl"] = normalize_ipa(
+                to_ipa(plural), remove_stress=True
+            )
+            notes = result.get("notes", "")
+            result["notes"] = (notes + " [IPA from G2P]").strip()
+
+    # Validate POS and gender
     result["pos"] = (result.get("pos") or "").strip().upper()
     if result["pos"] == "N" and not result.get("gender"):
         return None
 
+    # Run derivation pipeline
     derive_stem_final_and_cluster(result)
     validate_plural_quality(result)
     derive_mutation_and_orth_change(result)

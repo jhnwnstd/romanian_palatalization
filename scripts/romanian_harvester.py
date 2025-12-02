@@ -486,27 +486,55 @@ def strip_wiki_markup(s: str) -> str:
 
 
 def clean_ipa_raw(ipa_str: str) -> str:
-    """Remove IPA delimiters, HTML, percent-encoding; keep stress markers."""
+    """Remove IPA delimiters, HTML, percent-encoding; keep stress markers.
+
+    Handles malformed HTML patterns like:
+        encoded" title="IPA">IPA<
+        c%C3%B2%27t%C9%99%CC%80" title="cò&#39;tə̀">cò'tə̀<
+    """
     if not isinstance(ipa_str, str):
         return ""
     s = ipa_str.strip()
     if not s or s.lower() == "nan":
         return ""
-    # HTML decoding and cleanup
+
+    # Multiple rounds of URL decoding (some are double-encoded)
     try:
         from urllib.parse import unquote
 
-        s = unquote(s)
+        for _ in range(3):
+            decoded = unquote(s)
+            if decoded == s:
+                break
+            s = decoded
     except (ImportError, ValueError, TypeError):
         pass
-    # Remove HTML tags
+
+    # Extract from malformed HTML pattern: encoded" title="IPA">IPA<
+    # Try to extract the cleanest version (usually in title or after >)
+    title_match = re.search(r'title="([^"]*)"', s)
+    content_match = re.search(r">([^<]+)<", s)
+
+    if title_match:
+        s = title_match.group(1)
+    elif content_match:
+        s = content_match.group(1)
+
+    # Decode HTML entities
+    s = re.sub(r"&#(\d+);", lambda m: chr(int(m.group(1))), s)
+    s = re.sub(r"&#x([0-9a-fA-F]+);", lambda m: chr(int(m.group(1), 16)), s)
+
+    # Remove remaining HTML
     s = re.sub(r"<[^>]+>", "", s)
     s = re.sub(r'\b(?:title|href|class|id|lang|span)="[^"]*"', "", s)
     s = re.sub(r"&[a-zA-Z]+;", " ", s)
     s = s.replace(">", "").replace("<", "").replace('"', "")
     s = s.replace("[", "").replace("]", "").replace("/", "")
+
+    # Normalize whitespace
     s = re.sub(r"\s+", " ", s)
     s = re.sub(r"\s*\|\s*", " | ", s)
+
     # Deduplicate: sometimes HTML has the same IPA twice (in title and content)
     tokens = s.split()
     seen = set()
@@ -541,22 +569,39 @@ def clean_plural(s: str) -> str:
 
 
 def normalize_gloss(gloss: str) -> tuple[str, list[str], list[str]]:
-    """Normalize gloss field with basic cleanup.
+    """Normalize gloss field with enhanced HTML/template cleanup.
 
     Returns: (normalized_gloss, empty_list, empty_list)
     """
     if not gloss:
         return ("", [], [])
 
+    # Remove HTML comments
+    s = re.sub(r"<!--.*?-->", "", gloss, flags=re.DOTALL)
+
+    # Remove <ref> tags (with or without content)
+    s = re.sub(r"<ref[^>]*>.*?</ref>", "", s, flags=re.DOTALL)
+    s = re.sub(r"<ref[^>]*/>", "", s)
+    s = re.sub(r"<ref></ref>", "", s)
+
     # Basic cleanup
-    s = strip_wiki_markup(gloss)
+    s = strip_wiki_markup(s)
     s = normalize_unicode(s)
     s = normalize_ws(s)
 
-    # Remove parenthetical notes
-    s = re.sub(r"\s*\([^)]*\)\s*", " ", s)
-    s = normalize_ws(s)
+    # Remove unclosed template markers (artifacts from incomplete parsing)
+    s = re.sub(r"\}\}+$", "", s)  # Trailing }}
+    s = re.sub(r"^\{\{+", "", s)  # Leading {{
+    s = re.sub(r",\s*\}\}+", "", s)  # , followed by }}
 
+    # Clean up leading/trailing punctuation artifacts
+    s = re.sub(r"^[,\s]+|[,\s]+$", "", s)
+
+    # Remove parenthetical notes (but keep if entire gloss is in parens)
+    if not re.match(r"^\([^)]+\)$", s):
+        s = re.sub(r"\s*\([^)]*\)\s*", " ", s)
+
+    s = normalize_ws(s)
     return (s, [], [])
 
 

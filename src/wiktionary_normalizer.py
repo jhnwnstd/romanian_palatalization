@@ -126,8 +126,17 @@ def normalize_ipa(ipa: str, remove_stress: bool = True) -> str:
     except (ImportError, TypeError):
         pass
 
+    # Remove HTML/XML tags
     ipa = re.sub(r"<[^>]*>", "", ipa)
     ipa = re.sub(r'\b(?:title|href|class|id)="[^"]*"', "", ipa)
+
+    # Remove embedded quotes and comparison/marker patterns
+    # This handles cases like: "biç̌i"" >biç̌i<" → biç̌i
+    # Pattern: match quote, content, doubled quote, space, >content<, quote
+    ipa = re.sub(r'"([^"]+)""\s*>[^<]+<"?', r"\1", ipa)
+    # Remove any remaining standalone quoted strings
+    ipa = re.sub(r'"([^"]+)"', r"\1", ipa)
+
     ipa = re.sub(r"\s+", " ", ipa).strip()
     ipa = unicodedata.normalize("NFC", ipa).lower().strip()
     if ipa.startswith("-"):
@@ -137,6 +146,8 @@ def normalize_ipa(ipa: str, remove_stress: bool = True) -> str:
         for mark in ("ˈ", "ˌ", "'", "`"):
             ipa = ipa.replace(mark, "")
     ipa = ipa.replace(".", "")
+
+    # Handle pipe-separated variants
     if "|" in ipa:
         raw_segments = [seg.strip() for seg in ipa.split("|")]
         full_segments = [
@@ -148,11 +159,28 @@ def normalize_ipa(ipa: str, remove_stress: bool = True) -> str:
             ipa = " | ".join(full_segments)
         else:
             ipa = " | ".join(seg.lstrip("-").strip() for seg in raw_segments)
-        ipa = ipa.replace("tʃ", "t͡ʃ")
-        ipa = ipa.replace("dʒ", "d͡ʒ")
-        ipa = ipa.replace("ts", "t͡s")
-        ipa = ipa.replace("dz", "d͡z")
-        ipa = re.sub(r"g(?![ʰʲˠˤʷʼ͡])", "ɡ", ipa)
+
+    # Remove IPA diacritic modifiers for consistency
+    # These cause mismatches between lemma and plural IPA
+    ipa = re.sub(
+        r"[\u0320-\u0333\u0339-\u033F]", "", ipa
+    )  # Remove combining diacritics below
+    ipa = ipa.replace("ʳ", "r")  # Superscript r → regular r
+    ipa = ipa.replace("ʷ", "")  # Labialization marker
+    ipa = ipa.replace(
+        "ʲ", ""
+    )  # Palatalization marker (keep for now, may remove later)
+    ipa = ipa.replace("̯", "")  # Non-syllabic marker
+
+    # Add tie bars to affricates (UNCONDITIONAL)
+    ipa = ipa.replace("tʃ", "t͡ʃ")
+    ipa = ipa.replace("dʒ", "d͡ʒ")
+    ipa = ipa.replace("ts", "t͡s")
+    ipa = ipa.replace("dz", "d͡z")
+
+    # Normalize g → ɡ (Latin to IPA)
+    ipa = re.sub(r"g(?![ʰʲˠˤʷʼ͡])", "ɡ", ipa)
+
     return ipa.strip()
 
 
@@ -300,8 +328,11 @@ def test_normalization():
         ("aˈde.mik", "ademik"),
         ("adʒunkt", "ad͡ʒunkt"),
         ("a.kaˈde.mik", "akademik"),
-        ("nəluˈtʃi | nəˈlut͡ʃʲ", "nəlut͡ʃi | nəlut͡ʃʲ"),
-        ("bərˈbatsʲ", "bərbat͡sʲ"),
+        (
+            "nəluˈtʃi | nəˈlut͡ʃʲ",
+            "nəlut͡ʃi | nəlut͡ʃ",
+        ),  # ʲ removed for consistency
+        ("bərˈbatsʲ", "bərbat͡s"),  # ʲ removed for consistency
     ]
     for input_ipa, expected in ipa_tests:
         result = normalize_ipa(input_ipa, remove_stress=True)
