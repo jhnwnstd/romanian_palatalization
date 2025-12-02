@@ -1001,7 +1001,10 @@ def derive_suffix_triggers_plural_mutation(row: Dict[str, str]) -> None:
 
 
 def derive_derived_verbs_fields(row: Dict[str, str]) -> None:
-    """Derive deriv_suffixes and ipa_derived_verbs, keep only -a/-i/-ui verbs."""
+    """
+    Derive deriv_suffixes and ipa_derived_verbs, 
+    keep only -a/-i/-ui verbs.
+    """
     derived_verbs = (row.get("derived_verbs", "") or "").strip()
     row["deriv_suffixes"] = ""
     row["ipa_derived_verbs"] = ""
