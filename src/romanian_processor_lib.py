@@ -98,7 +98,7 @@ def ensure_ipa_fields(
 
     This function modifies the row in place, adding the normalized IPA field.
     It first checks if a raw IPA annotation exists; if so, it normalizes it.
-    Otherwise, it generates IPA via grapheme-to-phoneme conversion and 
+    Otherwise, it generates IPA via grapheme-to-phoneme conversion and
     optionally applies a tweak function.
 
     Args:
@@ -584,7 +584,7 @@ def derive_mutation_and_orth_change(row: Dict[str, str]) -> None:
         return
 
     # STEP 2: Classify as palatalization via exact or suffix matching
-    # Suffix matching: "ate→ăți" matches "te→ți" if "ate" ends 
+    # Suffix matching: "ate→ăți" matches "te→ți" if "ate" ends
     # with "te" AND "ăți" ends with "ți"
     is_palatalization = False
 
