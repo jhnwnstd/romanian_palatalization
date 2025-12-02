@@ -1738,6 +1738,42 @@ def main() -> None:
     print("=" * 80)
     df = harvest_data()
     print(f"\n{len(df)} entries harvested")
+
+    # ===========================================================================
+    # De-duplicate by (lemma, pos), preferring better sources
+    # ===========================================================================
+    print("\nDe-duplicating by (lemma, pos)...")
+
+    # 1. Source priority: prefer Romanian Wiktionary over English
+    source_priority = {
+        "ro.wiktionary.org": 0,
+        "en.wiktionary.org": 1,
+    }
+    df["source_rank"] = df["source"].map(source_priority).fillna(99)
+
+    # 2. Prefer rows that actually have a gloss and a plural
+    df["has_gloss"] = df["gloss"].notna() & (df["gloss"].str.strip() != "")
+    df["has_plural"] = df["plural"].notna() & (df["plural"].str.strip() != "")
+
+    # 3. Sort so the "best" row per lemma/pos comes first
+    df = df.sort_values(
+        by=["lemma", "pos", "source_rank", "has_gloss", "has_plural"],
+        ascending=[True, True, True, False, False],
+    )
+
+    # 4. Drop duplicates, keeping the best for each (lemma, pos)
+    duplicates_before = len(df)
+    df = df.drop_duplicates(subset=["lemma", "pos"], keep="first")
+    duplicates_removed = duplicates_before - len(df)
+
+    # 5. Clean up helper columns
+    df = df.drop(columns=["source_rank", "has_gloss", "has_plural"])
+
+    print(f"Removed {duplicates_removed} duplicate (lemma, pos) pairs")
+    print(f"{len(df)} unique entries remaining")
+
+    # ===========================================================================
+
     print(f"\nWriting to {OUTPUT_CSV}...")
     df.to_csv(OUTPUT_CSV, index=False)
     print("\n" + "=" * 80)

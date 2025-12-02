@@ -181,7 +181,18 @@ def normalize_ipa(ipa: str, remove_stress: bool = True) -> str:
     # Normalize g → ɡ (Latin to IPA)
     ipa = re.sub(r"g(?![ʰʲˠˤʷʼ͡])", "ɡ", ipa)
 
-    return ipa.strip()
+    ipa = ipa.strip()
+
+    # ===========================================================================
+    # SANITY FILTER: Reject IPA strings with obvious junk characters
+    # ===========================================================================
+    # If the string still contains problematic characters after all cleaning,
+    # refuse to treat it as normalized IPA and return empty string.
+    BAD_CHARS = set('[]{}<>"')
+    if any(ch in BAD_CHARS for ch in ipa):
+        return ""
+
+    return ipa
 
 
 def normalize_wiktionary_row(row: dict) -> dict:

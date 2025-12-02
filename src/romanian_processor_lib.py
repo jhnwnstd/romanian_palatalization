@@ -18,9 +18,6 @@ import unicodedata
 from difflib import SequenceMatcher
 from typing import Callable, Dict, List, Set, Tuple
 
-# IPA normalizer function to be injected from caller
-# Set this before calling derive_derived_verbs_fields or
-# derive_derived_adj_fields
 _ipa_normalizer: Callable[[str], str] | None = None
 
 
@@ -57,8 +54,6 @@ VELAR_FRONT_SEQUENCES = {
     "ghe": "g",
 }
 
-# Consonants used to sanity-check whether a TARGET_CONSONANT is truly
-# stem-final (no other consonant to its right in the stem).
 ROMANIAN_CONSONANTS: Set[str] = set("bcdfghjklmnpqrstvwxyzșşţțțţ")
 
 
@@ -84,15 +79,10 @@ def should_process_row(row: Dict[str, str]) -> bool:
     lemma = row.get("lemma", "") or ""
     if not lemma:
         return False
-
-    # Normalize to lowercase for checking
     lemma_lower = lemma.lower()
-
-    # Check if lemma contains at least one target consonant
     for consonant in TARGET_CONSONANTS:
         if consonant in lemma_lower:
             return True
-
     return False
 
 
@@ -126,24 +116,17 @@ def ensure_ipa_fields(
             "IPA normalizer not set. Call set_ipa_normalizer() first."
         )
 
-    # Check if raw IPA is provided
     raw_val = row.get(raw_key)
     if raw_val:
         row[norm_key] = _ipa_normalizer(raw_val)
         return
 
-    # Otherwise, generate IPA via G2P
     orth_val = row.get(orth_key, "")
     if orth_val:
         ipa = to_ipa(orth_val)
         if tweak_fn is not None:
             ipa = tweak_fn(orth_val, ipa)
         row[norm_key] = _ipa_normalizer(ipa)
-
-
-# ============================================================================
-# STRING UTILITIES
-# ============================================================================
 
 
 def strip_final_vowel(lemma: str) -> str:
@@ -189,10 +172,6 @@ def common_suffix_length(a: str, b: str) -> int:
             return i
     return min(len(a), len(b))
 
-
-# ============================================================================
-# PLURAL VALIDATION
-# ============================================================================
 
 _PL_PLAUS_SCORES: List[float] = []
 _PL_CALIBRATED = False
@@ -241,9 +220,6 @@ def compute_plural_plausibility(
     return plausibility, seq_sim, lcs_ratio
 
 
-# ============================================================================
-# PART 1: DERIVATION FUNCTIONS
-# ============================================================================
 def validate_plural_quality(row: Dict[str, str]) -> None:
     """
     Unsupervised plausibility filter for lemma-plural pairs using
@@ -304,14 +280,14 @@ def derive_stem_final_and_cluster(row: Dict[str, str]) -> None:
 
     lemma_l = lemma.lower()
 
-    # 1) Velar front clusters like "chi/che/ghi/ghe" at word edge
+    # Velar front clusters at word edge
     for seq, consonant in VELAR_FRONT_SEQUENCES.items():
         if lemma_l.endswith(seq):
             row["stem_final"] = consonant
-            row["cluster"] = lemma[-len(seq) :]  # keep original orth
+            row["cluster"] = lemma[-len(seq) :]
             return
 
-    # 2) Final clusters like -st, -sc, -ct (after stripping final vowel)
+    # Final clusters after stripping final vowel
     stem = strip_final_vowel(lemma_l)
     for cluster, consonant in FINAL_CLUSTERS.items():
         if stem.endswith(cluster):
@@ -321,8 +297,7 @@ def derive_stem_final_and_cluster(row: Dict[str, str]) -> None:
             ]
             return
 
-    # 3) Bare single consonant target at the very right edge of the stem
-    #    Only if there is no other consonant to its right in the stem.
+    # Bare single consonant at right edge (no consonant to its right)
     for i in range(len(stem) - 1, -1, -1):
         ch = stem[i]
         if ch in TARGET_CONSONANTS:
@@ -337,66 +312,59 @@ def derive_stem_final_and_cluster(row: Dict[str, str]) -> None:
     row["cluster"] = ""
 
 
-# ============================================================================
-# PART 2: CONSTANTS
-# ============================================================================
-
 # Mutation patterns: stem_final -> list of (lemma_ending, plural_ending)
 MUTATION_PATTERNS = {
     "c": [
-        ("c", "ci"),  # expected: core c → ci
-        ("c", "ce"),  # expected: core c → ce
-        ("că", "ci"),  # expected: -că / -ică → -ci
-        ("că", "ce"),  # expected: -că / -ică → -ce
-        ("ca", "ce"),  # NEW: abaca → abace
+        ("c", "ci"),
+        ("c", "ce"),
+        ("că", "ci"),
+        ("că", "ce"),
+        ("ca", "ce"),
     ],
     "g": [
-        ("g", "gi"),  # expected: core g → gi
-        ("g", "ge"),  # expected: core g → ge
-        ("gă", "gi"),  # expected: -gă → -gi
-        ("gă", "ge"),  # expected: -gă → -ge
-        ("ga", "ge"),  # NEW: ga → ge
-        ("go", "gi"),  # NEW: flamingo → flamingi
+        ("g", "gi"),
+        ("g", "ge"),
+        ("gă", "gi"),
+        ("gă", "ge"),
+        ("ga", "ge"),
+        ("go", "gi"),
     ],
     "t": [
-        ("t", "ți"),  # expected: core t → ț(i)
-        ("t", "țe"),  # unexpected: theoretical t → ț(e)
-        ("ct", "cți"),  # expected: ct → cț(i)
-        ("ct", "cțe"),  # unexpected: ct → cț(e)
-        ("te", "ți"),  # expected: -tate / -tite → -tăți / -ți
-        ("te", "țe"),  # unexpected: theoretical te → ț(e)
-        ("tă", "ți"),  # expected (rare): tă → ț(i)
-        ("tă", "țe"),  # expected (rare): tă → ț(e)
+        ("t", "ți"),
+        ("t", "țe"),
+        ("ct", "cți"),
+        ("ct", "cțe"),
+        ("te", "ți"),
+        ("te", "țe"),
+        ("tă", "ți"),
+        ("tă", "țe"),
     ],
     "d": [
-        ("d", "zi"),  # expected: cald → calzi, crud → cruzi, surd → surzi
-        ("de", "zi"),  # expected: verde → verzi, lespede → lespezi, etc.
-        ("d", "ze"),  # unexpected: theoretical
-        ("de", "ze"),  # unexpected: theoretical
-        ("de", "di"),  # expected (rare): nădejde → nădejdi
-        ("dă", "zi"),  # expected: amendă → amenzi, izbândă → izbânzi, etc.
-        ("dă", "ze"),  # unexpected: theoretical dă → z(e)
+        ("d", "zi"),
+        ("de", "zi"),
+        ("d", "ze"),
+        ("de", "ze"),
+        ("de", "di"),
+        ("dă", "zi"),
+        ("dă", "ze"),
     ],
     "s": [
-        ("s", "și"),  # expected: s → ș(i)
-        ("s", "șe"),  # unexpected: theoretical s → ș(e)
-        ("st", "ști"),  # expected: prost → proști, -ist → -iști
-        ("st", "ște"),  # unexpected: theoretical st → șt(e)
-        ("sc", "ști"),  # expected: -esc → -ești
-        ("sc", "ște"),  # unexpected: theoretical -esc → -ește
-        ("scă", "ști"),  # unexpected: theoretical scă → ști
-        ("scă", "ște"),  # expected (rare): franciscă → franciște
+        ("s", "și"),
+        ("s", "șe"),
+        ("st", "ști"),
+        ("st", "ște"),
+        ("sc", "ști"),
+        ("sc", "ște"),
+        ("scă", "ști"),
+        ("scă", "ște"),
     ],
     "z": [
-        ("z", "ji"),  # expected (rare): obraz → obraji, harbuz → harbuji, etc.
-        ("z", "je"),  # unexpected: theoretical z → j(e)
+        ("z", "ji"),
+        ("z", "je"),
     ],
 }
 
 
-# ============================================================================
-# PART 2: NEEDLEMAN-WUNSCH ALIGNMENT
-# ============================================================================
 def needleman_wunsch(s1: str, s2: str) -> Tuple[str, str]:
     """
     Global alignment using Needleman-Wunsch algorithm.
@@ -438,35 +406,111 @@ def needleman_wunsch(s1: str, s2: str) -> Tuple[str, str]:
     return "".join(reversed(aligned_s1)), "".join(reversed(aligned_s2))
 
 
+def detect_orth_change_dynamic(lemma: str, plural: str) -> str:
+    """Detect minimal orthographic change via alignment (non-circular).
+
+    Returns "X→Y" where X is lemma segment, Y is plural segment.
+    Examples: "copac"→"copaci" = "c→ci", "om"→"oameni" = "om→oamen"
+    """
+    if not lemma or not plural:
+        return ""
+
+    aligned_lemma, aligned_plural = needleman_wunsch(lemma, plural)
+
+    diff_cols = [
+        i
+        for i, (l_ch, p_ch) in enumerate(zip(aligned_lemma, aligned_plural))
+        if l_ch != p_ch
+    ]
+    if not diff_cols:
+        return ""
+
+    start = min(diff_cols)
+    end = max(diff_cols) + 1
+
+    lemma_window = aligned_lemma[start:end].replace("-", "")
+    plural_window = aligned_plural[start:end].replace("-", "")
+
+    if not lemma_window and not plural_window:
+        return ""
+
+    # Context expansion for palatalization: include preceding consonant
+    expanded_for_palatalization = False
+
+    # Pure insertion (e.g., "c-" → "ci")
+    if not lemma_window and len(plural_window) <= 2 and start > 0:
+        start -= 1
+        lemma_window = aligned_lemma[start:end].replace("-", "")
+        plural_window = aligned_plural[start:end].replace("-", "")
+        expanded_for_palatalization = True
+
+    # Vowel change with preceding target consonant (e.g., "ă" → "i" preceded by "c")
+    elif (
+        lemma_window
+        and plural_window
+        and len(lemma_window) <= 2
+        and len(plural_window) <= 2
+        and start > 0
+    ):
+        preceding_char = aligned_lemma[start - 1]
+        if preceding_char != "-" and preceding_char in TARGET_CONSONANTS:
+            start -= 1
+            lemma_window = aligned_lemma[start:end].replace("-", "")
+            plural_window = aligned_plural[start:end].replace("-", "")
+            expanded_for_palatalization = True
+
+    # Trimming: preserve pattern if expanded for palatalization
+    if expanded_for_palatalization:
+        lemma_core = lemma_window
+        plural_core = plural_window
+    else:
+        # Don't over-trim when one side is prefix of other
+        if lemma_window and plural_window:
+            if lemma_window == plural_window[: len(lemma_window)]:
+                return f"{lemma_window}→{plural_window}"
+            if plural_window == lemma_window[: len(plural_window)]:
+                return f"{lemma_window}→{plural_window}"
+
+        # Conservative prefix trimming
+        i = 0
+        while (
+            i < len(lemma_window) - 1
+            and i < len(plural_window) - 1
+            and lemma_window[i] == plural_window[i]
+        ):
+            i += 1
+
+        lemma_core = lemma_window[i:]
+        plural_core = plural_window[i:]
+
+    if not lemma_core and not plural_core:
+        return ""
+
+    if not lemma_core:
+        return f"∅→{plural_core}"
+    if not plural_core:
+        return f"{lemma_core}→∅"
+    if lemma_core == plural_core:
+        return ""
+
+    return f"{lemma_core}→{plural_core}"
+
+
 def get_change_window(
     lemma: str, plural: str, stem_final: str, cluster: str
 ) -> Tuple[str, str]:
-    """
-    Compute the minimal change window around stem_final.
-
-    Uses Needleman-Wunsch alignment to identify the region where
-    lemma and plural differ, focused on the palatalization site.
-
-    Args:
-        lemma: Lemma form
-        plural: Plural form
-        stem_final: Target consonant
-        cluster: Associated cluster (if any)
-
-    Returns:
-        Tuple of (lemma_sub, plural_sub): Substrings showing the change
-    """
+    """Compute minimal change window around stem_final using alignment."""
     if not lemma or not plural or not stem_final:
         return "", ""
     aligned_lemma, aligned_plural = needleman_wunsch(lemma, plural)
-    # Build index mapping lemma -> aligned
+
     lemma_to_aligned: Dict[int, int] = {}
     lemma_idx = 0
     for aligned_idx, ch in enumerate(aligned_lemma):
         if ch != "-":
             lemma_to_aligned[lemma_idx] = aligned_idx
             lemma_idx += 1
-    # Identify target span in lemma
+
     if cluster:
         if cluster in VELAR_FRONT_SEQUENCES:
             cluster_start = len(lemma) - len(cluster)
@@ -486,24 +530,23 @@ def get_change_window(
         if target_idx == -1:
             return "", ""
         target_indices = [target_idx]
-    # Map target indices to aligned positions
+
     aligned_target_positions: Set[int] = set()
     for idx in target_indices:
         if idx in lemma_to_aligned:
             aligned_target_positions.add(lemma_to_aligned[idx])
     if not aligned_target_positions:
         return "", ""
-    # Find all mismatch positions in the alignment
+
     diff_positions: Set[int] = set()
     for i, (char_l, char_p) in enumerate(zip(aligned_lemma, aligned_plural)):
         if char_l != char_p:
             diff_positions.add(i)
-    # Change window: all affected positions (target + diffs)
+
     all_positions = aligned_target_positions | diff_positions
     if not all_positions:
         return "", ""
     window_start = min(all_positions)
-    # Add one extra alignment column of right-hand context if available
     last_affected = max(all_positions)
     window_end = last_affected + 1
     if window_end < len(aligned_lemma):
@@ -513,132 +556,58 @@ def get_change_window(
     return lemma_sub, plural_sub
 
 
-# ============================================================================
-# PART 2: DERIVATION FUNCTIONS
-# ============================================================================
-def _canonical_orth_change(
-    lemma_sub: str, plural_sub: str, stem_final: str
-) -> str:
-    """
-    Collapse the local alignment window into a small orthographic
-    pattern anchored on stem_final.
-
-    We:
-      - anchor on the last occurrence of stem_final in lemma_sub
-      - take the tail from that consonant to the end in both strings
-      - if those tails differ, return `lemma_tail→plural_tail`
-
-    Importantly, we no longer try to strip shared material *after*
-    the consonant for dorsals. That logic was collapsing patterns
-    like 'că→căe' into 'c→ce', i.e. falsely looking like dorsal
-    palatalization.
-    """
-    if not lemma_sub or not plural_sub or lemma_sub == plural_sub:
-        return ""
-
-    lemma_sub = lemma_sub.lower()
-    plural_sub = plural_sub.lower()
-    stem_final = (stem_final or "").lower()
-
-    # Anchor a tail at the last occurrence of the target consonant;
-    # if that fails, fall back to a short right-edge window.
-    idx = lemma_sub.rfind(stem_final) if stem_final else -1
-    if idx != -1:
-        lemma_tail = lemma_sub[idx:]
-        plural_tail = (
-            plural_sub[idx:]
-            if idx < len(plural_sub)
-            else plural_sub[-len(lemma_tail) :]
-        )
-    else:
-        base_len = max(len(stem_final), 1)
-        tail_len = min(
-            max(base_len + 1, 2),
-            len(lemma_sub),
-            len(plural_sub),
-        )
-        lemma_tail = lemma_sub[-tail_len:]
-        plural_tail = plural_sub[-tail_len:]
-
-    if lemma_tail == plural_tail:
-        return ""
-
-    return f"{lemma_tail}→{plural_tail}"
-
-
 def derive_mutation_and_orth_change(row: Dict[str, str]) -> None:
-    """
-    Derive mutation and orth_change fields.
+    """Derive mutation and orth_change via alignment (non-circular approach).
 
-    Modifies row in place, adding:
-    - mutation: "True"/"False"/""
-    - orth_change:
-        * for true palatalization: a clean abstract pattern from
-          MUTATION_PATTERNS (e.g. "c→ci", "c→ce", "st→ști", "z→ji")
-        * otherwise: a canonicalized local change window from
-          _canonical_orth_change(), or "" when no change.
-
-    This keeps orth_change stable and small for real mutations (so it
-    lines up with ORTH_TO_PALATAL_IPA), while still using the alignment
-    window to describe other orthographic changes.
+    1. DISCOVER: Compute orth_change from alignment
+    2. CLASSIFY: Check if pattern matches palatalization via suffix matching
     """
-    pos = row.get("pos", "")
-    lemma = row.get("lemma", "")
-    plural = row.get("plural", "")
-    stem_final = row.get("stem_final", "")
-    cluster = row.get("cluster", "")
+    pos = (row.get("pos", "") or "").upper()
+    lemma = (row.get("lemma", "") or "").strip().lower()
+    plural = (row.get("plural", "") or "").strip().lower()
+
     row["mutation"] = "False"
     row["orth_change"] = ""
 
-    if pos not in {"N", "ADJ"} or not lemma or not plural or not stem_final:
+    if pos not in {"N", "ADJ"}:
         return
 
-    # Use alignment to find the local change window
-    lemma_sub, plural_sub = get_change_window(
-        lemma, plural, stem_final, cluster
-    )
+    if not lemma or not plural:
+        return
 
-    # No detectable change → explicitly no mutation
-    if not lemma_sub or not plural_sub or lemma_sub == plural_sub:
+    # STEP 1: Discover orth_change dynamically
+    orth_change = detect_orth_change_dynamic(lemma, plural)
+    row["orth_change"] = orth_change
+
+    if not orth_change:
         row["mutation"] = "False"
         return
 
-    # Default: canonicalized local window (for non-palatal changes)
-    row["orth_change"] = _canonical_orth_change(
-        lemma_sub, plural_sub, stem_final
-    )
+    # STEP 2: Classify as palatalization via exact or suffix matching
+    # Suffix matching: "ate→ăți" matches "te→ți" if "ate" ends with "te" AND "ăți" ends with "ți"
+    is_palatalization = False
 
-    # If this consonant is not in our mutation inventory, we're done
-    if stem_final not in MUTATION_PATTERNS:
-        row["mutation"] = "False"
-        return
+    if orth_change in ORTH_TO_PALATAL_IPA:
+        is_palatalization = True
+    else:
+        orth_parts = orth_change.split("→")
+        if len(orth_parts) == 2:
+            orth_from, orth_to = orth_parts
+            for canonical_pattern in ORTH_TO_PALATAL_IPA:
+                canon_parts = canonical_pattern.split("→")
+                if len(canon_parts) == 2:
+                    canon_from, canon_to = canon_parts
+                    if orth_from.endswith(canon_from) and orth_to.endswith(
+                        canon_to
+                    ):
+                        is_palatalization = True
+                        break
 
-    # Try to recognize one of the abstract palatalization patterns
-    for lemma_pattern, plural_pattern in MUTATION_PATTERNS[stem_final]:
-        if lemma_sub.endswith(lemma_pattern) and plural_sub.endswith(
-            plural_pattern
-        ):
-            if plural_pattern and plural_pattern[-1] in "ie":
-                row["mutation"] = "True"
-                row["orth_change"] = f"{lemma_pattern}→{plural_pattern}"
-                return
-
-    # No palatalization pattern matched
-    row["mutation"] = "False"
+    row["mutation"] = "True" if is_palatalization else "False"
 
 
 def derive_opportunity(row: Dict[str, str]) -> None:
-    """
-    Derive opportunity field.
-
-    Determines if plural adds a front vowel after stem_final.
-
-    Modifies row in place, adding:
-    - opportunity: "i"/"e"/"uri"/"none"
-
-    Args:
-        row: Dictionary representing a CSV row
-    """
+    """Derive opportunity: does plural add front vowel (i/e) after stem_final?"""
     pos = row.get("pos", "")
     lemma = row.get("lemma", "")
     plural = row.get("plural", "")
@@ -651,22 +620,38 @@ def derive_opportunity(row: Dict[str, str]) -> None:
     lemma_l = lemma.lower()
     plural_l = plural.lower()
 
-    # 0) Morphological neuter u/uri class: treat bona fide -uri plurals
-    # as "uri" opportunity and do not mix them with i/e.
+    # Neuter -uri class
     if plural_l.endswith("uri"):
         row["opportunity"] = "uri"
         return
 
-    # 1) PREFERRED: local plural change window (for i/e only)
+    # Filter unreliable plurals
+    notes = row.get("notes", "")
+    if notes:
+        notes_lower = notes.lower()
+        if (
+            "needs plural confirmation" in notes_lower
+            or "uncountable" in notes_lower
+        ):
+            row["opportunity"] = "none"
+            return
+
+    # Preferred: local plural change window
     plural_sub = (row.get("plural_change_window") or "").strip()
     if plural_sub:
         for ch in plural_sub:
             if ch in ("i", "e"):
                 row["opportunity"] = ch
+                pl = plural.strip().lower()
+                if not pl.endswith(ch):
+                    row["notes"] = (
+                        notes + "; opportunity/plural mismatch"
+                    ).strip("; ")
+                    row["opportunity"] = "none"
                 return
         return
 
-    # 2) FALLBACK: canonical palatalization pattern
+    # Fallback: canonical pattern
     orth_change = row.get("orth_change", "")
     if orth_change and orth_change in ORTH_TO_PALATAL_IPA:
         parts = orth_change.split("→", 1)
@@ -679,16 +664,15 @@ def derive_opportunity(row: Dict[str, str]) -> None:
                 row["opportunity"] = "e"
                 return
 
-    # 3) FALLBACK: alignment-based heuristics
+    # Fallback: alignment heuristics
     aligned_lemma, aligned_plural = needleman_wunsch(lemma_l, plural_l)
-    # Build index mapping from lemma index → aligned index
     lemma_to_aligned: Dict[int, int] = {}
     lemma_idx = 0
     for aligned_idx, char in enumerate(aligned_lemma):
         if char != "-":
             lemma_to_aligned[lemma_idx] = aligned_idx
             lemma_idx += 1
-    # Find target end index in the lemma (orthographic stem-final position)
+
     if cluster:
         if cluster in VELAR_FRONT_SEQUENCES:
             target_end_idx = len(lemma_l) - 1
@@ -705,7 +689,7 @@ def derive_opportunity(row: Dict[str, str]) -> None:
     if target_end_idx == -1 or target_end_idx not in lemma_to_aligned:
         return
     aligned_target_end = lemma_to_aligned[target_end_idx]
-    # Look at following characters in the aligned plural
+
     following_chars: List[str] = []
     for i in range(aligned_target_end + 1, len(aligned_plural)):
         if aligned_plural[i] != "-":
@@ -728,6 +712,16 @@ def derive_opportunity(row: Dict[str, str]) -> None:
         else:
             row["opportunity"] = "e"
 
+    # Consistency check
+    opp = row.get("opportunity", "")
+    if opp in {"i", "e"} and plural:
+        pl = plural.strip().lower()
+        if not pl.endswith(opp):
+            row["notes"] = (notes + "; opportunity/plural mismatch").strip(
+                "; "
+            )
+            row["opportunity"] = "none"
+
 
 def explode_pipe_group(
     row: Dict[str, str],
@@ -735,22 +729,17 @@ def explode_pipe_group(
     companion_fields: List[str],
     sep: str = "|",
 ) -> List[Dict[str, str]]:
-    """
-    Explode a row on `main_field` if it's pipe-separated, keeping
-    `companion_fields` aligned. All other fields are duplicated.
-    """
+    """Explode pipe-separated field into multiple rows."""
 
     def _split(raw_val: str) -> List[str]:
         raw_val = (raw_val or "").strip()
         if not raw_val:
             return []
-        # Split on "|" and drop empty segments, normalize whitespace
         return [seg.strip() for seg in raw_val.split(sep) if seg.strip()]
 
     raw = row.get(main_field, "")
     items = _split(raw)
     if not items:
-        # Nothing to explode; just clean spacing on companions
         for name in companion_fields:
             vals = _split(row.get(name, ""))
             row[name] = vals[0] if vals else ""
@@ -762,7 +751,6 @@ def explode_pipe_group(
     companion_lists = [split_field(name) for name in companion_fields]
     n = len(items)
 
-    # Normalize singleton case
     if n <= 1:
         row[main_field] = items[0]
         for name, vals in zip(companion_fields, companion_lists):
@@ -777,7 +765,7 @@ def explode_pipe_group(
     companion_lists = [pad_to(vals, n) for vals in companion_lists]
     exploded: List[Dict[str, str]] = []
     for idx, item in enumerate(items):
-        new_row = dict(row)  # shallow copy
+        new_row = dict(row)
         new_row[main_field] = item
         for name, vals in zip(companion_fields, companion_lists):
             new_row[name] = vals[idx]
@@ -786,29 +774,7 @@ def explode_pipe_group(
 
 
 def explode_derived_verbs_row(row: Dict[str, str]) -> List[Dict[str, str]]:
-    """
-    Make the row tidyverse-friendly with respect to derived verbs.
-
-    If a lemma has multiple derived verbs encoded as a single
-    pipe-separated string, e.g.:
-
-        derived_verbs     = "face|înfrunta"
-        deriv_suffixes    = "-e|-a"
-        ipa_derived_verbs = "fat͡ʃe | ɨnfrunta"
-
-    this function returns one row per derived verb, with all other
-    fields duplicated:
-
-        [
-          { ..., derived_verbs="face",    deriv_suffixes="-e",
-                ipa_derived_verbs="fat͡ʃe" },
-          { ..., derived_verbs="înfrunta", deriv_suffixes="-a",
-                ipa_derived_verbs="ɨnfrunta" },
-        ]
-
-    If there are zero or one derived verbs, it returns a single-element
-    list containing a (possibly slightly cleaned) version of the input row.
-    """
+    """Explode pipe-separated derived verbs into separate rows."""
     return explode_pipe_group(
         row,
         main_field="derived_verbs",
@@ -817,14 +783,7 @@ def explode_derived_verbs_row(row: Dict[str, str]) -> List[Dict[str, str]]:
 
 
 def explode_derived_adj_row(row: Dict[str, str]) -> List[Dict[str, str]]:
-    """
-    Make the row tidyverse-friendly with respect to derived adjectives.
-    If a lemma has multiple derived adjectives encoded as a single
-    pipe-separated string, e.g.:
-
-        derived_adj     = "frumos|frumoasă"
-        ipa_derived_adj = "frumos | frumoasă"
-    """
+    """Explode pipe-separated derived adjectives into separate rows."""
     return explode_pipe_group(
         row,
         main_field="derived_adj",
@@ -832,19 +791,8 @@ def explode_derived_adj_row(row: Dict[str, str]) -> List[Dict[str, str]]:
     )
 
 
-# ============================================================================
-# PART 3: G2P SETUP
-# ============================================================================
 def normalize_unicode_g2p(s: str) -> str:
-    """
-    Normalize Unicode for G2P conversion.
-
-    Args:
-        s: Input string
-
-    Returns:
-        Normalized string
-    """
+    """Normalize Unicode for G2P (cedilla → comma-below diacritics)."""
     if not isinstance(s, str):
         return ""
     s = unicodedata.normalize("NFC", s)
@@ -879,15 +827,7 @@ IPA_RULES = [
 
 
 def to_ipa(word: str) -> str:
-    """
-    Broad Romanian grapheme-to-phoneme conversion.
-
-    Args:
-        word: Romanian word in standard orthography
-
-    Returns:
-        IPA transcription (broad)
-    """
+    """Broad Romanian G2P conversion."""
     if not isinstance(word, str) or not word:
         return ""
     w = normalize_unicode_g2p(word).lower()
@@ -900,38 +840,36 @@ DIMINUTIVE_J_SUFFIXES = ("aică", "oaică", "uică", "eică", "iică")
 
 
 def tweak_nominal_ipa(lemma: str, ipa: str) -> str:
+    """Adjust IPA for diminutive suffixes (i+kə → j+kə)."""
     if not isinstance(lemma, str) or not isinstance(ipa, str):
         return ipa
     lemma_norm = normalize_unicode_g2p(lemma).lower()
     if lemma_norm.endswith(DIMINUTIVE_J_SUFFIXES):
-        # Replace final i + kə with j + kə
         ipa = re.sub(r"i(kə)$", r"j\1", ipa)
     return ipa
 
 
-# ============================================================================
-# PART 3: CONSTANTS
-# ============================================================================
-
 ORTH_TO_PALATAL_IPA = {
+    # Core patterns for classification via suffix matching
+    # Example: "ate→ăți" recognized via "te→ți" suffix match
     "c→ce": "t͡ʃ",
     "c→ci": "t͡ʃ",
     "ct→cți": "t͡s",
     "ct→cțe": "t͡s",
     "că→ce": "t͡ʃ",
     "că→ci": "t͡ʃ",
-    "ca→ce": "t͡ʃ",  # NEW: abaca → abace
+    "ca→ce": "t͡ʃ",
     "d→ze": "z",
     "d→zi": "z",
-    "de→di": "dʲ",  # rare allophonic palatalization
+    "de→di": "dʲ",
     "de→zi": "z",
     "dă→zi": "z",
     "g→ge": "d͡ʒ",
     "g→gi": "d͡ʒ",
     "gă→ge": "d͡ʒ",
     "gă→gi": "d͡ʒ",
-    "ga→ge": "d͡ʒ",  # NEW: ga → ge
-    "go→gi": "d͡ʒ",  # NEW: flamingo → flamingi
+    "ga→ge": "d͡ʒ",
+    "go→gi": "d͡ʒ",
     "s→șe": "ʃ",
     "s→și": "ʃ",
     "sc→ște": "ʃt",
@@ -957,40 +895,42 @@ LEMMA_SUFFIXES = [
 ]
 
 
-# ============================================================================
-# PART 3: DERIVATION FUNCTIONS
-# ============================================================================
 def derive_palatal_consonant_pl(row: Dict[str, str]) -> None:
-    """
-    Derive palatal_consonant_pl from orth_change.
-
-    Modifies row in place, adding:
-    - palatal_consonant_pl: IPA symbol or ""
-
-    Args:
-        row: Dictionary representing a CSV row
-    """
-    orth_change = row.get("orth_change", "")
+    """Derive palatal_consonant_pl from orth_change (only for mutation=True)."""
     row["palatal_consonant_pl"] = ""
+
+    mutation = row.get("mutation", "")
+    if mutation != "True":
+        return
+
+    orth_change = row.get("orth_change", "")
     if not orth_change:
         return
+
+    # Exact match
     if orth_change in ORTH_TO_PALATAL_IPA:
         row["palatal_consonant_pl"] = ORTH_TO_PALATAL_IPA[orth_change]
+        return
+
+    # Suffix matching (e.g., "ate→ăți" matches "te→ți")
+    orth_parts = orth_change.split("→")
+    if len(orth_parts) == 2:
+        orth_from, orth_to = orth_parts
+        for canonical_pattern, ipa_value in ORTH_TO_PALATAL_IPA.items():
+            canon_parts = canonical_pattern.split("→")
+            if len(canon_parts) == 2:
+                canon_from, canon_to = canon_parts
+                if orth_from.endswith(canon_from) and orth_to.endswith(
+                    canon_to
+                ):
+                    row["palatal_consonant_pl"] = ipa_value
+                    return
 
 
 def derive_lemma_suffix(row: Dict[str, str]) -> None:
-    """
-    Derive lemma_suffix field.
-
-    Modifies row in place, adding:
-    - lemma_suffix: Suffix like "-ică" or ""
-
-    Args:
-        row: Dictionary representing a CSV row
-    """
+    """Derive lemma_suffix field (e.g., "-ică", "-ist")."""
 
     def _normalize_suffix(suffix: str) -> str:
-        """Lowercase + NFC normalization for suffix comparison."""
         return unicodedata.normalize("NFC", suffix.lower())
 
     lemma = row.get("lemma", "")
@@ -1009,15 +949,7 @@ def derive_lemma_suffix(row: Dict[str, str]) -> None:
 
 
 def derive_target_is_suffix(row: Dict[str, str]) -> None:
-    """
-    Derive target_is_suffix field.
-
-    Modifies row in place, adding:
-    - target_is_suffix: "True"/"False"
-
-    Args:
-        row: Dictionary representing a CSV row
-    """
+    """Check if target consonant is within tracked suffix."""
     lemma = row.get("lemma", "")
     stem_final = row.get("stem_final", "")
     cluster = row.get("cluster", "")
@@ -1050,21 +982,12 @@ def derive_target_is_suffix(row: Dict[str, str]) -> None:
 
 
 def derive_suffix_triggers_plural_mutation(row: Dict[str, str]) -> None:
-    """
-    Derive suffix_triggers_plural_mutation field.
-
-    Modifies row in place, adding:
-    - suffix_triggers_plural_mutation: "True"/"False"
-
-    Args:
-        row: Dictionary representing a CSV row
-    """
+    """Check if tracked suffix triggers plural mutation."""
     pos = row.get("pos", "")
     lemma_suffix = row.get("lemma_suffix", "")
     opportunity = row.get("opportunity", "")
     target_is_suffix = row.get("target_is_suffix", "")
     mutation = row.get("mutation", "")
-    # Default: suffix is *not* triggering mutation for this lemma
     row["suffix_triggers_plural_mutation"] = "False"
     if (
         pos == "N"
@@ -1076,21 +999,8 @@ def derive_suffix_triggers_plural_mutation(row: Dict[str, str]) -> None:
         row["suffix_triggers_plural_mutation"] = "True"
 
 
-# ============================================================================
-# PART 4: DERIVATION FUNCTIONS
-# ============================================================================
 def derive_derived_verbs_fields(row: Dict[str, str]) -> None:
-    """
-    Derive deriv_suffixes and ipa_derived_verbs.
-
-    Keeps only denominal verbs ending in -a, -i, or -ui.
-    Drops other verbs (out of scope for the project).
-
-    Modifies row in place, adding:
-    - derived_verbs: cleaned pipe-separated verbs
-    - deriv_suffixes: pipe-separated suffixes (-a / -i / -ui)
-    - ipa_derived_verbs: pipe-separated normalized IPA
-    """
+    """Derive deriv_suffixes and ipa_derived_verbs (keep only -a/-i/-ui verbs)."""
     derived_verbs = (row.get("derived_verbs", "") or "").strip()
     row["deriv_suffixes"] = ""
     row["ipa_derived_verbs"] = ""
@@ -1105,7 +1015,6 @@ def derive_derived_verbs_fields(row: Dict[str, str]) -> None:
     suffixes: List[str] = []
     ipa_list: List[str] = []
     for verb in verb_list:
-        # Normalize orthography for suffix detection
         norm = normalize_unicode_g2p(verb).lower()
         if norm.endswith("ui"):
             suf = "-ui"
@@ -1114,18 +1023,15 @@ def derive_derived_verbs_fields(row: Dict[str, str]) -> None:
         elif norm.endswith("a"):
             suf = "-a"
         else:
-            # Out-of-domain verb (e.g. ends in -e): drop it
             continue
 
         clean_verbs.append(verb)
         suffixes.append(suf)
-        # Generate IPA, then normalize so affricates get tie bars, etc.
         ipa = to_ipa(verb)
         if _ipa_normalizer:
             ipa = _ipa_normalizer(ipa)
         ipa_list.append(ipa)
     if not clean_verbs:
-        # Treat as "no derived verbs" for this project
         row["derived_verbs"] = ""
         row["deriv_suffixes"] = ""
         row["ipa_derived_verbs"] = ""
@@ -1137,12 +1043,7 @@ def derive_derived_verbs_fields(row: Dict[str, str]) -> None:
 
 
 def derive_derived_adj_fields(row: Dict[str, str]) -> None:
-    """
-    Derive ipa_derived_adj.
-
-    Modifies row in place, adding:
-    - ipa_derived_adj: pipe-separated normalized IPA for each derived adjective
-    """
+    """Derive ipa_derived_adj."""
     derived_adj = (row.get("derived_adj", "") or "").strip()
     row["ipa_derived_adj"] = ""
     if not derived_adj:
@@ -1159,26 +1060,18 @@ def derive_derived_adj_fields(row: Dict[str, str]) -> None:
             ipa = _ipa_normalizer(ipa)
         ipa_list.append(ipa)
 
-    # Normalize spacing in derived_adj itself
     row["derived_adj"] = "|".join(adj_list)
     row["ipa_derived_adj"] = "|".join(ipa_list)
 
 
 def derive_nde_class(row: Dict[str, str]) -> None:
-    """
-    Classify NDE patterns.
+    """Classify NDE (non-derived environment) patterns.
 
     Types:
-    1. gimpe: Tautomorphemic C+front-vowel
-    2. ochi: Singular=plural with chi/ghi
-    3. paduchi: che/ghe→chi/ghi under-application
-    4. frontstem: ce/ci / ge/gi where plural only toggles e↔i
-
-    Modifies row in place, adding:
-    - nde_class: "gimpe"/"ochi"/"paduchi"/"frontstem"/""
-
-    Args:
-        row: Dictionary representing a CSV row
+    - gimpe: Tautomorphemic C+front-vowel (sg=pl)
+    - ochi: Singular=plural with chi/ghi
+    - paduchi: che/ghe→chi/ghi under-application
+    - frontstem: ce/ci / ge/gi where plural toggles e↔i
     """
     pos = row.get("pos", "")
     lemma = row.get("lemma", "") or ""
@@ -1188,7 +1081,7 @@ def derive_nde_class(row: Dict[str, str]) -> None:
     mutation = str(row.get("mutation", ""))
     orth_change = row.get("orth_change", "") or ""
     row["nde_class"] = ""
-    # NDEs are non-mutating dorsal nouns with both forms present
+
     if pos != "N" or not lemma or not plural:
         return
 
@@ -1198,12 +1091,12 @@ def derive_nde_class(row: Dict[str, str]) -> None:
     if stem_final not in ("c", "g"):
         return
 
-    # (1) ochi-type: sg = pl, chi/ghi
+    # ochi-type: sg = pl with chi/ghi
     if lemma == plural and cluster in ("chi", "ghi"):
         row["nde_class"] = "ochi"
         return
 
-    # (2) paduchi-type: che/ghe → chi/ghi (optionally allow chiuri/ghiuri)
+    # paduchi-type: che/ghe → chi/ghi
     if cluster in ("che", "ghe"):
         expected_cluster_pl = cluster[:-1] + "i"
         if plural.endswith(expected_cluster_pl) or plural.endswith(
@@ -1212,34 +1105,25 @@ def derive_nde_class(row: Dict[str, str]) -> None:
             row["nde_class"] = "paduchi"
             return
 
-    # (3) gimpe-type: sg = pl, final ci/ce/gi/ge, no velar-front cluster
+    # gimpe-type: sg = pl, final ci/ce/gi/ge, no cluster
     if not cluster:
         if lemma == plural and lemma.endswith(("ci", "ce", "gi", "ge")):
             row["nde_class"] = "gimpe"
             return
 
-        # (4) front-stem ce/ci/ge/gi where plural only toggles e↔i
+        # frontstem: e↔i toggle only
         if orth_change in {"ce→ci", "ci→ce", "ge→gi", "gi→ge"}:
             row["nde_class"] = "frontstem"
             return
 
 
 def derive_exception_reason(row: Dict[str, str]) -> None:
-    """
-    Derive exception_reason field.
-
-    Modifies row in place, adding:
-    - exception_reason: "nde:gimpe"/"nde:ochi"/"nde:paduchi"/""
-
-    Args:
-        row: Dictionary representing a CSV row
-    """
+    """Derive exception_reason field (nde:gimpe/ochi/paduchi or empty)."""
     row["exception_reason"] = ""
     pos = row.get("pos", "")
     plural = row.get("plural", "")
     mutation = row.get("mutation", "")
     nde = row.get("nde_class", "")
-    # Only nouns with an attested plural
     if pos != "N" or not plural or mutation == "True":
         return
     if nde in {"gimpe", "ochi", "paduchi"}:
@@ -1247,24 +1131,12 @@ def derive_exception_reason(row: Dict[str, str]) -> None:
 
 
 def derive_is_true_exception(row: Dict[str, str]) -> None:
-    """
-    Derive is_true_exception field.
-
-    A noun is a "true exception" if it has an i/e opportunity,
-    does not palatalize, and is not an NDE pattern.
-
-    Modifies row in place, adding:
-    - is_true_exception: "True"/"False"
-
-    Args:
-        row: Dictionary representing a CSV row
-    """
+    """Mark as true exception if i/e opportunity, no mutation, and not NDE."""
     pos = row.get("pos", "")
     mutation = row.get("mutation", "")
     opportunity = row.get("opportunity", "")
     nde_class = row.get("nde_class", "")
     has_ie_opportunity = opportunity in {"i", "e"}
-    # Treat any classified NDE pattern as NDE, including "frontstem"
     is_nde = bool(nde_class)
     if (
         pos == "N"
