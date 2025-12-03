@@ -195,12 +195,11 @@ def normalize_ipa(ipa: str, remove_stress: bool = True) -> str:
 
     # Remove junk patterns: dates, URLs, Twitter mentions
     # Pattern: "february 8, 2023", "http://...", "twitter", etc.
-    ipa = re.sub(
-        r"\b(?:january|february|march|april|may|june|july|august|september|october|november|december)\b",
-        "",
-        ipa,
-        flags=re.IGNORECASE,
+    months_pattern = (
+        r"\b(?:january|february|march|april|may|june|july|august"
+        r"|september|october|november|december)\b"
     )
+    ipa = re.sub(months_pattern, "", ipa, flags=re.IGNORECASE)
     ipa = re.sub(r"\b\d{1,2},?\s*\d{4}\b", "", ipa)  # Dates like "8, 2023"
     ipa = re.sub(r"\btwitter\b", "", ipa, flags=re.IGNORECASE)
     ipa = re.sub(r"\bhttp[s]?://[^\s]+", "", ipa)  # URLs
