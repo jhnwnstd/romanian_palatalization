@@ -45,6 +45,7 @@ from romanian_processor_lib import (  # noqa: E402
     derive_target_is_suffix,
     ensure_ipa_fields,
     explode_derived_verbs_row,
+    fix_nde_mutations,
     set_ipa_normalizer,
     should_process_row,
     to_ipa,
@@ -132,6 +133,7 @@ def process_row(row: Dict[str, str]) -> Optional[Dict[str, str]]:
     derive_derived_verbs_fields(result)
     derive_derived_adj_fields(result)
     derive_nde_class(result)
+    fix_nde_mutations(result)  # Fix mutation status for NDE items
     derive_exception_reason(result)
     derive_is_true_exception(result)
 
@@ -181,6 +183,9 @@ def process_csv(input_path: str, output_path: str) -> None:
         reader = csv.DictReader(f_in)
 
         rows = []
+        seen_entries = set()  # Track (lemma, pos, plural) to deduplicate
+        duplicates_skipped = 0
+
         for i, row in enumerate(reader, start=1):
             if i % 1000 == 0:
                 print(f"  Processed {i} rows...")
@@ -188,7 +193,22 @@ def process_csv(input_path: str, output_path: str) -> None:
             if processed is None:
                 continue
             exploded = explode_derived_verbs_row(processed)
-            rows.extend(exploded)
+
+            for exp_row in exploded:
+                # Deduplicate by (lemma, pos, plural)
+                key = (
+                    exp_row.get("lemma", ""),
+                    exp_row.get("pos", ""),
+                    exp_row.get("plural", ""),
+                )
+                if key in seen_entries:
+                    duplicates_skipped += 1
+                    continue
+                seen_entries.add(key)
+                rows.append(exp_row)
+
+        if duplicates_skipped > 0:
+            print(f"  Skipped {duplicates_skipped} duplicate entries")
 
     print(f"\nWriting {len(rows)} rows to {output_path}...")
 

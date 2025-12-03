@@ -577,6 +577,11 @@ def derive_mutation_and_orth_change(row: Dict[str, str]) -> None:
 
     # STEP 1: Discover orth_change dynamically
     orth_change = detect_orth_change_dynamic(lemma, plural)
+
+    # Fix ∅→iur and ∅→riu typos (should be ∅→uri for -uri plurals)
+    if orth_change in {"∅→iur", "∅→riu"} and plural.endswith("uri"):
+        orth_change = "∅→uri"
+
     row["orth_change"] = orth_change
 
     if not orth_change:
@@ -604,6 +609,13 @@ def derive_mutation_and_orth_change(row: Dict[str, str]) -> None:
                         is_palatalization = True
                         break
 
+    # STEP 3: Check for frontstem NDE before marking as mutation
+    # e.g., borci → borcii (lemma already has ci, just adding -i)
+    if is_palatalization and orth_change in {"c→ci", "c→ce", "g→gi", "g→ge"}:
+        if lemma.endswith(("ci", "ce", "gi", "ge")):
+            # This is frontstem NDE, not a true alternation
+            is_palatalization = False
+
     row["mutation"] = "True" if is_palatalization else "False"
 
 
@@ -630,10 +642,7 @@ def derive_opportunity(row: Dict[str, str]) -> None:
     notes = row.get("notes", "")
     if notes:
         notes_lower = notes.lower()
-        if (
-            "needs plural confirmation" in notes_lower
-            or "uncountable" in notes_lower
-        ):
+        if "needs plural confirmation" in notes_lower:
             row["opportunity"] = "none"
             return
 
@@ -691,27 +700,37 @@ def derive_opportunity(row: Dict[str, str]) -> None:
         return
     aligned_target_end = lemma_to_aligned[target_end_idx]
 
+    # Check if front vowel appears at or after target position
+    # (handles double consonants like tt→ți where i aligns with final t)
     following_chars: List[str] = []
-    for i in range(aligned_target_end + 1, len(aligned_plural)):
+    for i in range(aligned_target_end, len(aligned_plural)):
         if aligned_plural[i] != "-":
             following_chars.append(aligned_plural[i])
             if len(following_chars) >= 3:
                 break
     if not following_chars:
         return
-    first_vowel = following_chars[0]
-    if first_vowel == "i":
-        if aligned_target_end + 1 < len(aligned_lemma):
-            if aligned_lemma[aligned_target_end + 1] != "i":
+
+    # Find first i/e that wasn't already in lemma at same position
+    for idx, ch in enumerate(following_chars):
+        aligned_pos = aligned_target_end + idx
+        if ch == "i":
+            # Check if i is new (not in lemma at same aligned position)
+            if aligned_pos < len(aligned_lemma):
+                if aligned_lemma[aligned_pos] != "i":
+                    row["opportunity"] = "i"
+                    break
+            else:
                 row["opportunity"] = "i"
-        else:
-            row["opportunity"] = "i"
-    elif first_vowel == "e":
-        if aligned_target_end + 1 < len(aligned_lemma):
-            if aligned_lemma[aligned_target_end + 1] != "e":
+                break
+        elif ch == "e":
+            if aligned_pos < len(aligned_lemma):
+                if aligned_lemma[aligned_pos] != "e":
+                    row["opportunity"] = "e"
+                    break
+            else:
                 row["opportunity"] = "e"
-        else:
-            row["opportunity"] = "e"
+                break
 
     # Consistency check
     opp = row.get("opportunity", "")
@@ -1115,27 +1134,70 @@ def derive_nde_class(row: Dict[str, str]) -> None:
             row["nde_class"] = "gimpe"
             return
 
-        # frontstem: e↔i toggle only
+        # frontstem: e↔i toggle or already-palatalized stem adding -i
         if orth_change in {"ce→ci", "ci→ce", "ge→gi", "gi→ge"}:
             row["nde_class"] = "frontstem"
             return
 
+        # frontstem: lemma ends in ci/ce/gi/ge, plural just adds -i
+        # e.g., borci → borcii (c→ci but lemma already has ci)
+        if lemma.endswith(("ci", "ce", "gi", "ge")) and orth_change in {
+            "c→ci",
+            "c→ce",
+            "g→gi",
+            "g→ge",
+        }:
+            row["nde_class"] = "frontstem"
+            return
+
+
+def fix_nde_mutations(row: Dict[str, str]) -> None:
+    """Fix mutation status for NDE items (should always be False)."""
+    nde_class = row.get("nde_class", "")
+
+    if nde_class:
+        # All NDE items should have mutation=False
+        row["mutation"] = "False"
+        # Clear palatal consonant since it's not a true alternation
+        row["palatal_consonant_pl"] = ""
+
 
 def derive_exception_reason(row: Dict[str, str]) -> None:
-    """Derive exception_reason field (nde:gimpe/ochi/paduchi or empty)."""
+    """Derive exception_reason field for non-mutating items in i/e domain.
+
+    An "exception" is a word that:
+    1. Had opportunity to palatalize (i/e after target consonant)
+    2. Did NOT mutate
+    3. Cannot be explained by known NDE patterns
+
+    These represent unexplained blocking of palatalization.
+    """
     row["exception_reason"] = ""
     pos = row.get("pos", "")
     plural = row.get("plural", "")
     mutation = row.get("mutation", "")
+    opportunity = row.get("opportunity", "")
     nde = row.get("nde_class", "")
+
     if pos != "N" or not plural or mutation == "True":
         return
-    if nde in {"gimpe", "ochi", "paduchi"}:
+
+    # NDE classes explain non-mutation
+    if nde in {"gimpe", "ochi", "paduchi", "frontstem"}:
         row["exception_reason"] = f"nde:{nde}"
+        return
+
+    # True exceptions: had opportunity but didn't mutate (unexplained)
+    if opportunity in {"i", "e"}:
+        row["exception_reason"] = "unexplained"
 
 
 def derive_is_true_exception(row: Dict[str, str]) -> None:
-    """Mark as true exception if i/e opportunity, no mutation, and not NDE."""
+    """Mark as true exception if i/e opportunity, no mutation, and not NDE.
+
+    True exceptions are words that had the chance to palatalize but didn't,
+    and we cannot explain why (not covered by NDE patterns).
+    """
     pos = row.get("pos", "")
     mutation = row.get("mutation", "")
     opportunity = row.get("opportunity", "")

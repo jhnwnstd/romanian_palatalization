@@ -59,6 +59,49 @@ import unicodedata
 import urllib.parse
 from typing import Optional
 
+# Foreign language markers to filter from IPA
+FOREIGN_LANG_MARKERS = {
+    "#",
+    "français",
+    "french",
+    "azərbaycanca",
+    "azerbaijani",
+    "azeră",
+    "türkçe",
+    "turkish",
+    "català",
+    "catalană",
+    "catalan",
+    "português",
+    "portuguese",
+    "español",
+    "spanish",
+    "italiano",
+    "italian",
+    "deutsch",
+    "german",
+    "english",
+    "occitan",
+    "occitană",
+    "furlan",
+    "kurdă",
+    "kurdish",
+    "pt",
+}
+
+
+def is_foreign_ipa_segment(segment: str) -> bool:
+    """Check if IPA segment contains foreign language markers.
+
+    Args:
+        segment: IPA segment to check
+
+    Returns:
+        True if segment contains foreign language annotations
+    """
+    seg_lower = segment.lower()
+    return any(marker in seg_lower for marker in FOREIGN_LANG_MARKERS)
+
 
 def normalize_orthography(text: str) -> str:
     """Normalize Romanian orthographic text (lemmas, plurals, glosses).
@@ -81,6 +124,19 @@ def normalize_orthography(text: str) -> str:
     if not isinstance(text, str):
         return ""
     text = text.strip().lower()
+
+    # Remove Wiktionary markup patterns
+    # Strip 'head=' prefix (e.g., "head=lucrare" → "lucrare")
+    if text.startswith("head="):
+        text = text[5:].strip()
+
+    # Remove HTML tags and entities
+    text = re.sub(r"<[^>]+>", "", text)
+    text = re.sub(r"&[a-zA-Z]+;", " ", text)
+
+    # Remove URLs
+    text = re.sub(r"http[s]?://[^\s]+", "", text)
+
     text = unicodedata.normalize("NFC", text)
     # Official Romanian orthography uses comma-below, not cedilla
     text = text.replace("ş", "ș").replace("Ş", "ș")
@@ -137,6 +193,18 @@ def normalize_ipa(ipa: str, remove_stress: bool = True) -> str:
     # Remove any remaining standalone quoted strings
     ipa = re.sub(r'"([^"]+)"', r"\1", ipa)
 
+    # Remove junk patterns: dates, URLs, Twitter mentions
+    # Pattern: "february 8, 2023", "http://...", "twitter", etc.
+    ipa = re.sub(
+        r"\b(?:january|february|march|april|may|june|july|august|september|october|november|december)\b",
+        "",
+        ipa,
+        flags=re.IGNORECASE,
+    )
+    ipa = re.sub(r"\b\d{1,2},?\s*\d{4}\b", "", ipa)  # Dates like "8, 2023"
+    ipa = re.sub(r"\btwitter\b", "", ipa, flags=re.IGNORECASE)
+    ipa = re.sub(r"\bhttp[s]?://[^\s]+", "", ipa)  # URLs
+
     ipa = re.sub(r"\s+", " ", ipa).strip()
     ipa = unicodedata.normalize("NFC", ipa).lower().strip()
     if ipa.startswith("-"):
@@ -147,18 +215,23 @@ def normalize_ipa(ipa: str, remove_stress: bool = True) -> str:
             ipa = ipa.replace(mark, "")
     ipa = ipa.replace(".", "")
 
-    # Handle pipe-separated variants
+    # Handle pipe-separated variants and filter foreign language annotations
     if "|" in ipa:
         raw_segments = [seg.strip() for seg in ipa.split("|")]
-        full_segments = [
+        romanian_segments = [
             seg.lstrip("-").strip()
             for seg in raw_segments
-            if not seg.startswith("-")
+            if not seg.startswith("-") and not is_foreign_ipa_segment(seg)
         ]
-        if full_segments:
-            ipa = " | ".join(full_segments)
+        if romanian_segments:
+            ipa = " | ".join(romanian_segments)
         else:
-            ipa = " | ".join(seg.lstrip("-").strip() for seg in raw_segments)
+            # Fallback: keep all non-dash segments even if possibly foreign
+            ipa = " | ".join(
+                seg.lstrip("-").strip()
+                for seg in raw_segments
+                if not seg.startswith("-")
+            )
 
     # Remove IPA diacritic modifiers for consistency
     # These cause mismatches between lemma and plural IPA
@@ -182,6 +255,10 @@ def normalize_ipa(ipa: str, remove_stress: bool = True) -> str:
     ipa = re.sub(r"g(?![ʰʲˠˤʷʼ͡])", "ɡ", ipa)
 
     ipa = ipa.strip()
+
+    # Filter out entire string if it's a foreign language annotation
+    if is_foreign_ipa_segment(ipa):
+        return ""
 
     # ===========================================================================
     # SANITY FILTER: Reject IPA strings with obvious junk characters
