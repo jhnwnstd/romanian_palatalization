@@ -563,6 +563,8 @@ lex <- lex |>
     # Normalize basic categorical tags so downstream filters don't have to worry about stray whitespace / cases.
     across(c(pos, gender, stem_final, cluster, plural), ~ trimws(as.character(.))),
     pos = toupper(pos),
+    # Force is_true_exception to logical
+    is_true_exception = as.logical(is_true_exception),
     # Ensure "opportunity" is NA outside the explicitly supported set, so the TP domain is well-defined.
     opportunity = if_else(opportunity %in% plural_opportunities_all, opportunity, NA_character_),
     # Make NDEB and suffix tags explicit "none" rather than NA/blank, so grouping is well-behaved.
@@ -1037,14 +1039,20 @@ if (nrow(suffix_diff) > 0) {
   cat("All tracked suffix rows are also marked as targets.\n")
 }
 
-cat_section("TRUE EXCEPTIONS IN I/E DOMAIN (NON-NDEB)")
+cat_section("TRUE EXCEPTIONS IN I/E DOMAIN (NON-NDEB, FLAG-BASED)")
+
+# Use the Python-derived flag instead of recomputing "could-but-don't" in R.
+# Still:
+#   - restrict to the i/e opportunity domain
+#   - exclude NDEB classes (handled separately)
 true_exc <- nouns |>
   filter(
+    is_true_exception,
     opportunity %in% plural_opportunities,
-    !mutation,
     !(nde_class %in% ndeb_classes)
   )
-cat("Non-mutating, non-NDEB nouns:", nrow(true_exc), "\n")
+
+cat("Flagged true-exception nouns in i/e domain (non-NDEB):", nrow(true_exc), "\n")
 
 true_exc_by_seg <- true_exc |>
   group_by(stem_final) |>
@@ -1081,6 +1089,18 @@ if (nrow(true_exc) > 0) {
     head(10) |>
     print()
 }
+
+cat_section("STRUCTURAL NON-UNDERGOERS IN I/E DOMAIN (NON-NDEB)")
+
+# For reference: all non-mutating items regardless of flagging
+struct_non_under <- nouns |>
+  filter(
+    opportunity %in% plural_opportunities,
+    !mutation,
+    !(nde_class %in% ndeb_classes)
+  )
+
+cat("Non-mutating, non-NDEB nouns in i/e domain (structural):", nrow(struct_non_under), "\n")
 
 # =========================================================================
 # Frequency-Based Downsampling
