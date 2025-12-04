@@ -568,17 +568,22 @@ lex <- lex |>
     # Ensure "opportunity" is NA outside the explicitly supported set, so the TP domain is well-defined.
     opportunity = if_else(opportunity %in% plural_opportunities_all, opportunity, NA_character_),
     # Derive nde_class by replicating Python logic (since nde_class not in CSV)
-    # This must match derive_nde_class() in romanian_processor_lib.py lines 1035-1083
+    # This must match derive_nde_class() in romanian_processor_lib.py lines 1035-1087
     nde_class = case_when(
       # Only for nouns with plural, mutation=FALSE
       pos != "N" | is.na(plural) | plural == "" | mutation ~ "none",
-      # 1. GIMPE: lemma ends in ci/ce/gi/ge AND lemma=plural
-      str_ends(lemma, "ci|ce|gi|ge") & lemma == plural ~ "gimpe",
-      # 2. PADUCHI: lemma ends in che/ghe AND plural has chi/ghi (vowel e→i)
+      # 1. PADUCHI: lemma ends in che/ghe AND plural has chi/ghi (vowel e→i)
       str_ends(lemma, "che") & (str_ends(plural, "chi") | str_ends(plural, "chiuri")) ~ "paduchi",
       str_ends(lemma, "ghe") & (str_ends(plural, "ghi") | str_ends(plural, "ghiuri")) ~ "paduchi",
-      # 3. OCHI: lemma=plural with chi/ghi clusters
+      # 2. OCHI: lemma=plural with chi/ghi clusters
       lemma == plural & cluster %in% c("chi", "ghi") ~ "ochi",
+      # 3. GIMPE: ANY target C + i/e already in lemma (root-internal)
+      stem_final == "c" & (str_detect(lemma, "ci") | str_detect(lemma, "ce")) ~ "gimpe",
+      stem_final == "g" & (str_detect(lemma, "gi") | str_detect(lemma, "ge")) ~ "gimpe",
+      stem_final == "t" & (str_detect(lemma, "ti") | str_detect(lemma, "te")) ~ "gimpe",
+      stem_final == "d" & (str_detect(lemma, "di") | str_detect(lemma, "de")) ~ "gimpe",
+      stem_final == "s" & (str_detect(lemma, "si") | str_detect(lemma, "se")) ~ "gimpe",
+      stem_final == "z" & (str_detect(lemma, "zi") | str_detect(lemma, "ze")) ~ "gimpe",
       TRUE ~ "none"
     ),
     # Derive target_is_suffix from lemma_suffix for backward compatibility

@@ -1079,9 +1079,9 @@ def derive_nde_class(row: Dict[str, str]) -> None:
         return
 
     # 3. GIMPE: C+front vowel tautomorphemic in root
-    # "Canonical NDEB" - ci/ce/gi/ge already in root, not created by suffix
-    # Includes both invariant (alice→alice) and variable (abagiu→abagii)
-    if stem_final in ("c", "g"):
+    # "Canonical NDEB" - any target C + i/e already in root, not created by suffix
+    # Examples: alice→alice (c+i), abagiu→abagii (g+i), ablepsie→ablepsii (s+i)
+    if stem_final in ("c", "g", "t", "d", "s", "z"):
         if stem_final + "i" in lemma or stem_final + "e" in lemma:
             row["nde_class"] = "gimpe"
             return
