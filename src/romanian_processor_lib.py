@@ -620,22 +620,27 @@ def derive_mutation_and_orth_change(row: Dict[str, str]) -> None:
 
 
 def derive_opportunity(row: Dict[str, str]) -> None:
-    """Derive opportunity: does plural add front vowel after stem_final?"""
+    """Derive opportunity: does plural add front vowel after stem_final?
+
+    Logic captures both actual mutations AND potential opportunities:
+    1. If mutation=True: extract vowel from orth_change pattern
+    2. If mutation=False: check if i/e immediately follows stem_final
+    3. Special case: 'uri' plurals → opportunity='uri'
+    """
     pos = row.get("pos", "")
     lemma = row.get("lemma", "")
     plural = row.get("plural", "")
     stem_final = row.get("stem_final", "")
-    cluster = row.get("cluster", "")
+    orth_change = row.get("orth_change", "")
+    mutation = row.get("mutation", "False")
+
     row["opportunity"] = "none"
+
     if pos not in {"N", "ADJ"} or not lemma or not plural or not stem_final:
         return
 
-    lemma_l = lemma.lower()
-    plural_l = plural.lower()
-
-    # Neuter -uri class
-    if plural_l.endswith("uri"):
-        row["opportunity"] = "uri"
+    # If lemma and plural are identical, no opportunity exists
+    if lemma == plural:
         return
 
     # Filter unreliable plurals
@@ -643,104 +648,62 @@ def derive_opportunity(row: Dict[str, str]) -> None:
     if notes:
         notes_lower = notes.lower()
         if "needs plural confirmation" in notes_lower:
-            row["opportunity"] = "none"
             return
 
-    # Preferred: local plural change window
-    plural_sub = (row.get("plural_change_window") or "").strip()
-    if plural_sub:
-        for ch in plural_sub:
-            if ch in ("i", "e"):
-                row["opportunity"] = ch
-                pl = plural.strip().lower()
-                if not pl.endswith(ch):
-                    row["notes"] = (
-                        notes + "; opportunity/plural mismatch"
-                    ).strip("; ")
-                    row["opportunity"] = "none"
-                return
+    # Check for 'uri' in orth_change
+    if orth_change and "uri" in orth_change:
+        row["opportunity"] = "uri"
         return
 
-    # Fallback: canonical pattern
-    orth_change = row.get("orth_change", "")
-    if orth_change and orth_change in ORTH_TO_PALATAL_IPA:
+    # CASE 1: mutation=True → extract vowel from orth_change
+    if mutation == "True" and orth_change:
         parts = orth_change.split("→", 1)
         if len(parts) == 2:
             plural_side = parts[1]
-            if plural_side.endswith("i"):
+            # Check what vowel appears in the plural side
+            if "i" in plural_side or plural_side.endswith(
+                ("ți", "și", "zi", "di", "ci", "gi", "ști")
+            ):
                 row["opportunity"] = "i"
                 return
-            if plural_side.endswith("e"):
+            elif "e" in plural_side or plural_side.endswith(
+                ("țe", "șe", "ze", "de", "ce", "ge", "ște")
+            ):
                 row["opportunity"] = "e"
                 return
 
-    # Fallback: alignment heuristics
-    aligned_lemma, aligned_plural = needleman_wunsch(lemma_l, plural_l)
-    lemma_to_aligned: Dict[int, int] = {}
-    lemma_idx = 0
-    for aligned_idx, char in enumerate(aligned_lemma):
-        if char != "-":
-            lemma_to_aligned[lemma_idx] = aligned_idx
-            lemma_idx += 1
+    # CASE 2: mutation=False → check if i/e immediately after stem_final
+    # This captures potential opportunities that didn't palatalize
+    if mutation == "False":
+        # Palatalization map for checking palatalized forms too
+        palatal_map = {
+            "t": "ț",
+            "d": "d",
+            "s": "ș",
+            "z": "z",
+            "c": "c",
+            "g": "g",
+        }
 
-    if cluster:
-        if cluster in VELAR_FRONT_SEQUENCES:
-            target_end_idx = len(lemma_l) - 1
-        else:
-            stem = strip_final_vowel(lemma_l)
-            target_end_idx = len(stem) - 1
-    else:
-        stem = strip_final_vowel(lemma_l)
-        target_end_idx = -1
-        for i in range(len(stem) - 1, -1, -1):
-            if stem[i] == stem_final:
-                target_end_idx = i
-                break
-    if target_end_idx == -1 or target_end_idx not in lemma_to_aligned:
-        return
-    aligned_target_end = lemma_to_aligned[target_end_idx]
-
-    # Check if front vowel appears at or after target position
-    # (handles double consonants like tt→ți where i aligns with final t)
-    following_chars: List[str] = []
-    for i in range(aligned_target_end, len(aligned_plural)):
-        if aligned_plural[i] != "-":
-            following_chars.append(aligned_plural[i])
-            if len(following_chars) >= 3:
-                break
-    if not following_chars:
-        return
-
-    # Find first i/e that wasn't already in lemma at same position
-    for idx, ch in enumerate(following_chars):
-        aligned_pos = aligned_target_end + idx
-        if ch == "i":
-            # Check if i is new (not in lemma at same aligned position)
-            if aligned_pos < len(aligned_lemma):
-                if aligned_lemma[aligned_pos] != "i":
-                    row["opportunity"] = "i"
-                    break
-            else:
+        # Check for stem_final + i (plain or palatalized)
+        if stem_final + "i" in plural:
+            row["opportunity"] = "i"
+            return
+        elif stem_final in palatal_map:
+            palatalized = palatal_map[stem_final]
+            if palatalized + "i" in plural:
                 row["opportunity"] = "i"
-                break
-        elif ch == "e":
-            if aligned_pos < len(aligned_lemma):
-                if aligned_lemma[aligned_pos] != "e":
-                    row["opportunity"] = "e"
-                    break
-            else:
-                row["opportunity"] = "e"
-                break
+                return
 
-    # Consistency check
-    opp = row.get("opportunity", "")
-    if opp in {"i", "e"} and plural:
-        pl = plural.strip().lower()
-        if not pl.endswith(opp):
-            row["notes"] = (notes + "; opportunity/plural mismatch").strip(
-                "; "
-            )
-            row["opportunity"] = "none"
+        # Check for stem_final + e (plain or palatalized)
+        if stem_final + "e" in plural:
+            row["opportunity"] = "e"
+            return
+        elif stem_final in palatal_map:
+            palatalized = palatal_map[stem_final]
+            if palatalized + "e" in plural:
+                row["opportunity"] = "e"
+                return
 
 
 def explode_pipe_group(
@@ -1001,24 +964,6 @@ def derive_target_is_suffix(row: Dict[str, str]) -> None:
         row["target_is_suffix"] = "True"
 
 
-def derive_suffix_triggers_plural_mutation(row: Dict[str, str]) -> None:
-    """Check if tracked suffix triggers plural mutation."""
-    pos = row.get("pos", "")
-    lemma_suffix = row.get("lemma_suffix", "")
-    opportunity = row.get("opportunity", "")
-    target_is_suffix = row.get("target_is_suffix", "")
-    mutation = row.get("mutation", "")
-    row["suffix_triggers_plural_mutation"] = "False"
-    if (
-        pos == "N"
-        and opportunity in {"i", "e"}
-        and mutation == "True"
-        and target_is_suffix == "True"
-        and lemma_suffix in {"-ic", "-ist", "-esc", "-ică"}
-    ):
-        row["suffix_triggers_plural_mutation"] = "True"
-
-
 def derive_derived_verbs_fields(row: Dict[str, str]) -> None:
     """
     Derive deriv_suffixes and ipa_derived_verbs,
@@ -1090,19 +1035,18 @@ def derive_derived_adj_fields(row: Dict[str, str]) -> None:
 def derive_nde_class(row: Dict[str, str]) -> None:
     """Classify NDE (non-derived environment) patterns.
 
-    Types:
-    - gimpe: Tautomorphemic C+front-vowel (sg=pl)
-    - ochi: Singular=plural with chi/ghi
-    - paduchi: che/ghe→chi/ghi under-application
-    - frontstem: ce/ci / ge/gi where plural toggles e↔i
+    Types (checked in order):
+    - gimpe: Lemma ends in ci/ce/gi/ge AND lemma=plural (tautomorphemic)
+    - paduchi: Lemma ends in che/ghe, vowel e→i (che→chi or ghe→ghi)
+    - ochi: Lemma=plural with chi/ghi clusters (e.g., ochi/ochi)
+
+    Per email.txt definitions (lines 131, 226-228).
     """
     pos = row.get("pos", "")
     lemma = row.get("lemma", "") or ""
     plural = row.get("plural", "") or ""
-    stem_final = row.get("stem_final", "") or ""
     cluster = row.get("cluster", "") or ""
     mutation = str(row.get("mutation", ""))
-    orth_change = row.get("orth_change", "") or ""
     row["nde_class"] = ""
 
     if pos != "N" or not lemma or not plural:
@@ -1111,44 +1055,32 @@ def derive_nde_class(row: Dict[str, str]) -> None:
     if mutation == "True":
         return
 
-    if stem_final not in ("c", "g"):
+    # 1. GIMPE: lemma ends in ci/ce/gi/ge AND lemma=plural
+    # Email: "gimpe 'thorn', the <gi> is tautomorphemic"
+    if lemma.endswith(("ci", "ce", "gi", "ge")) and lemma == plural:
+        row["nde_class"] = "gimpe"
         return
 
-    # ochi-type: sg = pl with chi/ghi
-    if lemma == plural and cluster in ("chi", "ghi"):
-        row["nde_class"] = "ochi"
-        return
-
-    # paduchi-type: che/ghe → chi/ghi
-    if cluster in ("che", "ghe"):
-        expected_cluster_pl = cluster[:-1] + "i"
-        if plural.endswith(expected_cluster_pl) or plural.endswith(
-            expected_cluster_pl + "uri"
+    # 2. PADUCHI: lemma ends in che/ghe AND vowel changes to i
+    # Email: "păduche/păduchi, /...k-e/ in singular, /...k-i/ in plural"
+    if lemma.endswith(("che", "ghe")):
+        # Check if plural has chi/ghi (vowel e→i)
+        if lemma.endswith("che") and (
+            plural.endswith("chi") or plural.endswith("chiuri")
+        ):
+            row["nde_class"] = "paduchi"
+            return
+        if lemma.endswith("ghe") and (
+            plural.endswith("ghi") or plural.endswith("ghiuri")
         ):
             row["nde_class"] = "paduchi"
             return
 
-    # gimpe-type: sg = pl, final ci/ce/gi/ge, no cluster
-    if not cluster:
-        if lemma == plural and lemma.endswith(("ci", "ce", "gi", "ge")):
-            row["nde_class"] = "gimpe"
-            return
-
-        # frontstem: e↔i toggle or already-palatalized stem adding -i
-        if orth_change in {"ce→ci", "ci→ce", "ge→gi", "gi→ge"}:
-            row["nde_class"] = "frontstem"
-            return
-
-        # frontstem: lemma ends in ci/ce/gi/ge, plural just adds -i
-        # e.g., borci → borcii (c→ci but lemma already has ci)
-        if lemma.endswith(("ci", "ce", "gi", "ge")) and orth_change in {
-            "c→ci",
-            "c→ce",
-            "g→gi",
-            "g→ge",
-        }:
-            row["nde_class"] = "frontstem"
-            return
+    # 3. OCHI: lemma=plural with chi/ghi clusters
+    # Email: "Things like ochi/ochi, unchi/unchi"
+    if lemma == plural and cluster in ("chi", "ghi"):
+        row["nde_class"] = "ochi"
+        return
 
 
 def fix_nde_mutations(row: Dict[str, str]) -> None:
@@ -1183,33 +1115,10 @@ def derive_exception_reason(row: Dict[str, str]) -> None:
         return
 
     # NDE classes explain non-mutation
-    if nde in {"gimpe", "ochi", "paduchi", "frontstem"}:
+    if nde in {"gimpe", "ochi", "paduchi"}:
         row["exception_reason"] = f"nde:{nde}"
         return
 
     # True exceptions: had opportunity but didn't mutate (unexplained)
     if opportunity in {"i", "e"}:
         row["exception_reason"] = "unexplained"
-
-
-def derive_is_true_exception(row: Dict[str, str]) -> None:
-    """Mark as true exception if i/e opportunity, no mutation, and not NDE.
-
-    True exceptions are words that had the chance to palatalize but didn't,
-    and we cannot explain why (not covered by NDE patterns).
-    """
-    pos = row.get("pos", "")
-    mutation = row.get("mutation", "")
-    opportunity = row.get("opportunity", "")
-    nde_class = row.get("nde_class", "")
-    has_ie_opportunity = opportunity in {"i", "e"}
-    is_nde = bool(nde_class)
-    if (
-        pos == "N"
-        and has_ie_opportunity
-        and mutation == "False"
-        and not is_nde
-    ):
-        row["is_true_exception"] = "True"
-    else:
-        row["is_true_exception"] = "False"

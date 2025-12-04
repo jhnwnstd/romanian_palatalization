@@ -563,8 +563,6 @@ lex <- lex |>
     # Normalize basic categorical tags so downstream filters don't have to worry about stray whitespace / cases.
     across(c(pos, gender, stem_final, cluster, plural), ~ trimws(as.character(.))),
     pos = toupper(pos),
-    # Force is_true_exception to logical
-    is_true_exception = as.logical(is_true_exception),
     # Ensure "opportunity" is NA outside the explicitly supported set, so the TP domain is well-defined.
     opportunity = if_else(opportunity %in% plural_opportunities_all, opportunity, NA_character_),
     # Make NDEB and suffix tags explicit "none" rather than NA/blank, so grouping is well-behaved.
@@ -618,7 +616,7 @@ nouns_opp <- nouns |>
       mutation ~ "undergoes",
       nde_class %in% ndeb_classes ~ paste0("NDEB_", nde_class),
       lemma_suffix %in% suffix_interest ~ paste0("suffix_", lemma_suffix),
-      is_true_exception ~ "true_exception",
+      exception_reason == "unexplained" ~ "true_exception",
       TRUE ~ "other_non_undergoer"
     )
   )
@@ -702,16 +700,10 @@ if (nrow(inconsistent) > 0) {
 }
 
 cat_section("QC: SUFFIX ANNOTATIONS")
-# Make sure the marked "triggering" suffixes and "target_is_suffix" are internally consistent.
+# Check basic suffix tagging consistency
 suffix_rows <- filter(nouns, lemma_suffix %in% suffix_interest)
 cat("Nouns with tracked suffixes:", nrow(suffix_rows), "\n")
 count(suffix_rows, lemma_suffix) |> print()
-
-suffix_flag_true_nomut <- filter(suffix_rows, suffix_triggers_plural_mutation, !mutation)
-cat("\nSuffix marked as trigger but lemma does not mutate:", nrow(suffix_flag_true_nomut), "\n")
-
-suffix_flag_true_notarget <- filter(suffix_rows, suffix_triggers_plural_mutation, !target_is_suffix)
-cat("\nSuffix marked as trigger but not marked as target site:", nrow(suffix_flag_true_notarget), "\n")
 
 cat_section("QC: PALATAL CONSONANT IN PLURAL")
 # palatal_consonant_pl is used as a more fine-grained sanity check on the binary mutation flag.
@@ -1039,15 +1031,15 @@ if (nrow(suffix_diff) > 0) {
   cat("All tracked suffix rows are also marked as targets.\n")
 }
 
-cat_section("TRUE EXCEPTIONS IN I/E DOMAIN (NON-NDEB, FLAG-BASED)")
+cat_section("TRUE EXCEPTIONS IN I/E DOMAIN (NON-NDEB)")
 
-# Use the Python-derived flag instead of recomputing "could-but-don't" in R.
+# Use exception_reason to identify unexplained exceptions
 # Still:
 #   - restrict to the i/e opportunity domain
 #   - exclude NDEB classes (handled separately)
 true_exc <- nouns |>
   filter(
-    is_true_exception,
+    exception_reason == "unexplained",
     opportunity %in% plural_opportunities,
     !(nde_class %in% ndeb_classes)
   )

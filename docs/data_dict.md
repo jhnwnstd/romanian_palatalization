@@ -7,7 +7,7 @@ All text normalization uses `wiktionary_normalizer.py`, which provides:
 
 These normalizers are applied to the raw Wiktionary harvest before the palatalization-specific derivations.
 
-**Note on boolean storage**: Boolean-valued derived fields (`mutation`, `target_is_suffix`, `suffix_triggers_plural_mutation`, `is_true_exception`) are stored as lowercase strings (`"true"` / `"false"`) in the CSV output for consistency and cross-platform compatibility. R's `readr::read_csv()` automatically converts these to logical types (`TRUE`/`FALSE`) when loading the data.
+**Note on boolean storage**: Boolean-valued derived fields (`mutation`, `target_is_suffix`) are stored as lowercase strings (`"true"` / `"false"`) in the CSV output for consistency and cross-platform compatibility. R's `readr::read_csv()` automatically converts these to logical types (`TRUE`/`FALSE`) when loading the data.
 
 ### Core extracted fields
 
@@ -269,7 +269,7 @@ The only allowed atomic suffix values are `-a`, `-i`, and `-ui`.
 * The resulting forms are joined with `|` in the same order.
 * `derived_adj` itself is normalized to a `|`-separated, whitespace-trimmed list of lemmas.
 
-### Lemma-level suffixes: `lemma_suffix`, `target_is_suffix`, `suffix_triggers_plural_mutation`
+### Lemma-level suffixes: `lemma_suffix`, `target_is_suffix`
 
 `lemma_suffix` is derived from the lemma orthography (after lowercasing and Unicode NFC normalization, including unifying comma- vs. cedilla-variants of <ș>/<ş> and <ț>/<ţ>). It identifies whether the lemma ends in one of several productive derivational suffixes that are relevant for palatalization patterns. Romanian diacritics (ă, â, î, ș, ț) are preserved during matching to ensure accurate suffix detection and prevent false matches (e.g., distinguishing -ică from -ica).
 
@@ -305,25 +305,12 @@ For example:
 * `<fizic ~ fizici>`: `lemma_suffix = "-ic"`, `stem_final = c`, and `target_is_suffix = "True"`.
 * `<lingvistic ~ lingvistice>`: `lemma_suffix = "-ic"`, but the palatalizing target is `<t>` in the root cluster, so `target_is_suffix = "False"`.
 
-`suffix_triggers_plural_mutation` is derived from `lemma_suffix`, `pos`, `opportunity`, `mutation`, and `target_is_suffix`. It is boolean (`"True"` / `"False"`) and indicates whether a noun with a productive suffix actually shows palatalization at the stem edge in the plural paradigm, and whether that palatalization target lies within the suffix itself.
-
-Derivation:
-
-* Default: `suffix_triggers_plural_mutation = "False"`.
-* It is set to `"True"` iff all of the following hold:
-  * `pos == "N"`,
-  * `opportunity ∈ {"i", "e"}` (the plural creates a C+front-vowel environment at `stem_final`/`cluster`),
-  * `mutation == "True"` (palatalization occurs),
-  * `target_is_suffix == "True"` (the palatalizing consonant is inside the suffix),
-  * `lemma_suffix ∈ {"-ic", "-ist", "-esc", "-ică"}` (these suffixes are currently tracked as potentially palatalization-triggering).
-
 In combination:
 
 * `lemma_suffix` tells you which productive suffix (if any) the lemma bears.
 * `target_is_suffix` tells you whether the palatalizing consonant belongs to that suffix.
-* `suffix_triggers_plural_mutation` tells you whether the suffix itself undergoes palatalization in the plural paradigm.
 
-### NDE patterns and exceptions: `nde_class`, `exception_reason`, `is_true_exception`
+### NDE patterns and exceptions: `nde_class`, `exception_reason`
 
 These fields carve out non-derived environment blocking (NDEB) patterns and then identify "true exceptions" to the productive palatalization rules.
 
@@ -379,16 +366,7 @@ Note: Z-final stems with z→ji/je palatalization (e.g. `<obraz ~ obraji>`, `<ar
 
 Note: `exception_reason` is set for all NDE cases regardless of the `opportunity` value, because some NDE patterns (ochi, paduchi) may have `opportunity = "none"` due to alignment issues even though they morphologically involve front vowels.
 
-`is_true_exception` is derived from `pos`, `opportunity`, `mutation`, and `nde_class`. It is boolean (`"True"` / `"False"`) and marks genuine unexplained failures of plural palatalization in derived front-vowel environments, after filtering out all known NDEB patterns.
-
-* `is_true_exception = "True"` iff all of the following hold:
-  * `pos == "N"`,
-  * `opportunity ∈ {"i", "e"}` (the plural creates a C+`i` or C+`e` environment at `stem_final`/`cluster`),
-  * `mutation == "False"` (no palatalization at that site),
-  * `nde_class` is empty (not `"gimpe"`, `"ochi"`, or `"paduchi"`).
-* In all other cases (no front-vowel opportunity, mutation `True`, or any NDE pattern), `is_true_exception = "False"`.
-
-Entries with `mutation == "True"` are normal undergoers (including z→ji/je) and are never marked as exceptions. All NDE cases (gimpe, ochi, păduche) are excluded from `is_true_exception = "True"` but remain identifiable via `nde_class` and `exception_reason` for separate analysis.
+Entries with `mutation == "True"` are normal undergoers (including z→ji/je) and are never marked as exceptions. All NDE cases (gimpe, ochi, păduche) can be identified via `nde_class` and `exception_reason` for separate analysis.
 
 ### Other fields
 

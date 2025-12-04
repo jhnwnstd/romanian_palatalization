@@ -34,14 +34,12 @@ from romanian_processor_lib import (  # noqa: E402
     derive_derived_adj_fields,
     derive_derived_verbs_fields,
     derive_exception_reason,
-    derive_is_true_exception,
     derive_lemma_suffix,
     derive_mutation_and_orth_change,
     derive_nde_class,
     derive_opportunity,
     derive_palatal_consonant_pl,
     derive_stem_final_and_cluster,
-    derive_suffix_triggers_plural_mutation,
     derive_target_is_suffix,
     ensure_ipa_fields,
     explode_derived_verbs_row,
@@ -129,13 +127,11 @@ def process_row(row: Dict[str, str]) -> Optional[Dict[str, str]]:
     derive_palatal_consonant_pl(result)
     derive_lemma_suffix(result)
     derive_target_is_suffix(result)
-    derive_suffix_triggers_plural_mutation(result)
     derive_derived_verbs_fields(result)
     derive_derived_adj_fields(result)
     derive_nde_class(result)
     fix_nde_mutations(result)  # Fix mutation status for NDE items
     derive_exception_reason(result)
-    derive_is_true_exception(result)
 
     return result
 
@@ -162,10 +158,8 @@ OUTPUT_FIELDS = [
     "etym_lang",
     "exception_reason",
     "nde_class",
-    "is_true_exception",
     "lemma_suffix",
     "target_is_suffix",
-    "suffix_triggers_plural_mutation",
     "source",
     "notes",
     "ipa_raw_lemma",
@@ -251,7 +245,7 @@ def process_csv(input_path: str, output_path: str) -> None:
     nde_ochi = sum(1 for r in rows if r.get("nde_class") == "ochi")
     nde_paduchi = sum(1 for r in rows if r.get("nde_class") == "paduchi")
     true_exceptions = sum(
-        1 for r in rows if r.get("is_true_exception") == "True"
+        1 for r in rows if r.get("exception_reason") == "unexplained"
     )
 
     print("\nException classification:")
