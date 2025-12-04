@@ -60,6 +60,8 @@ suffix_interest <- c("-ic", "-ist", "-esc", "-ică", "-ice") # denominal/adjecti
 
 # NDEB = non-derived exception base lemmas (gimpe / ochi / păduche patterns)
 # These are lexically special noun bases that behave like exceptions but form structured families.
+# Now stored in exception_reason as "nde:gimpe", "nde:ochi", "nde:paduchi"
+# We derive nde_class field from exception_reason, so we still use class names here
 ndeb_classes <- c("gimpe", "ochi", "paduchi")
 ndeb_observable <- c("ochi", "paduchi") # only these are observable as DE in the plural domain; gimpe-type is hidden
 
@@ -565,8 +567,24 @@ lex <- lex |>
     pos = toupper(pos),
     # Ensure "opportunity" is NA outside the explicitly supported set, so the TP domain is well-defined.
     opportunity = if_else(opportunity %in% plural_opportunities_all, opportunity, NA_character_),
-    # Make NDEB and suffix tags explicit "none" rather than NA/blank, so grouping is well-behaved.
-    nde_class = if_else(is.na(nde_class) | nde_class == "", "none", nde_class),
+    # Derive nde_class by replicating Python logic (since nde_class not in CSV)
+    # This must match derive_nde_class() in romanian_processor_lib.py lines 1035-1083
+    nde_class = case_when(
+      # Only for nouns with plural, mutation=FALSE
+      pos != "N" | is.na(plural) | plural == "" | mutation ~ "none",
+      # 1. GIMPE: lemma ends in ci/ce/gi/ge AND lemma=plural
+      str_ends(lemma, "ci|ce|gi|ge") & lemma == plural ~ "gimpe",
+      # 2. PADUCHI: lemma ends in che/ghe AND plural has chi/ghi (vowel e→i)
+      str_ends(lemma, "che") & (str_ends(plural, "chi") | str_ends(plural, "chiuri")) ~ "paduchi",
+      str_ends(lemma, "ghe") & (str_ends(plural, "ghi") | str_ends(plural, "ghiuri")) ~ "paduchi",
+      # 3. OCHI: lemma=plural with chi/ghi clusters
+      lemma == plural & cluster %in% c("chi", "ghi") ~ "ochi",
+      TRUE ~ "none"
+    ),
+    # Derive target_is_suffix from lemma_suffix for backward compatibility
+    # target_is_suffix = (lemma_suffix is not blank) AND (lemma_suffix != "-el")
+    target_is_suffix = !is.na(lemma_suffix) & lemma_suffix != "" & lemma_suffix != "-el",
+    # Make suffix tags explicit "none" rather than NA/blank, so grouping is well-behaved.
     lemma_suffix = if_else(is.na(lemma_suffix) | lemma_suffix == "", "none", lemma_suffix),
     # Coarse-grain plural endings, used to determine whether an item sits in the i/e domain even when
     # the original "opportunity" annotation is absent or "none".

@@ -1036,17 +1036,18 @@ def derive_nde_class(row: Dict[str, str]) -> None:
     """Classify NDE (non-derived environment) patterns.
 
     Types (checked in order):
-    - gimpe: Lemma ends in ci/ce/gi/ge AND lemma=plural (tautomorphemic)
-    - paduchi: Lemma ends in che/ghe, vowel e→i (che→chi or ghe→ghi)
-    - ochi: Lemma=plural with chi/ghi clusters (e.g., ochi/ochi)
+    - gimpe: C+front vowel tautomorphemic in root (ci/ce/gi/ge in lemma)
+    - paduchi: Lemma ends in che/ghe, vowel e→i (derived underapplication)
+    - ochi: Lemma=plural with chi/ghi clusters (ambiguous morphology)
 
-    Per email.txt definitions (lines 131, 226-228).
+    Per email.txt definitions and NDEB explanation.
     """
     pos = row.get("pos", "")
     lemma = row.get("lemma", "") or ""
     plural = row.get("plural", "") or ""
     cluster = row.get("cluster", "") or ""
     mutation = str(row.get("mutation", ""))
+    stem_final = row.get("stem_final", "")
     row["nde_class"] = ""
 
     if pos != "N" or not lemma or not plural:
@@ -1055,14 +1056,9 @@ def derive_nde_class(row: Dict[str, str]) -> None:
     if mutation == "True":
         return
 
-    # 1. GIMPE: lemma ends in ci/ce/gi/ge AND lemma=plural
-    # Email: "gimpe 'thorn', the <gi> is tautomorphemic"
-    if lemma.endswith(("ci", "ce", "gi", "ge")) and lemma == plural:
-        row["nde_class"] = "gimpe"
-        return
-
-    # 2. PADUCHI: lemma ends in che/ghe AND vowel changes to i
-    # Email: "păduche/păduchi, /...k-e/ in singular, /...k-i/ in plural"
+    # 1. PADUCHI: lemma ends in che/ghe AND vowel changes to i
+    # Checked first because it's most specific
+    # "Clearly derived underapplication" - SG has che/ghe, PL has chi/ghi
     if lemma.endswith(("che", "ghe")):
         # Check if plural has chi/ghi (vowel e→i)
         if lemma.endswith("che") and (
@@ -1076,11 +1072,19 @@ def derive_nde_class(row: Dict[str, str]) -> None:
             row["nde_class"] = "paduchi"
             return
 
-    # 3. OCHI: lemma=plural with chi/ghi clusters
-    # Email: "Things like ochi/ochi, unchi/unchi"
+    # 2. OCHI: lemma=plural with chi/ghi clusters
+    # "Ambiguous morphology" - could be /oki/ or /ok-i/
     if lemma == plural and cluster in ("chi", "ghi"):
         row["nde_class"] = "ochi"
         return
+
+    # 3. GIMPE: C+front vowel tautomorphemic in root
+    # "Canonical NDEB" - ci/ce/gi/ge already in root, not created by suffix
+    # Includes both invariant (alice→alice) and variable (abagiu→abagii)
+    if stem_final in ("c", "g"):
+        if stem_final + "i" in lemma or stem_final + "e" in lemma:
+            row["nde_class"] = "gimpe"
+            return
 
 
 def fix_nde_mutations(row: Dict[str, str]) -> None:
@@ -1095,14 +1099,13 @@ def fix_nde_mutations(row: Dict[str, str]) -> None:
 
 
 def derive_exception_reason(row: Dict[str, str]) -> None:
-    """Derive exception_reason field for non-mutating items in i/e domain.
+    """Derive exception_reason field for mutation behavior.
 
-    An "exception" is a word that:
-    1. Had opportunity to palatalize (i/e after target consonant)
-    2. Did NOT mutate
-    3. Cannot be explained by known NDE patterns
-
-    These represent unexplained blocking of palatalization.
+    Categories:
+    - undergoer: mutation=True (word palatalized)
+    - nde:{type}: mutation=False with known NDE explanation
+    - unexplained: mutation=False with i/e opportunity, no NDE explanation
+    - non exception: opportunity=none/uri (no chance to mutate) OR adjectives
     """
     row["exception_reason"] = ""
     pos = row.get("pos", "")
@@ -1111,10 +1114,28 @@ def derive_exception_reason(row: Dict[str, str]) -> None:
     opportunity = row.get("opportunity", "")
     nde = row.get("nde_class", "")
 
-    if pos != "N" or not plural or mutation == "True":
+    # ADJ - mark all adjectives as non exception
+    if pos == "ADJ":
+        row["exception_reason"] = "non exception"
         return
 
-    # NDE classes explain non-mutation
+    # Only process nouns beyond this point
+    if pos != "N":
+        return
+
+    # Skip if no plural form for remaining analyses
+    if not plural:
+        # Still mark as non exception if opportunity=none/uri
+        if opportunity in {"none", "uri"}:
+            row["exception_reason"] = "non exception"
+        return
+
+    # Undergoers: words that palatalized
+    if mutation == "True":
+        row["exception_reason"] = "undergoer"
+        return
+
+    # NDE classes explain non-mutation (check before "non exception")
     if nde in {"gimpe", "ochi", "paduchi"}:
         row["exception_reason"] = f"nde:{nde}"
         return
@@ -1122,3 +1143,9 @@ def derive_exception_reason(row: Dict[str, str]) -> None:
     # True exceptions: had opportunity but didn't mutate (unexplained)
     if opportunity in {"i", "e"}:
         row["exception_reason"] = "unexplained"
+        return
+
+    # Non-exceptions: no opportunity to mutate (none or uri)
+    if opportunity in {"none", "uri"}:
+        row["exception_reason"] = "non exception"
+        return

@@ -157,9 +157,7 @@ OUTPUT_FIELDS = [
     "ipa_derived_adj",
     "etym_lang",
     "exception_reason",
-    "nde_class",
     "lemma_suffix",
-    "target_is_suffix",
     "source",
     "notes",
     "ipa_raw_lemma",
@@ -241,9 +239,13 @@ def process_csv(input_path: str, output_path: str) -> None:
     for opp in ["i", "e", "uri", "none"]:
         print(f"  {opp}: {opp_counts.get(opp, 0)}")
 
-    nde_gimpe = sum(1 for r in rows if r.get("nde_class") == "gimpe")
-    nde_ochi = sum(1 for r in rows if r.get("nde_class") == "ochi")
-    nde_paduchi = sum(1 for r in rows if r.get("nde_class") == "paduchi")
+    nde_gimpe = sum(
+        1 for r in rows if r.get("exception_reason") == "nde:gimpe"
+    )
+    nde_ochi = sum(1 for r in rows if r.get("exception_reason") == "nde:ochi")
+    nde_paduchi = sum(
+        1 for r in rows if r.get("exception_reason") == "nde:paduchi"
+    )
     true_exceptions = sum(
         1 for r in rows if r.get("exception_reason") == "unexplained"
     )
