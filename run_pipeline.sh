@@ -277,12 +277,13 @@ main() {
         log_info "Output will be written to: $ANALYSIS_LOG"
         echo ""
 
-        if Rscript "$R_SCRIPT"; then
+        if Rscript "$R_SCRIPT" > /dev/null 2>&1; then
             log_success "R analysis complete!"
             log_info "Results saved to: $ANALYSIS_LOG"
         else
             log_error "R analysis failed"
-            log_error "Check error messages above for missing packages"
+            log_error "Re-running with output for debugging..."
+            Rscript "$R_SCRIPT"
             exit 1
         fi
     fi
