@@ -410,10 +410,15 @@ def detect_orth_change_dynamic(lemma: str, plural: str) -> str:
     """Detect minimal orthographic change via alignment (non-circular).
 
     Returns "X→Y" where X is lemma segment, Y is plural segment.
+    Returns "none" when lemma and plural are identical strings.
     Examples: "copac"→"copaci" = "c→ci", "om"→"oameni" = "om→oamen"
     """
     if not lemma or not plural:
         return ""
+
+    # Check if lemma and plural are identical
+    if lemma == plural:
+        return "none"
 
     aligned_lemma, aligned_plural = needleman_wunsch(lemma, plural)
 
@@ -423,7 +428,7 @@ def detect_orth_change_dynamic(lemma: str, plural: str) -> str:
         if l_ch != p_ch
     ]
     if not diff_cols:
-        return ""
+        return "none"
 
     start = min(diff_cols)
     end = max(diff_cols) + 1
@@ -584,21 +589,31 @@ def derive_mutation_and_orth_change(row: Dict[str, str]) -> None:
 
     row["orth_change"] = orth_change
 
-    if not orth_change:
+    if not orth_change or orth_change == "none":
         row["mutation"] = "False"
         return
 
-    # STEP 2: Classify as palatalization via exact or suffix matching
-    # Suffix matching: "ate→ăți" matches "te→ți" if "ate" ends
-    # with "te" AND "ăți" ends with "ți"
+    # STEP 2: Classify as palatalization
+    # Strategy: Check if plural side contains palatalized consonants (ț, ș, č, j, z)
+    # This is more robust than trying to enumerate all possible orth_change patterns
     is_palatalization = False
 
-    if orth_change in ORTH_TO_PALATAL_IPA:
-        is_palatalization = True
-    else:
-        orth_parts = orth_change.split("→")
-        if len(orth_parts) == 2:
-            orth_from, orth_to = orth_parts
+    orth_parts = orth_change.split("→")
+    if len(orth_parts) == 2:
+        orth_from, orth_to = orth_parts
+
+        # Direct approach: Does the plural side contain palatalized consonants?
+        # This works regardless of vowel changes (e→ă, etc.)
+        if any(pal in orth_to for pal in ["ț", "ș", "č", "j"]):
+            is_palatalization = True
+        # Check for z (d→z palatalization)
+        elif "z" in orth_to and orth_from and "d" in orth_from:
+            is_palatalization = True
+        # Fallback: Try exact pattern matching for edge cases
+        elif orth_change in ORTH_TO_PALATAL_IPA:
+            is_palatalization = True
+        # Fallback: Try suffix matching for patterns like "ate→ăți"
+        else:
             for canonical_pattern in ORTH_TO_PALATAL_IPA:
                 canon_parts = canonical_pattern.split("→")
                 if len(canon_parts) == 2:
@@ -671,6 +686,31 @@ def derive_opportunity(row: Dict[str, str]) -> None:
             ):
                 row["opportunity"] = "e"
                 return
+            # CASE 1b: Bare consonant change (e.g., t→ț without vowel)
+            # Look at what follows the palatalized consonant in the actual plural
+            elif plural_side in ("ț", "č", "ǧ", "ș", "j", "z"):
+                # Find the palatalized consonant in the plural and check what follows
+                if stem_final and plural:
+                    # Look for the stem_final position in the plural (accounting for palatalization)
+                    palatal_map = {
+                        "t": "ț",
+                        "c": "č",
+                        "g": "ǧ",
+                        "s": "ș",
+                        "z": "j",
+                        "d": "z",
+                    }
+                    palatal = palatal_map.get(stem_final, stem_final)
+                    if palatal in plural:
+                        idx = plural.rfind(palatal)
+                        if idx != -1 and idx + 1 < len(plural):
+                            following = plural[idx + 1]
+                            if following == "i":
+                                row["opportunity"] = "i"
+                                return
+                            elif following == "e":
+                                row["opportunity"] = "e"
+                                return
 
     # CASE 2: mutation=False → check if i/e immediately after stem_final
     # This captures potential opportunities that didn't palatalize
@@ -844,6 +884,7 @@ ORTH_TO_PALATAL_IPA = {
     "ca→ce": "t͡ʃ",
     "d→ze": "z",
     "d→zi": "z",
+    "d→z": "z",  # bare consonant change
     "de→di": "dʲ",
     "de→zi": "z",
     "dă→zi": "z",
@@ -855,6 +896,7 @@ ORTH_TO_PALATAL_IPA = {
     "go→gi": "d͡ʒ",
     "s→șe": "ʃ",
     "s→și": "ʃ",
+    "s→ș": "ʃ",  # bare consonant change
     "sc→ște": "ʃt",
     "sc→ști": "ʃt",
     "scă→ște": "ʃt",
@@ -863,12 +905,14 @@ ORTH_TO_PALATAL_IPA = {
     "st→ști": "ʃt",
     "t→țe": "t͡s",
     "t→ți": "t͡s",
+    "t→ț": "t͡s",  # bare consonant change (e.g., componente → componențe)
     "te→țe": "t͡s",
     "te→ți": "t͡s",
     "tă→țe": "t͡s",
     "tă→ți": "t͡s",
     "z→je": "ʒ",
     "z→ji": "ʒ",
+    "z→j": "ʒ",  # bare consonant change
 }
 
 ORDERED_LEMMA_SUFFIXES = ["ică", "iști", "ice", "ist", "esc", "ic", "el"]
@@ -1072,16 +1116,20 @@ def derive_nde_class(row: Dict[str, str]) -> None:
             row["nde_class"] = "paduchi"
             return
 
-    # 2. OCHI: lemma=plural with chi/ghi clusters
+    # 2. OCHI: lemma=plural with chi/ghi clusters (plural-i domain only)
     # "Ambiguous morphology" - could be /oki/ or /ok-i/
+    # As per email: "exceptions after noun plural -i" - specifically /k-i/ cases
+    # che/ghe lemma=plural cases are NOT OCHI (different domain, not about plural -i)
     if lemma == plural and cluster in ("chi", "ghi"):
         row["nde_class"] = "ochi"
         return
 
-    # 3. GIMPE: C+front vowel tautomorphemic in root
-    # "Canonical NDEB" - any target C + i/e already in root, not created by suffix
-    # Examples: alice→alice (c+i), abagiu→abagii (g+i), ablepsie→ablepsii (s+i)
-    if stem_final in ("c", "g", "t", "d", "s", "z"):
+    # 3. GIMPE: Dorsal (velar) C+front vowel tautomorphemic in root
+    # "Canonical NDEB" - ONLY c/g + i/e already in root, not created by suffix
+    # This is the classic velar NDEB pattern (Kiparsky 1993, Steriade 2008)
+    # Examples: gimpe 'thorn' (g+i), alice→alice (c+i), abagiu→abagii (g+i)
+    # NOT applied to coronals (t/d/s/z) - those are just true exceptions
+    if stem_final in ("c", "g"):
         if stem_final + "i" in lemma or stem_final + "e" in lemma:
             row["nde_class"] = "gimpe"
             return
@@ -1135,17 +1183,24 @@ def derive_exception_reason(row: Dict[str, str]) -> None:
         row["exception_reason"] = "undergoer"
         return
 
-    # NDE classes explain non-mutation (check before "non exception")
-    if nde in {"gimpe", "ochi", "paduchi"}:
+    # OCHI and PADUCHI: special NDE cases that apply regardless of opportunity
+    # These have morphological explanations even without surface i/e opportunity
+    if nde in {"ochi", "paduchi"}:
         row["exception_reason"] = f"nde:{nde}"
+        return
+
+    # Non-exceptions: no opportunity to mutate (none or uri)
+    # CHECK THIS BEFORE GIMPE to prevent gimpe from capturing no-opportunity cases
+    if opportunity in {"none", "uri"}:
+        row["exception_reason"] = "non exception"
+        return
+
+    # GIMPE: only applies when there's an actual i/e opportunity being blocked
+    if nde == "gimpe":
+        row["exception_reason"] = "nde:gimpe"
         return
 
     # True exceptions: had opportunity but didn't mutate (unexplained)
     if opportunity in {"i", "e"}:
         row["exception_reason"] = "unexplained"
-        return
-
-    # Non-exceptions: no opportunity to mutate (none or uri)
-    if opportunity in {"none", "uri"}:
-        row["exception_reason"] = "non exception"
         return

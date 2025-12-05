@@ -567,28 +567,33 @@ lex <- lex |>
     pos = toupper(pos),
     # Ensure "opportunity" is NA outside the explicitly supported set, so the TP domain is well-defined.
     opportunity = if_else(opportunity %in% plural_opportunities_all, opportunity, NA_character_),
-    # Derive nde_class by replicating Python logic (since nde_class not in CSV)
-    # This must match derive_nde_class() in romanian_processor_lib.py lines 1035-1087
+    # Extract nde_class from exception_reason field (Python already applied correct logic)
+    # exception_reason has values like "nde:gimpe", "nde:ochi", "nde:paduchi"
+    # This avoids replicating complex logic and ensures consistency with Python pipeline
     nde_class = case_when(
-      # Only for nouns with plural, mutation=FALSE
-      pos != "N" | is.na(plural) | plural == "" | mutation ~ "none",
-      # 1. PADUCHI: lemma ends in che/ghe AND plural has chi/ghi (vowel e→i)
-      str_ends(lemma, "che") & (str_ends(plural, "chi") | str_ends(plural, "chiuri")) ~ "paduchi",
-      str_ends(lemma, "ghe") & (str_ends(plural, "ghi") | str_ends(plural, "ghiuri")) ~ "paduchi",
-      # 2. OCHI: lemma=plural with chi/ghi clusters
-      lemma == plural & cluster %in% c("chi", "ghi") ~ "ochi",
-      # 3. GIMPE: ANY target C + i/e already in lemma (root-internal)
-      stem_final == "c" & (str_detect(lemma, "ci") | str_detect(lemma, "ce")) ~ "gimpe",
-      stem_final == "g" & (str_detect(lemma, "gi") | str_detect(lemma, "ge")) ~ "gimpe",
-      stem_final == "t" & (str_detect(lemma, "ti") | str_detect(lemma, "te")) ~ "gimpe",
-      stem_final == "d" & (str_detect(lemma, "di") | str_detect(lemma, "de")) ~ "gimpe",
-      stem_final == "s" & (str_detect(lemma, "si") | str_detect(lemma, "se")) ~ "gimpe",
-      stem_final == "z" & (str_detect(lemma, "zi") | str_detect(lemma, "ze")) ~ "gimpe",
+      str_starts(exception_reason, "nde:") ~ str_remove(exception_reason, "^nde:"),
       TRUE ~ "none"
     ),
-    # Derive target_is_suffix from lemma_suffix for backward compatibility
-    # target_is_suffix = (lemma_suffix is not blank) AND (lemma_suffix != "-el")
-    target_is_suffix = !is.na(lemma_suffix) & lemma_suffix != "" & lemma_suffix != "-el",
+    # Derive target_is_suffix: check if stem_final matches the final consonant of the suffix
+    # This identifies whether the target consonant is suffix-internal vs. root-final
+    # Examples:
+    #   - "democratic" ends in -ic, stem_final=c → target IS the suffix (c in -ic)
+    #   - "batuc" has no tracked suffix, stem_final=c → target is root-final
+    #   - "economist" ends in -ist, stem_final=t → target IS the suffix (t in -ist)
+    target_is_suffix = case_when(
+      # -ic: suffix-final is 'c'
+      lemma_suffix == "-ic" & stem_final == "c" ~ TRUE,
+      # -ică: suffix-final is 'c'
+      lemma_suffix == "-ică" & stem_final == "c" ~ TRUE,
+      # -ice: suffix-final is 'c'
+      lemma_suffix == "-ice" & stem_final == "c" ~ TRUE,
+      # -ist: suffix-final is 't'
+      lemma_suffix == "-ist" & stem_final == "t" ~ TRUE,
+      # -esc: suffix-final is 's'
+      lemma_suffix == "-esc" & stem_final == "s" ~ TRUE,
+      # Default: not suffix-internal
+      TRUE ~ FALSE
+    ),
     # Make suffix tags explicit "none" rather than NA/blank, so grouping is well-behaved.
     lemma_suffix = if_else(is.na(lemma_suffix) | lemma_suffix == "", "none", lemma_suffix),
     # Coarse-grain plural endings, used to determine whether an item sits in the i/e domain even when
@@ -1053,6 +1058,80 @@ if (nrow(suffix_diff) > 0) {
 } else {
   cat("All tracked suffix rows are also marked as targets.\n")
 }
+
+cat_section("SUFFIX-INTERNAL VS ROOT-FINAL TARGETS: GIMPE ANALYSIS")
+
+# Key question from email.txt: Does GIMPE (root-internal C+i) behave differently
+# when the C+i is suffix-internal (e.g., "-ic" has c+i) vs. truly root-internal?
+#
+# Prediction: Suffix-internal C+i should be lexicalized (never mutate in plural),
+# while root-final targets at suffix boundary might still show variation.
+
+cat("\nGIMPE cases by suffix status:\n")
+gimpe_by_suffix <- nouns_opp |>
+  filter(nde_class == "gimpe") |>
+  group_by(target_is_suffix, lemma_suffix) |>
+  summarise(
+    N = n(),
+    N_with_opp = sum(opportunity %in% c("i", "e"), na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  arrange(desc(target_is_suffix), desc(N))
+print_full(gimpe_by_suffix)
+
+cat("\nSuffix-internal GIMPE examples:\n")
+gimpe_suffix_internal <- nouns_opp |>
+  filter(nde_class == "gimpe", target_is_suffix) |>
+  select(lemma, plural, stem_final, lemma_suffix, opportunity, exception_reason) |>
+  head(20)
+print_full(gimpe_suffix_internal)
+
+cat("\nRoot-final GIMPE examples (not in tracked suffix):\n")
+gimpe_root_final <- nouns_opp |>
+  filter(nde_class == "gimpe", !target_is_suffix) |>
+  select(lemma, plural, stem_final, lemma_suffix, opportunity, exception_reason) |>
+  head(20)
+print_full(gimpe_root_final)
+
+cat_section("SUFFIX TARGET ANALYSIS: MUTATION RATES BY POSITION")
+
+# Compare mutation rates when target is suffix-internal vs. root-final
+# This tests whether suffixes behave as "inalterable" vs. normal targets
+
+cat("\nMutation rates: Suffix-internal vs. Root-final targets (i/e domain):\n")
+suffix_position_comparison <- nouns_opp |>
+  mutate(
+    target_position = case_when(
+      target_is_suffix ~ "suffix_internal",
+      lemma_suffix != "none" ~ "root_final_with_suffix",
+      TRUE ~ "root_final_no_suffix"
+    )
+  ) |>
+  group_by(target_position, stem_final, opportunity) |>
+  summarise(
+    N = n(),
+    N_mut = sum(mutation, na.rm = TRUE),
+    rate_mut = if_else(N > 0, N_mut / N, NA_real_),
+    N_gimpe = sum(nde_class == "gimpe", na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  arrange(target_position, stem_final, opportunity)
+print_full(suffix_position_comparison)
+
+cat("\nSuffix-specific analysis (only suffix-internal targets):\n")
+suffix_specific <- nouns_opp |>
+  filter(target_is_suffix) |>
+  group_by(lemma_suffix, stem_final, opportunity) |>
+  summarise(
+    N = n(),
+    N_mut = sum(mutation, na.rm = TRUE),
+    rate_mut = if_else(N > 0, N_mut / N, NA_real_),
+    N_gimpe = sum(nde_class == "gimpe", na.rm = TRUE),
+    N_unexplained = sum(exception_reason == "unexplained", na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  arrange(lemma_suffix, opportunity, stem_final)
+print_full(suffix_specific)
 
 cat_section("TRUE EXCEPTIONS IN I/E DOMAIN (NON-NDEB)")
 
