@@ -39,7 +39,17 @@ def set_ipa_normalizer(normalizer: Callable[[str], str]) -> None:
 # ============================================================================
 
 TARGET_CONSONANTS = {"c", "g", "t", "d", "s", "z"}
-VOWELS = "aăâeiîou"
+
+VOWEL_SET = {
+    "a",
+    "ă",
+    "â",
+    "e",
+    "i",
+    "î",
+    "o",
+    "u",
+}
 
 FINAL_CLUSTERS = {
     "st": "s",
@@ -56,6 +66,48 @@ VELAR_FRONT_SEQUENCES = {
 
 ROMANIAN_CONSONANTS: Set[str] = set("bcdfghjklmnpqrstvwxyzșşţțțţ")
 
+ORTH_TO_PALATAL_IPA = {
+    # Core patterns for classification via suffix matching
+    # Example: "ate→ăți" recognized via "te→ți" suffix match
+    "c→ce": "t͡ʃ",
+    "c→ci": "t͡ʃ",
+    "ct→cți": "t͡s",
+    "ct→cțe": "t͡s",
+    "că→ce": "t͡ʃ",
+    "că→ci": "t͡ʃ",
+    "ca→ce": "t͡ʃ",
+    "d→ze": "z",
+    "d→zi": "z",
+    "d→z": "z",  # bare consonant change
+    "de→di": "dʲ",
+    "de→zi": "z",
+    "dă→zi": "z",
+    "g→ge": "d͡ʒ",
+    "g→gi": "d͡ʒ",
+    "gă→ge": "d͡ʒ",
+    "gă→gi": "d͡ʒ",
+    "ga→ge": "d͡ʒ",
+    "go→gi": "d͡ʒ",
+    "s→șe": "ʃ",
+    "s→și": "ʃ",
+    "s→ș": "ʃ",  # bare consonant change
+    "sc→ște": "ʃt",
+    "sc→ști": "ʃt",
+    "scă→ște": "ʃt",
+    "scă→ști": "ʃt",
+    "st→ște": "ʃt",
+    "st→ști": "ʃt",
+    "t→țe": "t͡s",
+    "t→ți": "t͡s",
+    "t→ț": "t͡s",  # bare consonant change (e.g., componente → componențe)
+    "te→țe": "t͡s",
+    "te→ți": "t͡s",
+    "tă→țe": "t͡s",
+    "tă→ți": "t͡s",
+    "z→je": "ʒ",
+    "z→ji": "ʒ",
+    "z→j": "ʒ",  # bare consonant change
+}
 
 # ============================================================================
 # ROW FILTERING
@@ -84,26 +136,6 @@ def should_process_row(row: Dict[str, str]) -> bool:
         if consonant in lemma_lower:
             return True
     return False
-
-
-VOWEL_SET = {
-    "a",
-    "ă",
-    "â",
-    "e",
-    "i",
-    "î",
-    "o",
-    "u",
-    "A",
-    "Ă",
-    "Â",
-    "E",
-    "I",
-    "Î",
-    "O",
-    "U",
-}
 
 
 def orth_change_is_vowels_or_le(orth_change: str) -> bool:
@@ -184,7 +216,7 @@ def strip_final_vowel(lemma: str) -> str:
     """Strip a single final vowel from lemma if present."""
     if len(lemma) <= 1:
         return lemma
-    if lemma[-1] in VOWELS:
+    if lemma[-1] in VOWEL_SET:
         return lemma[:-1]
     return lemma
 
@@ -986,49 +1018,6 @@ def tweak_nominal_ipa(lemma: str, ipa: str) -> str:
     return ipa
 
 
-ORTH_TO_PALATAL_IPA = {
-    # Core patterns for classification via suffix matching
-    # Example: "ate→ăți" recognized via "te→ți" suffix match
-    "c→ce": "t͡ʃ",
-    "c→ci": "t͡ʃ",
-    "ct→cți": "t͡s",
-    "ct→cțe": "t͡s",
-    "că→ce": "t͡ʃ",
-    "că→ci": "t͡ʃ",
-    "ca→ce": "t͡ʃ",
-    "d→ze": "z",
-    "d→zi": "z",
-    "d→z": "z",  # bare consonant change
-    "de→di": "dʲ",
-    "de→zi": "z",
-    "dă→zi": "z",
-    "g→ge": "d͡ʒ",
-    "g→gi": "d͡ʒ",
-    "gă→ge": "d͡ʒ",
-    "gă→gi": "d͡ʒ",
-    "ga→ge": "d͡ʒ",
-    "go→gi": "d͡ʒ",
-    "s→șe": "ʃ",
-    "s→și": "ʃ",
-    "s→ș": "ʃ",  # bare consonant change
-    "sc→ște": "ʃt",
-    "sc→ști": "ʃt",
-    "scă→ște": "ʃt",
-    "scă→ști": "ʃt",
-    "st→ște": "ʃt",
-    "st→ști": "ʃt",
-    "t→țe": "t͡s",
-    "t→ți": "t͡s",
-    "t→ț": "t͡s",  # bare consonant change (e.g., componente → componențe)
-    "te→țe": "t͡s",
-    "te→ți": "t͡s",
-    "tă→țe": "t͡s",
-    "tă→ți": "t͡s",
-    "z→je": "ʒ",
-    "z→ji": "ʒ",
-    "z→j": "ʒ",  # bare consonant change
-}
-
 ORDERED_LEMMA_SUFFIXES = ["ică", "iști", "ice", "ist", "esc", "ic", "el"]
 
 LEMMA_SUFFIXES = [
@@ -1037,35 +1026,69 @@ LEMMA_SUFFIXES = [
 
 
 def derive_palatal_consonant_pl(row: Dict[str, str]) -> None:
-    """Derive palatal_consonant_pl from orth_change only for mutation=True."""
+    """Derive palatal_consonant_pl from orth_change for mutation=True rows.
+
+    Strategy:
+      1. Use ORTH_TO_PALATAL_IPA for exact/suffix matches on orth_change.
+      2. If that fails but mutation=True, fall back to a segment-based map
+         from stem_final → palatal IPA (handles 'e→ăți'-type windows).
+    """
     row["palatal_consonant_pl"] = ""
 
-    mutation = row.get("mutation", "")
-    if mutation != "True":
+    # Only defined for rows that actually palatalize
+    if row.get("mutation") != "True":
         return
 
-    orth_change = row.get("orth_change", "")
+    orth_change = (row.get("orth_change") or "").strip()
     if not orth_change:
         return
 
-    # Exact match
-    if orth_change in ORTH_TO_PALATAL_IPA:
-        row["palatal_consonant_pl"] = ORTH_TO_PALATAL_IPA[orth_change]
+    # 1. DIRECT LOOKUP: exact orth_change in the canonical map
+    direct = ORTH_TO_PALATAL_IPA.get(orth_change)
+    if direct is not None:
+        row["palatal_consonant_pl"] = direct
         return
 
-    # Suffix matching (e.g., "ate→ăți" matches "te→ți")
-    orth_parts = orth_change.split("→")
-    if len(orth_parts) == 2:
-        orth_from, orth_to = orth_parts
-        for canonical_pattern, ipa_value in ORTH_TO_PALATAL_IPA.items():
-            canon_parts = canonical_pattern.split("→")
-            if len(canon_parts) == 2:
-                canon_from, canon_to = canon_parts
-                if orth_from.endswith(canon_from) and orth_to.endswith(
-                    canon_to
-                ):
-                    row["palatal_consonant_pl"] = ipa_value
-                    return
+    # 2. FLEXIBLE MATCH: canonical pattern as suffix / substring
+    #    Example: "ate→ăți" should match "te→ți"
+    try:
+        orth_from, orth_to = orth_change.split("→", 1)
+    except ValueError:
+        orth_from, orth_to = "", ""
+
+    if orth_from and orth_to:
+        for pattern, ipa_value in ORTH_TO_PALATAL_IPA.items():
+            try:
+                canon_from, canon_to = pattern.split("→", 1)
+            except ValueError:
+                continue
+
+            # lemma side: window must end in canonical source
+            if not orth_from.endswith(canon_from):
+                continue
+
+            # plural side: canonical target just needs to appear somewhere
+            if canon_to in orth_to:
+                row["palatal_consonant_pl"] = ipa_value
+                return
+
+    # 3. STEM-BASED FALLBACK: we know *which* segment mutated
+    #    (this catches 'e→ăți' cases like afectuozitate→afectuozitatăți)
+    stem_final = (row.get("stem_final") or "").strip()
+
+    STEM_TO_IPA = {
+        "c": "t͡ʃ",
+        "g": "d͡ʒ",
+        "t": "t͡s",
+        "d": "z",
+        "s": "ʃ",
+        "z": "ʒ",
+    }
+
+    ipa_fallback = STEM_TO_IPA.get(stem_final)
+    if ipa_fallback is not None:
+        row["palatal_consonant_pl"] = ipa_fallback
+        # no return needed; function ends here anyway
 
 
 def derive_lemma_suffix(row: Dict[str, str]) -> None:
