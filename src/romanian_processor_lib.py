@@ -407,7 +407,7 @@ def needleman_wunsch(s1: str, s2: str) -> Tuple[str, str]:
 
 
 def detect_orth_change_dynamic(lemma: str, plural: str) -> str:
-    """Detect minimal orthographic change via alignment (non-circular).
+    """Detect minimal orthographic change via alignment.
 
     Returns "X→Y" where X is lemma segment, Y is plural segment.
     Returns "none" when lemma and plural are identical strings.
@@ -418,7 +418,7 @@ def detect_orth_change_dynamic(lemma: str, plural: str) -> str:
 
     # Check if lemma and plural are identical
     if lemma == plural:
-        return "none"
+        return "no change"
 
     aligned_lemma, aligned_plural = needleman_wunsch(lemma, plural)
 
@@ -581,7 +581,12 @@ def derive_mutation_and_orth_change(row: Dict[str, str]) -> None:
     if pos not in {"N", "ADJ"}:
         return
 
-    if not lemma or not plural:
+    if not lemma:
+        return
+
+    # If plural is empty, mark it explicitly
+    if not plural:
+        row["orth_change"] = "no plural"
         return
 
     # STEP 0: Mutation requires a known stem_final consonant
@@ -605,7 +610,7 @@ def derive_mutation_and_orth_change(row: Dict[str, str]) -> None:
 
     row["orth_change"] = orth_change
 
-    if not orth_change or orth_change == "none":
+    if not orth_change or orth_change == "no change":
         row["mutation"] = "False"
         return
 
@@ -621,11 +626,18 @@ def derive_mutation_and_orth_change(row: Dict[str, str]) -> None:
 
         # Direct approach: Does the plural side contain palatalized consonants
         # that are NOT in the lemma side?
-        palatalized_consonants = ["ț", "ș", "č", "j"]
+        # Note: "j" only counts as palatalization if stem_final is "z" (z→j)
+        # For other consonants, "j" can appear for orthographic reasons (e.g., giu→je)
+        palatalized_consonants = ["ț", "ș"]
         for pal in palatalized_consonants:
             if pal in orth_to and pal not in orth_from:
                 is_palatalization = True
                 break
+
+        # Special case: "j" only for z→j palatalization
+        if not is_palatalization and "j" in orth_to and "j" not in orth_from:
+            if stem_final == "z":
+                is_palatalization = True
 
         # Check for z (d→z palatalization) - z must be new in plural
         if not is_palatalization:
