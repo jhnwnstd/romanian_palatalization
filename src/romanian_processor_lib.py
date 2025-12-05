@@ -678,8 +678,9 @@ def derive_mutation_and_orth_change(row: Dict[str, str]) -> None:
 
         # Direct approach: Does the plural side contain palatalized consonants
         # that are NOT in the lemma side?
-        # Note: "j" only counts as palatalization if stem_final is "z" (z→j)
-        # For other consonants, "j" can appear for orthographic reasons (e.g., giu→je)
+        # Note: "j" only counts as palatalization if stem_final="z" (z→j)
+        # For other consonants, "j" appears for orthographic reasons
+        # (e.g., giu→je)
         palatalized_consonants = ["ț", "ș"]
         for pal in palatalized_consonants:
             if pal in orth_to and pal not in orth_from:
@@ -701,7 +702,8 @@ def derive_mutation_and_orth_change(row: Dict[str, str]) -> None:
             ):
                 is_palatalization = True
 
-        # Fallback: Try exact pattern matching for edge cases (c→ci, g→gi, etc.)
+        # Fallback: Try exact pattern matching for edge cases
+        # (c→ci, g→gi, etc.)
         if not is_palatalization and orth_change in ORTH_TO_PALATAL_IPA:
             is_palatalization = True
 
@@ -780,11 +782,12 @@ def derive_opportunity(row: Dict[str, str]) -> None:
                 row["opportunity"] = "e"
                 return
             # CASE 1b: Bare consonant change (e.g., t→ț without vowel)
-            # Look at what follows the palatalized consonant in the actual plural
+            # Look at what follows the palatalized consonant in plural
             elif plural_side in ("ț", "č", "ǧ", "ș", "j", "z"):
-                # Find the palatalized consonant in the plural and check what follows
+                # Find palatalized consonant in plural and check what follows
                 if stem_final and plural:
-                    # Look for the stem_final position in the plural (accounting for palatalization)
+                    # Look for stem_final position in plural
+                    # (accounting for palatalization)
                     palatal_map = {
                         "t": "ț",
                         "c": "č",
@@ -1218,10 +1221,12 @@ def derive_nde_class(row: Dict[str, str]) -> None:
             row["nde_class"] = "paduchi"
             return
 
-    # 2. OCHI: lemma=plural with chi/ghi clusters (plural-i domain only)
+    # 2. OCHI: lemma=plural with chi/ghi clusters (plural-i domain)
     # "Ambiguous morphology" - could be /oki/ or /ok-i/
-    # As per email: "exceptions after noun plural -i" - specifically /k-i/ cases
-    # che/ghe lemma=plural cases are NOT OCHI (different domain, not about plural -i)
+    # As per email: "exceptions after noun plural -i"
+    # specifically /k-i/ cases
+    # che/ghe lemma=plural cases are NOT OCHI
+    # (different domain, not about plural -i)
     if lemma == plural and cluster in ("chi", "ghi"):
         row["nde_class"] = "ochi"
         return
@@ -1294,14 +1299,17 @@ def derive_exception_reason(row: Dict[str, str]) -> None:
         row["exception_reason"] = "undergoer"
         return
 
-    # OCHI and PADUCHI: special NDE cases that apply regardless of opportunity
-    # These have morphological explanations even without surface i/e opportunity
+    # OCHI and PADUCHI: special NDE cases that apply
+    # regardless of opportunity
+    # These have morphological explanations even without
+    # surface i/e opportunity
     if nde in {"ochi", "paduchi"}:
         row["exception_reason"] = f"nde:{nde}"
         return
 
     # Non-exceptions: no opportunity to mutate (none or uri)
-    # CHECK THIS BEFORE GIMPE to prevent gimpe from capturing no-opportunity cases
+    # CHECK THIS BEFORE GIMPE to prevent gimpe from capturing
+    # no-opportunity cases
     if opportunity in {"none", "uri"}:
         row["exception_reason"] = "non exception"
         return
