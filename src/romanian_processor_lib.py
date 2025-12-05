@@ -566,10 +566,14 @@ def derive_mutation_and_orth_change(row: Dict[str, str]) -> None:
 
     1. DISCOVER: Compute orth_change from alignment
     2. CLASSIFY: Check if pattern matches palatalization via suffix matching
+
+    IMPORTANT: Mutation can only be True if stem_final is populated.
+    Without knowing the stem-final consonant, we can't determine if it mutated.
     """
     pos = (row.get("pos", "") or "").upper()
     lemma = (row.get("lemma", "") or "").strip().lower()
     plural = (row.get("plural", "") or "").strip().lower()
+    stem_final = (row.get("stem_final", "") or "").strip()
 
     row["mutation"] = "False"
     row["orth_change"] = ""
@@ -578,6 +582,18 @@ def derive_mutation_and_orth_change(row: Dict[str, str]) -> None:
         return
 
     if not lemma or not plural:
+        return
+
+    # STEP 0: Mutation requires a known stem_final consonant
+    # Without stem_final, we can't track whether the stem mutated
+    # (palatalized consonants might just be in the suffix, e.g., -ștri)
+    if not stem_final:
+        row["mutation"] = "False"
+        # Still compute orth_change for reference
+        orth_change = detect_orth_change_dynamic(lemma, plural)
+        if orth_change in {"∅→iur", "∅→riu"} and plural.endswith("uri"):
+            orth_change = "∅→uri"
+        row["orth_change"] = orth_change
         return
 
     # STEP 1: Discover orth_change dynamically
@@ -594,26 +610,39 @@ def derive_mutation_and_orth_change(row: Dict[str, str]) -> None:
         return
 
     # STEP 2: Classify as palatalization
-    # Strategy: Check if plural side contains palatalized consonants (ț, ș, č, j, z)
-    # This is more robust than trying to enumerate all possible orth_change patterns
+    # Strategy: Check if plural side contains NEWLY INTRODUCED palatalized consonants
+    # Key: The palatalized consonant must NOT already be in the lemma side
+    # This avoids false positives like "ocinaș→ocinașe" (ș already there)
     is_palatalization = False
 
     orth_parts = orth_change.split("→")
     if len(orth_parts) == 2:
         orth_from, orth_to = orth_parts
 
-        # Direct approach: Does the plural side contain palatalized consonants?
-        # This works regardless of vowel changes (e→ă, etc.)
-        if any(pal in orth_to for pal in ["ț", "ș", "č", "j"]):
+        # Direct approach: Does the plural side contain palatalized consonants
+        # that are NOT in the lemma side?
+        palatalized_consonants = ["ț", "ș", "č", "j"]
+        for pal in palatalized_consonants:
+            if pal in orth_to and pal not in orth_from:
+                is_palatalization = True
+                break
+
+        # Check for z (d→z palatalization) - z must be new in plural
+        if not is_palatalization:
+            if (
+                "z" in orth_to
+                and "z" not in orth_from
+                and orth_from
+                and "d" in orth_from
+            ):
+                is_palatalization = True
+
+        # Fallback: Try exact pattern matching for edge cases (c→ci, g→gi, etc.)
+        if not is_palatalization and orth_change in ORTH_TO_PALATAL_IPA:
             is_palatalization = True
-        # Check for z (d→z palatalization)
-        elif "z" in orth_to and orth_from and "d" in orth_from:
-            is_palatalization = True
-        # Fallback: Try exact pattern matching for edge cases
-        elif orth_change in ORTH_TO_PALATAL_IPA:
-            is_palatalization = True
+
         # Fallback: Try suffix matching for patterns like "ate→ăți"
-        else:
+        if not is_palatalization:
             for canonical_pattern in ORTH_TO_PALATAL_IPA:
                 canon_parts = canonical_pattern.split("→")
                 if len(canon_parts) == 2:
