@@ -489,6 +489,79 @@ def needleman_wunsch(s1: str, s2: str) -> Tuple[str, str]:
     return "".join(reversed(aligned_s1)), "".join(reversed(aligned_s2))
 
 
+def has_tautomorphemic_front_vowel(
+    lemma: str, plural: str, stem_final: str
+) -> bool:
+    """
+    Return True iff, around the stem_final consonant, the lemma and plural
+    both have the SAME front vowel (i/e) immediately following it.
+
+    Intuition:
+      - Align lemma/plural.
+      - Locate the aligned position of the *target* consonant in lemma.
+      - Look for the next real segment to the right in both lemma and plural.
+      - If both share 'i' or 'e' there, that C+front-vowel sequence is
+        tautomorphemic (not introduced by a suffix) ⇒ GIMPE-like.
+
+    Used for *all* TARGET_CONSONANTS (c, g, t, d, s, z).
+    """
+    if not lemma or not plural or not stem_final:
+        return False
+
+    lemma = lemma.lower()
+    plural = plural.lower()
+    stem_final = stem_final.lower()
+
+    if stem_final not in TARGET_CONSONANTS:
+        return False
+
+    # Global alignment
+    aligned_lemma, aligned_plural = needleman_wunsch(lemma, plural)
+
+    # Map lemma indices → aligned positions
+    lemma_to_aligned: Dict[int, int] = {}
+    li = 0
+    for ai, ch in enumerate(aligned_lemma):
+        if ch != "-":
+            lemma_to_aligned[li] = ai
+            li += 1
+
+    # Take the rightmost occurrence of stem_final in the lemma
+    try:
+        target_idx = max(i for i, ch in enumerate(lemma) if ch == stem_final)
+    except ValueError:
+        return False
+
+    if target_idx not in lemma_to_aligned:
+        return False
+
+    aidx = lemma_to_aligned[target_idx]
+
+    # Walk right in the alignment to find the next *real* segment
+    # in lemma and in plural
+    next_lemma_char = None
+    next_plural_char = None
+
+    j = aidx + 1
+    while j < len(aligned_lemma):
+        if next_lemma_char is None and aligned_lemma[j] != "-":
+            next_lemma_char = aligned_lemma[j].lower()
+        if next_plural_char is None and aligned_plural[j] != "-":
+            next_plural_char = aligned_plural[j].lower()
+
+        # Stop as soon as we have at least one real char on either side
+        if next_lemma_char is not None or next_plural_char is not None:
+            break
+        j += 1
+
+    # We need an actual *front vowel* in lemma, and the plural must
+    # share it *unchanged* (so it's tautomorphemic, not created by suffix)
+    if next_lemma_char in {"i", "e"} and next_plural_char == next_lemma_char:
+        return True
+
+    return False
+
+
 def detect_orth_change_dynamic(lemma: str, plural: str) -> str:
     """Detect minimal orthographic change via alignment.
 
@@ -861,35 +934,49 @@ def derive_opportunity(row: Dict[str, str]) -> None:
             # Leave row["opportunity"] as "none"
             return
 
-        # Palatalization map for checking palatalized forms too
-        palatal_map = {
-            "t": "ț",
-            "d": "d",
-            "s": "ș",
-            "z": "z",
-            "c": "c",
-            "g": "g",
-        }
+        # Use alignment to find what vowel follows stem_final in plural
+        # This prevents false positives from irrelevant i/e elsewhere
+        aligned_lemma, aligned_plural = needleman_wunsch(
+            lemma.lower(), plural.lower()
+        )
 
-        # Check for stem_final + i (plain or palatalized)
-        if stem_final + "i" in plural:
+        # Map lemma indices to aligned positions
+        lemma_to_aligned: Dict[int, int] = {}
+        li = 0
+        for ai, ch in enumerate(aligned_lemma):
+            if ch != "-":
+                lemma_to_aligned[li] = ai
+                li += 1
+
+        # Find rightmost stem_final in lemma
+        try:
+            target_idx = max(
+                i for i, ch in enumerate(lemma.lower()) if ch == stem_final
+            )
+        except ValueError:
+            return
+
+        if target_idx not in lemma_to_aligned:
+            return
+
+        aidx = lemma_to_aligned[target_idx]
+
+        # Walk right to find next segment in plural
+        next_plural_char = None
+        j = aidx + 1
+        while j < len(aligned_plural):
+            if aligned_plural[j] != "-":
+                next_plural_char = aligned_plural[j].lower()
+                break
+            j += 1
+
+        # Set opportunity based on the actual vowel following stem_final
+        if next_plural_char == "i":
             row["opportunity"] = "i"
             return
-        elif stem_final in palatal_map:
-            palatalized = palatal_map[stem_final]
-            if palatalized + "i" in plural:
-                row["opportunity"] = "i"
-                return
-
-        # Check for stem_final + e (plain or palatalized)
-        if stem_final + "e" in plural:
+        elif next_plural_char == "e":
             row["opportunity"] = "e"
             return
-        elif stem_final in palatal_map:
-            palatalized = palatal_map[stem_final]
-            if palatalized + "e" in plural:
-                row["opportunity"] = "e"
-                return
 
 
 def explode_pipe_group(
@@ -1217,70 +1304,102 @@ def derive_nde_class(row: Dict[str, str]) -> None:
     """Classify NDE (non-derived environment) patterns.
 
     Types (checked in order):
-    - gimpe: C+front vowel tautomorphemic in root (ci/ce/gi/ge in lemma)
-    - paduchi: Lemma ends in che/ghe, vowel e→i (derived underapplication)
-    - ochi: Lemma=plural with chi/ghi clusters (ambiguous morphology)
+    - paduchi: clearly derived underapplication (e→i, but no mutation)
+    - ochi: lemma=plural with final front-vowel sequence
+            (ambiguous plural -i)
+    - gimpe: C+front vowel tautomorphemic in root
 
+    Extended to dorsals (c/g) AND coronals (t/d/s/z).
     Per email.txt definitions and NDEB explanation.
     """
     pos = row.get("pos", "")
-    lemma = row.get("lemma", "") or ""
-    plural = row.get("plural", "") or ""
-    cluster = row.get("cluster", "") or ""
+    lemma = (row.get("lemma", "") or "").strip().lower()
+    plural = (row.get("plural", "") or "").strip().lower()
+    cluster = (row.get("cluster", "") or "").strip().lower()
     mutation = str(row.get("mutation", ""))
-    stem_final = row.get("stem_final", "")
+    stem_final = (row.get("stem_final", "") or "").strip().lower()
     row["nde_class"] = ""
 
+    # Only nouns with a plural, and ONLY if they did *not* mutate
     if pos != "N" or not lemma or not plural:
         return
-
     if mutation == "True":
         return
 
-    # 1. PADUCHI: lemma ends in che/ghe AND vowel changes to i
-    # Checked first because it's most specific
-    # "Clearly derived underapplication" - SG has che/ghe, PL has chi/ghi
-    if lemma.endswith(("che", "ghe")):
-        # Check if plural has chi/ghi (vowel e→i)
-        if lemma.endswith("che") and (
-            plural.endswith("chi") or plural.endswith("chiuri")
-        ):
-            row["nde_class"] = "paduchi"
-            return
-        if lemma.endswith("ghe") and (
-            plural.endswith("ghi") or plural.endswith("ghiuri")
-        ):
-            row["nde_class"] = "paduchi"
-            return
+    # ------------------------------------------------------------------
+    # 1. PADUCHI: clearly derived underapplication (most specific)
+    # ------------------------------------------------------------------
 
-    # 2. OCHI: lemma=plural with chi/ghi clusters (plural-i domain)
-    # "Ambiguous morphology" - could be /oki/ or /ok-i/
-    # As per email: "exceptions after noun plural -i"
-    # specifically /k-i/ cases
-    # che/ghe lemma=plural cases are NOT OCHI
-    # (different domain, not about plural -i)
-    if lemma == plural and cluster in ("chi", "ghi"):
-        row["nde_class"] = "ochi"
+    # DORSAL: classic păduche-type (che/ghe → chi/ghi or chiuri/ghiuri)
+    if lemma.endswith("che") and (
+        plural.endswith("chi") or plural.endswith("chiuri")
+    ):
+        row["nde_class"] = "paduchi"
+        return
+    if lemma.endswith("ghe") and (
+        plural.endswith("ghi") or plural.endswith("ghiuri")
+    ):
+        row["nde_class"] = "paduchi"
         return
 
-    # 3. GIMPE: Dorsal (velar) C+front vowel tautomorphemic in root
-    # "Canonical NDEB" - ONLY c/g + i/e already in root, not created
-    # by suffix. This is the classic velar NDEB pattern
-    # (Kiparsky 1993, Steriade 2008)
-    #
-    # Note: The word "gimpe" (thorn) is the etymological prototype
-    # for this pattern, but it's actually OUTSIDE the processed domain
-    # since it doesn't have c/g as its stem-final consonant
-    # (stem_final would be empty for "gimpe").
-    #
-    # Examples that ARE in this class: alice→alice (c+i),
-    # abagiu→abagii (g+i). These have stem_final=c or g, AND contain
-    # that consonant + front vowel in the lemma.
-    # NOT applied to coronals (t/d/s/z) - just true exceptions.
-    if stem_final in ("c", "g"):
-        if stem_final + "i" in lemma or stem_final + "e" in lemma:
+    # CORONAL: C+e → C+i with no palatalization
+    # (t/d/s/z + e → t/d/s/z + i)
+    if stem_final in {"t", "d", "s", "z"}:
+        if lemma.endswith(stem_final + "e") and plural.endswith(
+            stem_final + "i"
+        ):
+            row["nde_class"] = "paduchi"
+            return
+
+    # ------------------------------------------------------------------
+    # 2. OCHI: lemma = plural with ambiguous final -i
+    # ------------------------------------------------------------------
+    if lemma == plural:
+        # DORSAL: chi/ghi as in *ochi*
+        if cluster in {"chi", "ghi"}:
+            row["nde_class"] = "ochi"
+            return
+
+        # CORONAL: lemma = plural, final C+i (t/d/s/z + i)
+        # with no palatalization
+        if stem_final in {"t", "d", "s", "z"} and lemma.endswith(
+            stem_final + "i"
+        ):
+            row["nde_class"] = "ochi"
+            return
+
+    # ------------------------------------------------------------------
+    # 3. GIMPE: tautomorphemic C+front vowel sequences (broadest)
+    # ------------------------------------------------------------------
+    # Applies to ALL target consonants (dorsals + coronals).
+
+    # GIMPE 3a: Special case for ce→ci / ge→gi (e→i vowel shift)
+    # These are canonical GIMPE: the palatal is already in the lemma
+    # (ce = /tʃe/, ge = /dʒe/), and the plural just shifts the vowel
+    # (e→i) while keeping the same palatal consonant.
+    # Examples: cruce→cruci, indice→indici, fenice→fenici
+    if stem_final in {"c", "g"}:
+        if lemma.endswith("ce") and plural.endswith("ci"):
             row["nde_class"] = "gimpe"
             return
+        elif lemma.endswith("ge") and plural.endswith("gi"):
+            row["nde_class"] = "gimpe"
+            return
+
+    # GIMPE 3b: General alignment-based detection
+    # We use alignment to ensure the front vowel after stem_final is
+    # *already* present in the lemma and is shared identically by the plural
+    # at that position (i.e., not created by suffixation).
+    #
+    # This catches cases like:
+    #   - abazie → abazii: lemma has 'zie', plural has 'zii',
+    #     alignment shows 'i' is shared after 'z' ✓
+    #   - alice → alice: lemma=plural, both have 'ce' ✓
+    #   - abstinentă → abstinente: lemma has 'ti' internally,
+    #     but plural creates NEW 'te' at end ✗ (not GIMPE)
+    if has_tautomorphemic_front_vowel(lemma, plural, stem_final):
+        row["nde_class"] = "gimpe"
+        return
 
 
 def fix_nde_mutations(row: Dict[str, str]) -> None:
@@ -1301,29 +1420,25 @@ def derive_exception_reason(row: Dict[str, str]) -> None:
     - undergoer: mutation=True (word palatalized)
     - nde:{type}: mutation=False with known NDE explanation
     - unexplained: mutation=False with i/e opportunity, no NDE explanation
-    - non exception: opportunity=none/uri (no chance to mutate) OR adjectives
+    - non exception: all other cases (no opportunity, no data, etc.)
+
+    Note: Structural issues (no plural, no stem_final) can be filtered
+    using those fields directly - exception_reason focuses on the
+    palatalization pattern itself.
+
+    Applies to all POS types (nouns and adjectives). The restriction
+    to nouns for statistical analysis happens in the R code, not here.
     """
     row["exception_reason"] = ""
-    pos = row.get("pos", "")
     plural = row.get("plural", "")
     mutation = row.get("mutation", "")
     opportunity = row.get("opportunity", "")
     nde = row.get("nde_class", "")
+    stem_final = row.get("stem_final", "")
 
-    # ADJ - mark all adjectives as non exception
-    if pos == "ADJ":
+    # No stem final or no plural → non exception (data limitation)
+    if not stem_final or not plural:
         row["exception_reason"] = "non exception"
-        return
-
-    # Only process nouns beyond this point
-    if pos != "N":
-        return
-
-    # Skip if no plural form for remaining analyses
-    if not plural:
-        # Still mark as non exception if opportunity=none/uri
-        if opportunity in {"none", "uri"}:
-            row["exception_reason"] = "non exception"
         return
 
     # Undergoers: words that palatalized
@@ -1331,24 +1446,21 @@ def derive_exception_reason(row: Dict[str, str]) -> None:
         row["exception_reason"] = "undergoer"
         return
 
-    # OCHI and PADUCHI: special NDE cases that apply
+    # OCHI, PADUCHI, and GIMPE: NDE cases that apply
     # regardless of opportunity
-    # These have morphological explanations even without
+    # These have morphological/phonological explanations even without
     # surface i/e opportunity
-    if nde in {"ochi", "paduchi"}:
+    #
+    # E.g., abazie→abazii (GIMPE with opportunity=none): lemma has 'zie',
+    # showing z+i in root already, so e→i vowel change doesn't create
+    # a new palatalization context
+    if nde in {"ochi", "paduchi", "gimpe"}:
         row["exception_reason"] = f"nde:{nde}"
         return
 
     # Non-exceptions: no opportunity to mutate (none or uri)
-    # CHECK THIS BEFORE GIMPE to prevent gimpe from capturing
-    # no-opportunity cases
     if opportunity in {"none", "uri"}:
         row["exception_reason"] = "non exception"
-        return
-
-    # GIMPE: only applies when there's an actual i/e opportunity being blocked
-    if nde == "gimpe":
-        row["exception_reason"] = "nde:gimpe"
         return
 
     # True exceptions: had opportunity but didn't mutate (unexplained)

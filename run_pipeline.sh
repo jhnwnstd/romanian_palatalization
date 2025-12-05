@@ -43,7 +43,7 @@ DISAGREEMENTS_CSV="$DATA_DIR/dex_qc_disagreements.csv"
 
 # Analysis files
 R_SCRIPT="$ANALYSIS_DIR/analyze_romanian_palatalization.R"
-ANALYSIS_LOG="$ANALYSIS_DIR/romanian_palatalization_analysis.txt"
+ANALYSIS_LOG="$ANALYSIS_DIR/romanian_palatalization_analysis.log"
 
 # Parse arguments
 FORCE_RUN=0
