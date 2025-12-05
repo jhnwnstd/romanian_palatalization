@@ -719,6 +719,15 @@ def derive_mutation_and_orth_change(row: Dict[str, str]) -> None:
                         is_palatalization = True
                         break
 
+        # Special check: c/g followed by i/e means palatalization
+        # e.g., g→ger (liturg→liturger), c→cer, etc.
+        # In Romanian, c/g + front vowel = palatalized
+        if not is_palatalization and stem_final in ("c", "g"):
+            if orth_from == stem_final:
+                # Check if orth_to contains stem_final + i or e
+                if stem_final + "i" in orth_to or stem_final + "e" in orth_to:
+                    is_palatalization = True
+
     # STEP 3: Check for frontstem NDE before marking as mutation
     # e.g., borci → borcii (lemma already has ci, just adding -i)
     if is_palatalization and orth_change in {"c→ci", "c→ce", "g→gi", "g→ge"}:
@@ -783,15 +792,15 @@ def derive_opportunity(row: Dict[str, str]) -> None:
                 return
             # CASE 1b: Bare consonant change (e.g., t→ț without vowel)
             # Look at what follows the palatalized consonant in plural
-            elif plural_side in ("ț", "č", "ǧ", "ș", "j", "z"):
+            elif plural_side in ("ț", "ș", "j", "z"):
                 # Find palatalized consonant in plural and check what follows
                 if stem_final and plural:
                     # Look for stem_final position in plural
                     # (accounting for palatalization)
                     palatal_map = {
                         "t": "ț",
-                        "c": "č",
-                        "g": "ǧ",
+                        "c": "c",
+                        "g": "g",
                         "s": "ș",
                         "z": "j",
                         "d": "z",
