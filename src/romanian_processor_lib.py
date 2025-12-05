@@ -86,6 +86,57 @@ def should_process_row(row: Dict[str, str]) -> bool:
     return False
 
 
+VOWEL_SET = {
+    "a",
+    "ă",
+    "â",
+    "e",
+    "i",
+    "î",
+    "o",
+    "u",
+    "A",
+    "Ă",
+    "Â",
+    "E",
+    "I",
+    "Î",
+    "O",
+    "U",
+}
+
+
+def orth_change_is_vowels_or_le(orth_change: str) -> bool:
+    """Return True if orth_change is vowel-only or includes 'le'.
+
+    Examples: 'e→i', 'a→le', 'ă→ăe'
+
+    This detects cases where the orthographic change is purely vocalic
+    and should NOT be treated as introducing a new C+i/e opportunity
+    for coronal stems.
+
+    Used to filter out false opportunities like:
+    - abazie → abazii (e→i): already has z+i in lemma
+    - acadea → acadele (a→le): just vowel/suffix change
+    - antiartă → antiartăe (ă→ăe): purely vocalic
+    """
+    if not orth_change or "→" not in orth_change:
+        return False
+
+    for ch in orth_change:
+        if ch in {" ", "\t"}:
+            continue
+        if ch in {"→", "∅"}:
+            continue
+        if ch in VOWEL_SET:
+            continue
+        if ch.lower() == "l":
+            continue
+        return False
+
+    return True
+
+
 def ensure_ipa_fields(
     row: Dict[str, str],
     orth_key: str,
@@ -615,8 +666,9 @@ def derive_mutation_and_orth_change(row: Dict[str, str]) -> None:
         return
 
     # STEP 2: Classify as palatalization
-    # Strategy: Check if plural side contains NEWLY INTRODUCED palatalized consonants
-    # Key: The palatalized consonant must NOT already be in the lemma side
+    # Strategy: Check if plural side contains NEWLY INTRODUCED
+    # palatalized consonants.
+    # Key: The palatalized consonant must NOT already be in lemma
     # This avoids false positives like "ocinaș→ocinașe" (ș already there)
     is_palatalization = False
 
@@ -756,6 +808,15 @@ def derive_opportunity(row: Dict[str, str]) -> None:
     # CASE 2: mutation=False → check if i/e immediately after stem_final
     # This captures potential opportunities that didn't palatalize
     if mutation == "False":
+        # For coronal stems, ignore purely vocalic orth changes
+        # e.g., abazie→abazii (e→i), acadea→acadele (a→le),
+        # antiartă→antiartăe (ă→ăe)
+        if stem_final in {"t", "d", "s", "z"} and (
+            orth_change_is_vowels_or_le(orth_change)
+        ):
+            # Leave row["opportunity"] as "none"
+            return
+
         # Palatalization map for checking palatalized forms too
         palatal_map = {
             "t": "ț",
@@ -1166,10 +1227,19 @@ def derive_nde_class(row: Dict[str, str]) -> None:
         return
 
     # 3. GIMPE: Dorsal (velar) C+front vowel tautomorphemic in root
-    # "Canonical NDEB" - ONLY c/g + i/e already in root, not created by suffix
-    # This is the classic velar NDEB pattern (Kiparsky 1993, Steriade 2008)
-    # Examples: gimpe 'thorn' (g+i), alice→alice (c+i), abagiu→abagii (g+i)
-    # NOT applied to coronals (t/d/s/z) - those are just true exceptions
+    # "Canonical NDEB" - ONLY c/g + i/e already in root, not created
+    # by suffix. This is the classic velar NDEB pattern
+    # (Kiparsky 1993, Steriade 2008)
+    #
+    # Note: The word "gimpe" (thorn) is the etymological prototype
+    # for this pattern, but it's actually OUTSIDE the processed domain
+    # since it doesn't have c/g as its stem-final consonant
+    # (stem_final would be empty for "gimpe").
+    #
+    # Examples that ARE in this class: alice→alice (c+i),
+    # abagiu→abagii (g+i). These have stem_final=c or g, AND contain
+    # that consonant + front vowel in the lemma.
+    # NOT applied to coronals (t/d/s/z) - just true exceptions.
     if stem_final in ("c", "g"):
         if stem_final + "i" in lemma or stem_final + "e" in lemma:
             row["nde_class"] = "gimpe"
