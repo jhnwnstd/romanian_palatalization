@@ -46,6 +46,7 @@ from romanian_processor_lib import (  # noqa: E402
     explode_derived_verbs_row,
     fix_nde_mutations,
     fix_underlying_palatals,
+    mark_tp_domain,
     set_ipa_normalizer,
     should_process_row,
     to_ipa,
@@ -136,6 +137,9 @@ def process_row(row: Dict[str, str]) -> Optional[Dict[str, str]]:
     fix_nde_mutations(result)  # Fix mutation status for NDE items
     fix_underlying_palatals(result)  # Remove frontstem dorsals unless NDE
     derive_exception_reason(result)  # Must be after fix_underlying_palatals
+    mark_tp_domain(
+        result
+    )  # Mark TP domain membership after all filters applied
 
     return result
 
@@ -162,6 +166,7 @@ OUTPUT_FIELDS = [
     "ipa_derived_adj",
     "etym_lang",
     "exception_reason",
+    "tp_in_domain",
     "lemma_suffix",
     "source",
     "notes",

@@ -1505,15 +1505,69 @@ def fix_nde_mutations(row: Dict[str, str]) -> None:
         row["palatal_consonant_pl"] = ""
 
 
+def lemma_has_coronal_front_env(lemma: str, stem_final: str) -> bool:
+    """
+    Detect if lemma has C+{i,e} tautomorphemic sequence for coronals.
+
+    For stem_final in {t, d, s, z}, detect C+{i,e} sequences in the lemma
+    that correspond to the same consonant as stem_final.
+
+    This is the coronal analogue of frontstem_dorsal detection for dorsals.
+
+    Examples:
+        abazie (has 'zie') with stem_final='z' → True
+        absolutistă (has 'sti') with stem_final='s' → True
+        batuc (no 'ci/ce') with stem_final='c' → False
+    """
+    if not lemma or stem_final not in {"t", "d", "s", "z"}:
+        return False
+
+    # Look for stem_final + {i,e} in the lemma
+    # This catches tautomorphemic C+front-vowel
+    pattern = stem_final + "[ie]"
+    return bool(re.search(pattern, lemma))
+
+
+def lemma_has_palatal_coronal(lemma: str, stem_final: str) -> bool:
+    """
+    Detect if lemma already has the palatal output grapheme for a coronal.
+
+    This identifies lemmas where the "target consonant" is already in its
+    palatalized form in the lemma, analogous to frontstem dorsals.
+
+    Examples:
+        abația (has 'ț') with stem_final='t' → True (already palatal)
+        abazie (has 'z' but as plain /z/) with stem_final='d' → might match
+        batuc (no palatal graphemes) with stem_final='c' → False
+
+    Returns True if palatal grapheme appears near end of lemma.
+    """
+    if not lemma or stem_final not in {"t", "d", "s", "z"}:
+        return False
+
+    pal = PALATAL_SURFACE.get(stem_final)
+    if not pal:
+        return False
+
+    # Look for palatal grapheme in the last ~4 characters
+    # (to avoid matching unrelated instances earlier in the word)
+    return pal in lemma[-4:]
+
+
 def fix_underlying_palatals(row: Dict[str, str]) -> None:
-    """Remove frontstem dorsals from alternation domain unless NDE.
+    """Remove non-NDE items with underlying palatals from domain.
 
-    Lemmas with ci/ce/gi/ge (frontstem dorsals) represent already-
-    palatalized stems, not plain dorsals. They should be excluded from
-    the palatalization domain UNLESS they're explicitly used as NDEB.
+    This handles two cases:
 
-    This prevents them from counting as "opportunities" for plain c/g
-    palatalization in the R analysis.
+    1. Frontstem dorsals (ci/ce/gi/ge): already-palatalized stems
+    2. Palatal coronals (lemma has ț/ș/j/z): underlying palatals
+
+    These are excluded from palatalization domain UNLESS used as NDEB,
+    because they don't represent alternating underspecified segments.
+
+    IAP perspective: Fully specified /k, g, t, d, s, z, ʃ, ʒ, ts, dz/
+    don't alternate. Only underspecified /K, G, T, S, Z/ get feature-filled
+    in front-vowel contexts.
 
     Must be called AFTER derive_nde_class but BEFORE
     derive_exception_reason.
@@ -1521,19 +1575,90 @@ def fix_underlying_palatals(row: Dict[str, str]) -> None:
     stem_final = row.get("stem_final", "")
     frontstem = row.get("frontstem_dorsal", "")
     nde_class = row.get("nde_class", "")
+    lemma = (row.get("lemma", "") or "").strip().lower()
 
-    # Only process frontstem dorsals
-    if frontstem != "True" or stem_final not in {"c", "g"}:
+    # Case 1: Frontstem dorsals (ci/ce/gi/ge)
+    if frontstem == "True" and stem_final in {"c", "g"}:
+        # If this item is NOT being used as NDE, remove from domain
+        if not nde_class:
+            row["stem_final"] = ""
+            row["cluster"] = ""
+            row["opportunity"] = "none"
+            row["mutation"] = "False"
+            row["palatal_consonant_pl"] = ""
+            row["orth_change"] = ""
+            return
+
+    # Case 2: Palatal coronals already in lemma (ț/ș/j/z in palatal sense)
+    if stem_final in {"t", "d", "s", "z"}:
+        if lemma_has_palatal_coronal(lemma, stem_final) and not nde_class:
+            # Lemma already has the palatal grapheme → underlyingly palatal
+            # Exclude from alternation domain
+            row["stem_final"] = ""
+            row["cluster"] = ""
+            row["opportunity"] = "none"
+            row["mutation"] = "False"
+            row["palatal_consonant_pl"] = ""
+            row["orth_change"] = ""
+            return
+
+
+def mark_tp_domain(row: Dict[str, str]) -> None:
+    """
+    Mark whether this row belongs in the TP domain for segment-level counts.
+
+    TP domain = noun, i/e environment, target segment in {c,g,t,d,s,z},
+    EXCLUDING:
+    - All NDEB classes (gimpe, ochi, paduchi)
+    - Items already marked as "non exception" (structural out-of-domain)
+    - Suffix-internal targets (optional, currently excluded)
+
+    IAP perspective: The TP domain contains only items where the target segment
+    could plausibly be an underspecified /K, G, T, S, Z/ that alternates.
+    Fully specified segments, NDEB items, and structural non-alternators are
+    excluded from both N and exception counts.
+
+    Must be called AFTER derive_exception_reason.
+    """
+    pos = row.get("pos", "")
+    opportunity = row.get("opportunity", "")
+    stem_final = row.get("stem_final", "")
+    nde_class = row.get("nde_class", "")
+    exception_reason = row.get("exception_reason", "")
+    target_is_suffix = row.get("target_is_suffix", "False")
+
+    # Basic domain check: noun with i/e opportunity and target segment
+    in_basic_domain = (
+        pos == "N"
+        and opportunity in {"i", "e"}
+        and stem_final in {"c", "g", "t", "d", "s", "z"}
+    )
+
+    if not in_basic_domain:
+        row["tp_in_domain"] = "False"
         return
 
-    # If this item is NOT being used as NDE, remove from domain
-    if not nde_class:
-        row["stem_final"] = ""
-        row["cluster"] = ""
-        row["opportunity"] = "none"
-        row["mutation"] = "False"
-        row["palatal_consonant_pl"] = ""
-        row["orth_change"] = ""
+    # Exclude all NDEB classes from the productive TP domain
+    # These are structured families, not productive exceptions
+    if nde_class in {"gimpe", "ochi", "paduchi"}:
+        row["tp_in_domain"] = "False"
+        return
+
+    # Exclude anything marked as "non exception"
+    # (underlying palatal, suffix-internal, weird morphophonology, etc.)
+    if exception_reason == "non exception":
+        row["tp_in_domain"] = "False"
+        return
+
+    # Optionally exclude suffix-internal targets
+    # These are targets where the consonant is part of a derivational suffix,
+    # not the root, so they don't reflect root-final palatalization
+    if target_is_suffix == "True":
+        row["tp_in_domain"] = "False"
+        return
+
+    # If we made it here, this item is in the productive TP domain
+    row["tp_in_domain"] = "True"
 
 
 def derive_exception_reason(row: Dict[str, str]) -> None:
