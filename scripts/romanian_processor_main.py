@@ -34,6 +34,7 @@ from romanian_processor_lib import (  # noqa: E402
     derive_derived_adj_fields,
     derive_derived_verbs_fields,
     derive_exception_reason,
+    derive_frontstem_dorsal,
     derive_lemma_suffix,
     derive_mutation_and_orth_change,
     derive_nde_class,
@@ -44,6 +45,7 @@ from romanian_processor_lib import (  # noqa: E402
     ensure_ipa_fields,
     explode_derived_verbs_row,
     fix_nde_mutations,
+    fix_underlying_palatals,
     set_ipa_normalizer,
     should_process_row,
     to_ipa,
@@ -121,6 +123,7 @@ def process_row(row: Dict[str, str]) -> Optional[Dict[str, str]]:
 
     # Run derivation pipeline
     derive_stem_final_and_cluster(result)
+    derive_frontstem_dorsal(result)  # Mark gi/ge/ci/ce stems
     validate_plural_quality(result)
     derive_mutation_and_orth_change(result)
     derive_opportunity(result)
@@ -131,7 +134,8 @@ def process_row(row: Dict[str, str]) -> Optional[Dict[str, str]]:
     derive_derived_adj_fields(result)
     derive_nde_class(result)
     fix_nde_mutations(result)  # Fix mutation status for NDE items
-    derive_exception_reason(result)
+    fix_underlying_palatals(result)  # Remove frontstem dorsals unless NDE
+    derive_exception_reason(result)  # Must be after fix_underlying_palatals
 
     return result
 
@@ -143,6 +147,7 @@ OUTPUT_FIELDS = [
     "gender",
     "stem_final",
     "cluster",
+    "frontstem_dorsal",
     "plural",
     "mutation",
     "orth_change",

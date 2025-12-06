@@ -40,6 +40,14 @@ def set_ipa_normalizer(normalizer: Callable[[str], str]) -> None:
 
 TARGET_CONSONANTS = {"c", "g", "t", "d", "s", "z"}
 
+# Palatal surface forms for coronals (used in NDE alternation detection)
+PALATAL_SURFACE = {
+    "t": "ț",  # t → ț before i/e
+    "d": "z",  # d → z before i/e (NOT when z is underlyingly in lemma)
+    "s": "ș",  # s → ș before i/e
+    "z": "j",  # z → j before i/e
+}
+
 VOWEL_SET = {
     "a",
     "ă",
@@ -393,6 +401,31 @@ def derive_stem_final_and_cluster(row: Dict[str, str]) -> None:
 
     row["stem_final"] = ""
     row["cluster"] = ""
+
+
+def derive_frontstem_dorsal(row: Dict[str, str]) -> None:
+    """Mark lemmas with frontstem dorsals (ci/ce/gi/ge without h).
+
+    These represent already-palatalized stems where the "target consonant"
+    is actually the palatal output, not a plain dorsal.
+
+    Examples: alice, indice, abazie (with 'zie' ending)
+
+    This flag is used post-NDE to remove these from the alternation domain
+    unless they're explicitly used as NDEB items.
+    """
+    lemma = (row.get("lemma", "") or "").strip().lower()
+    stem_final = (row.get("stem_final", "") or "").strip().lower()
+
+    row["frontstem_dorsal"] = "False"
+
+    if not lemma or stem_final not in {"c", "g"}:
+        return
+
+    # Check if lemma has ci/ce or gi/ge (without 'h' before)
+    # Pattern: not preceded by 'h', followed by i or e
+    if re.search(r"(?<!h)[cg][ie]", lemma):
+        row["frontstem_dorsal"] = "True"
 
 
 # Mutation patterns: stem_final -> list of (lemma_ending, plural_ending)
@@ -924,16 +957,9 @@ def derive_opportunity(row: Dict[str, str]) -> None:
 
     # CASE 2: mutation=False → check if i/e immediately after stem_final
     # This captures potential opportunities that didn't palatalize
+    # NOTE: We no longer filter vowel-only changes here - those will be
+    # detected as opportunity=i/e and then classified as NDE:GIMPE later
     if mutation == "False":
-        # For coronal stems, ignore purely vocalic orth changes
-        # e.g., abazie→abazii (e→i), acadea→acadele (a→le),
-        # antiartă→antiartăe (ă→ăe)
-        if stem_final in {"t", "d", "s", "z"} and (
-            orth_change_is_vowels_or_le(orth_change)
-        ):
-            # Leave row["opportunity"] as "none"
-            return
-
         # Use alignment to find what vowel follows stem_final in plural
         # This prevents false positives from irrelevant i/e elsewhere
         aligned_lemma, aligned_plural = needleman_wunsch(
@@ -1320,8 +1346,9 @@ def derive_nde_class(row: Dict[str, str]) -> None:
     stem_final = (row.get("stem_final", "") or "").strip().lower()
     row["nde_class"] = ""
 
-    # Only nouns with a plural, and ONLY if they did *not* mutate
-    if pos != "N" or not lemma or not plural:
+    # Only nouns and adjectives with a plural, and ONLY if they did
+    # *not* mutate
+    if pos not in {"N", "ADJ"} or not lemma or not plural:
         return
     if mutation == "True":
         return
@@ -1344,12 +1371,26 @@ def derive_nde_class(row: Dict[str, str]) -> None:
 
     # CORONAL: C+e → C+i with no palatalization
     # (t/d/s/z + e → t/d/s/z + i)
+    # Also check palatal variants where alternation exists:
+    #   - lemma has plain C+e, plural has palatal+i (e.g., te→ți)
     if stem_final in {"t", "d", "s", "z"}:
+        # Plain coronal: C+e → C+i (no mutation)
         if lemma.endswith(stem_final + "e") and plural.endswith(
             stem_final + "i"
         ):
             row["nde_class"] = "paduchi"
             return
+
+        # Palatal variant: C+e → PAL+i (where PAL is palatalized form)
+        # This catches cases where the e→i shift IS accompanied by
+        # palatalization, but it's NDEB because C+e was in lemma
+        palatal = PALATAL_SURFACE.get(stem_final)
+        if palatal:
+            if lemma.endswith(stem_final + "e") and plural.endswith(
+                palatal + "i"
+            ):
+                row["nde_class"] = "paduchi"
+                return
 
     # ------------------------------------------------------------------
     # 2. OCHI: lemma = plural with ambiguous final -i
@@ -1362,11 +1403,20 @@ def derive_nde_class(row: Dict[str, str]) -> None:
 
         # CORONAL: lemma = plural, final C+i (t/d/s/z + i)
         # with no palatalization
-        if stem_final in {"t", "d", "s", "z"} and lemma.endswith(
-            stem_final + "i"
-        ):
-            row["nde_class"] = "ochi"
-            return
+        # Also check palatal variants (ți, și, zi, ji) where they appear
+        # in BOTH lemma and plural (no evidence of alternation)
+        if stem_final in {"t", "d", "s", "z"}:
+            # Plain coronal + i
+            if lemma.endswith(stem_final + "i"):
+                row["nde_class"] = "ochi"
+                return
+
+            # Palatal coronal + i (both forms identical with palatal)
+            # This is ONLY OCHI if lemma=plural AND no alternation
+            palatal = PALATAL_SURFACE.get(stem_final)
+            if palatal and lemma.endswith(palatal + "i"):
+                row["nde_class"] = "ochi"
+                return
 
     # ------------------------------------------------------------------
     # 3. GIMPE: tautomorphemic C+front vowel sequences (broadest)
@@ -1402,6 +1452,32 @@ def derive_nde_class(row: Dict[str, str]) -> None:
         row["nde_class"] = "gimpe"
         return
 
+    # GIMPE 3a-vowel-only: Vowel-only alternations (no consonant change)
+    # When orth_change is purely vocalic (e→i, u→i, a→le, etc.),
+    # the stem_final consonant is the same in both forms.
+    # The C+front-vowel is tautomorphemic - not created by plural suffix.
+    # Examples:
+    #   - abazie→abazii (e→i): z is same, z+i is tautomorphemic
+    #   - abagiu→abagii (u→i): g is same, g+i is tautomorphemic
+    orth_change = row.get("orth_change", "")
+    if orth_change_is_vowels_or_le(orth_change):
+        row["nde_class"] = "gimpe"
+        return
+
+    # GIMPE 3a-suffix-pattern: Suffix-internal patterns like -istă→-iste
+    # The target consonant is inside a derivational suffix, not root-final.
+    # Examples:
+    #   - absolutistă→absolutiste (tă→te): stem_final 's' is in -istă suffix
+    #   - t→te, tă→te where lemma ends in -ist/-istă
+    # These are out of domain for root-final palatalization
+    if stem_final in {"s", "t"}:
+        if lemma.endswith("istă") and plural.endswith("iste"):
+            row["nde_class"] = "gimpe"
+            return
+        elif lemma.endswith("ist") and plural.endswith("iste"):
+            row["nde_class"] = "gimpe"
+            return
+
     # GIMPE 3b: General alignment-based detection
     # We use alignment to ensure the front vowel after stem_final is
     # *already* present in the lemma and is shared identically by the plural
@@ -1427,6 +1503,37 @@ def fix_nde_mutations(row: Dict[str, str]) -> None:
         row["mutation"] = "False"
         # Clear palatal consonant since it's not a true alternation
         row["palatal_consonant_pl"] = ""
+
+
+def fix_underlying_palatals(row: Dict[str, str]) -> None:
+    """Remove frontstem dorsals from alternation domain unless NDE.
+
+    Lemmas with ci/ce/gi/ge (frontstem dorsals) represent already-
+    palatalized stems, not plain dorsals. They should be excluded from
+    the palatalization domain UNLESS they're explicitly used as NDEB.
+
+    This prevents them from counting as "opportunities" for plain c/g
+    palatalization in the R analysis.
+
+    Must be called AFTER derive_nde_class but BEFORE
+    derive_exception_reason.
+    """
+    stem_final = row.get("stem_final", "")
+    frontstem = row.get("frontstem_dorsal", "")
+    nde_class = row.get("nde_class", "")
+
+    # Only process frontstem dorsals
+    if frontstem != "True" or stem_final not in {"c", "g"}:
+        return
+
+    # If this item is NOT being used as NDE, remove from domain
+    if not nde_class:
+        row["stem_final"] = ""
+        row["cluster"] = ""
+        row["opportunity"] = "none"
+        row["mutation"] = "False"
+        row["palatal_consonant_pl"] = ""
+        row["orth_change"] = ""
 
 
 def derive_exception_reason(row: Dict[str, str]) -> None:
