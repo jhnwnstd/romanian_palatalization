@@ -1589,4 +1589,553 @@ if (!RUN_SEGMENT_CLASS_BRMS) {
   cat("  (OR < 1 ⇒ dorsals more likely to palatalize across /i/ and /e/ plurals)\n")
 }
 
+# =========================================================================
+# EXPORT: TP SUMMARY TABLES FOR FULL AND DOWNSAMPLED LEXICA
+# =========================================================================
+
+cat_section("EXPORT: TP SUMMARY TABLES (FULL & DOWNSAMPLED)")
+
+# Helper: blank separator row
+blank_row <- tibble(
+  type = "",
+  N = NA_integer_,
+  mutated = NA_integer_,
+  `non-mutated` = NA_integer_,
+  rate = NA_real_,
+  majority = NA,
+  tolerated = NA,
+  memo = ""
+)
+
+# ---------- 1. FULL LEXICON SUMMARY ----------
+
+## 1a. NDEB block (full lexicon)
+ndeb_export_full <- ndeb_tp_full |>
+  transmute(
+    type,
+    N,
+    mutated,
+    `non-mutated` = non_mutated,
+    rate,
+    majority = majority_mutates,
+    tolerated,
+    memo = dplyr::case_when(
+      type == "gimpe type" ~ "classic NDEB",
+      type == "ochi-ochi type" ~ "maybe NDEB if you assume the <i> is part of the root; an exception if you don't",
+      type == "paduche-paduchi type" ~ "maybe NDEB in the singular if you assume the <e> is part of the root, but more dubious in the plural (counterfeeding ordering of stem vowel truncation and palatalization?)",
+      TRUE ~ ""
+    )
+  ) |>
+  arrange(type)
+
+## 1b. Dorsals block (full lexicon)
+
+# segment-level TP tables already computed:
+#   seg_tp_all          (full)
+#   seg_tp_all_no_ndeb  (no NDEB)
+get_seg_row <- function(tbl, label) {
+  tbl |>
+    filter(type == label) |>
+    transmute(
+      type,
+      N,
+      mutated,
+      `non-mutated` = non_mutated,
+      rate,
+      majority = majority_mutates,
+      tolerated,
+      memo = ""
+    )
+}
+
+dorsals_full <- bind_rows(
+  get_seg_row(seg_tp_all, "<c> + <-i> plural"),
+  get_seg_row(seg_tp_all, "<c> + <-e> plural"),
+  get_seg_row(seg_tp_all, "<c> + <-i, -e> plural"),
+  # no-NDEB row: relabel type to match spreadsheet convention
+  get_seg_row(seg_tp_all_no_ndeb, "<c> + <-i, -e> plural (no NDEB)") |>
+    mutate(
+      type = "<c> + <-i, -e> plural, no NDEB",
+      memo = "only tolerated IFF we give it the maximal benefit of the doubt; downsampling will probably help though"
+    ),
+  get_seg_row(seg_tp_all, "<g> + <-i> plural"),
+  get_seg_row(seg_tp_all, "<g> + <-e> plural"),
+  get_seg_row(seg_tp_all, "<g> + <-i, -e> plural"),
+  get_seg_row(seg_tp_all_no_ndeb, "<g> + <-i, -e> plural (no NDEB)") |>
+    mutate(
+      type = "<g> + <-i, -e> plural, no NDEB"
+    )
+)
+
+## 1c. Coronals block (full lexicon)
+
+coronals_full <- bind_rows(
+  get_seg_row(seg_tp_all, "<s> + <-i> plural"),
+  get_seg_row(seg_tp_all, "<s> + <-e> plural"),
+  get_seg_row(seg_tp_all, "<s> + <-i, -e> plural"),
+  get_seg_row(seg_tp_all, "<z> + <-i> plural"),
+  get_seg_row(seg_tp_all, "<z> + <-e> plural"),
+  get_seg_row(seg_tp_all, "<z> + <-i, -e> plural"),
+  get_seg_row(seg_tp_all, "<t> + <-i> plural"),
+  get_seg_row(seg_tp_all, "<t> + <-e> plural"),
+  get_seg_row(seg_tp_all, "<t> + <-i, -e> plural"),
+  get_seg_row(seg_tp_all, "<d> + <-i> plural"),
+  get_seg_row(seg_tp_all, "<d> + <-e> plural"),
+  get_seg_row(seg_tp_all, "<d> + <-i, -e> plural")
+)
+
+## 1d. Cluster block (full lexicon)
+
+# cluster_tp_all has type like "<st> + <-i> plural"
+clusters_full <- cluster_tp_all |>
+  filter(type %in% c(
+    "<st> + <-i> plural",
+    "<st> + <-e> plural",
+    "<st> + <-i, -e> plural",
+    "<sc> + <-i> plural",
+    "<sc> + <-e> plural",
+    "<sc> + <-i, -e> plural",
+    "<ct> + <-i> plural",
+    "<ct> + <-e> plural",
+    "<ct> + <-i, -e> plural"
+  )) |>
+  transmute(
+    type,
+    N,
+    mutated,
+    `non-mutated` = non_mutated,
+    rate,
+    majority = majority_mutates,
+    tolerated,
+    memo = ""
+  ) |>
+  arrange(type)
+
+## 1e. Derivational (N→V, full lexicon)
+
+deriv_nv_full <- tibble()
+
+if (exists("denom_pairs") && nrow(denom_pairs) > 0) {
+  # base-conditioned rows: already in nv_tp_full
+  deriv_nv_full <- nv_tp_full |>
+    transmute(
+      type,
+      N,
+      mutated,
+      `non-mutated` = non_mutated,
+      rate,
+      majority,
+      tolerated,
+      memo = ""
+    )
+
+  # ALL row
+  nv_all_full <- denom_pairs |>
+    summarise(
+      mutated = sum(mutation_deriv_verb, na.rm = TRUE),
+      non_mutated = sum(!mutation_deriv_verb, na.rm = TRUE),
+      .groups = "drop"
+    ) |>
+    mutate(type = "N→V derivation, ALL") |>
+    tp_table(type, mutated, non_mutated) |>
+    transmute(
+      type,
+      N,
+      mutated,
+      `non-mutated` = non_mutated,
+      rate,
+      majority = majority_mutates,
+      tolerated,
+      memo = ""
+    )
+
+  deriv_nv_full <- bind_rows(deriv_nv_full, nv_all_full)
+}
+
+## 1f. Derivational (N→Adj, full lexicon)
+
+deriv_na_full <- tibble()
+
+if (exists("noun_adj_pairs") && nrow(noun_adj_pairs) > 0) {
+  deriv_na_full <- na_tp_full |>
+    transmute(
+      type,
+      N,
+      mutated,
+      `non-mutated` = non_mutated,
+      rate,
+      majority,
+      tolerated,
+      memo = ""
+    )
+
+  na_all_full <- noun_adj_pairs |>
+    summarise(
+      mutated = sum(mutation_deriv_adj, na.rm = TRUE),
+      non_mutated = sum(!mutation_deriv_adj, na.rm = TRUE),
+      .groups = "drop"
+    ) |>
+    mutate(type = "N→Adj derivation, ALL") |>
+    tp_table(type, mutated, non_mutated) |>
+    transmute(
+      type,
+      N,
+      mutated,
+      `non-mutated` = non_mutated,
+      rate,
+      majority = majority_mutates,
+      tolerated,
+      memo = ""
+    )
+
+  deriv_na_full <- bind_rows(deriv_na_full, na_all_full)
+}
+
+## 1g. Assemble full-lexicon spreadsheet table
+
+summary_full <- bind_rows(
+  tibble(
+    type = "NDEB?",
+    N = NA_integer_,
+    mutated = NA_integer_,
+    `non-mutated` = NA_integer_,
+    rate = NA_real_,
+    majority = NA,
+    tolerated = NA,
+    memo = ""
+  ),
+  ndeb_export_full,
+  blank_row,
+  tibble(
+    type = "Dorsals",
+    N = NA_integer_,
+    mutated = NA_integer_,
+    `non-mutated` = NA_integer_,
+    rate = NA_real_,
+    majority = NA,
+    tolerated = NA,
+    memo = ""
+  ),
+  dorsals_full,
+  blank_row,
+  tibble(
+    type = "Coronals",
+    N = NA_integer_,
+    mutated = NA_integer_,
+    `non-mutated` = NA_integer_,
+    rate = NA_real_,
+    majority = NA,
+    tolerated = NA,
+    memo = ""
+  ),
+  coronals_full,
+  blank_row,
+  tibble(
+    type = "Clusters",
+    N = NA_integer_,
+    mutated = NA_integer_,
+    `non-mutated` = NA_integer_,
+    rate = NA_real_,
+    majority = NA,
+    tolerated = NA,
+    memo = ""
+  ),
+  clusters_full,
+  blank_row,
+  tibble(
+    type = "Derivational (N→V, front suffix)",
+    N = NA_integer_,
+    mutated = NA_integer_,
+    `non-mutated` = NA_integer_,
+    rate = NA_real_,
+    majority = NA,
+    tolerated = NA,
+    memo = ""
+  ),
+  deriv_nv_full,
+  blank_row,
+  tibble(
+    type = "Derivational (N→Adj, front suffix)",
+    N = NA_integer_,
+    mutated = NA_integer_,
+    `non-mutated` = NA_integer_,
+    rate = NA_real_,
+    majority = NA,
+    tolerated = NA,
+    memo = ""
+  ),
+  deriv_na_full
+)
+
+# Rename columns to have the "?" in the header for the CSV
+summary_full_export <- summary_full |>
+  rename(
+    `majority?` = majority,
+    `tolerated?` = tolerated
+  )
+
+full_outfile <- file.path("analysis", "romanian_tp_summary_full.csv")
+readr::write_csv(summary_full_export, full_outfile)
+cat("Wrote full-lexicon TP summary to:", full_outfile, "\n\n")
+
+
+# ---------- 2. DOWNSAMPLED (TOP 1000) SUMMARY ----------
+
+summary_ds <- tibble()
+
+if (!is.null(nouns_opp_down_single) && nrow(nouns_opp_down_single) > 0L) {
+  ## 2a. NDEB block (downsampled)
+  ndeb_export_ds <- ndeb_tp_ds |>
+    transmute(
+      type,
+      N,
+      mutated,
+      `non-mutated` = non_mutated,
+      rate,
+      majority = majority_mutates,
+      tolerated,
+      memo = "" # re-use or hand-edit memos as desired
+    ) |>
+    arrange(type)
+
+  ## 2b. Segment TP tables (downsampled)
+  # seg_tp_all_ds  and seg_tp_all_ds_no_ndeb were computed earlier
+  get_seg_row_ds <- function(tbl, label, new_label = NULL) {
+    out <- tbl |>
+      filter(type == label) |>
+      transmute(
+        type,
+        N,
+        mutated,
+        `non-mutated` = non_mutated,
+        rate,
+        majority = majority_mutates,
+        tolerated,
+        memo = ""
+      )
+    if (!is.null(new_label)) out$type <- new_label
+    out
+  }
+
+  dorsals_ds <- bind_rows(
+    get_seg_row_ds(seg_tp_all_ds, "<c> + <-i> plural (downsampled)"),
+    get_seg_row_ds(seg_tp_all_ds, "<c> + <-e> plural (downsampled)"),
+    get_seg_row_ds(seg_tp_all_ds, "<c> + <-i, -e> plural (downsampled)"),
+    get_seg_row_ds(
+      seg_tp_all_ds_no_ndeb,
+      "<c> + <-i, -e> plural (downsampled, no NDEB)",
+      "<c> + <-i, -e> plural, downsampled, no NDEB"
+    ),
+    get_seg_row_ds(seg_tp_all_ds, "<g> + <-i> plural (downsampled)"),
+    get_seg_row_ds(seg_tp_all_ds, "<g> + <-e> plural (downsampled)"),
+    get_seg_row_ds(seg_tp_all_ds, "<g> + <-i, -e> plural (downsampled)"),
+    get_seg_row_ds(
+      seg_tp_all_ds_no_ndeb,
+      "<g> + <-i, -e> plural (downsampled, no NDEB)",
+      "<g> + <-i, -e> plural, downsampled, no NDEB"
+    )
+  )
+
+  coronals_ds <- bind_rows(
+    get_seg_row_ds(seg_tp_all_ds, "<s> + <-i> plural (downsampled)"),
+    get_seg_row_ds(seg_tp_all_ds, "<s> + <-e> plural (downsampled)"),
+    get_seg_row_ds(seg_tp_all_ds, "<s> + <-i, -e> plural (downsampled)"),
+    get_seg_row_ds(seg_tp_all_ds, "<z> + <-i> plural (downsampled)"),
+    get_seg_row_ds(seg_tp_all_ds, "<z> + <-e> plural (downsampled)"),
+    get_seg_row_ds(seg_tp_all_ds, "<z> + <-i, -e> plural (downsampled)"),
+    get_seg_row_ds(seg_tp_all_ds, "<t> + <-i> plural (downsampled)"),
+    get_seg_row_ds(seg_tp_all_ds, "<t> + <-e> plural (downsampled)"),
+    get_seg_row_ds(seg_tp_all_ds, "<t> + <-i, -e> plural (downsampled)"),
+    get_seg_row_ds(seg_tp_all_ds, "<d> + <-i> plural (downsampled)"),
+    get_seg_row_ds(seg_tp_all_ds, "<d> + <-e> plural (downsampled)"),
+    get_seg_row_ds(seg_tp_all_ds, "<d> + <-i, -e> plural (downsampled)")
+  )
+
+  clusters_ds <- cluster_tp_all_ds |>
+    filter(type %in% c(
+      "<st> + <-i> plural (downsampled)",
+      "<st> + <-e> plural (downsampled)",
+      "<st> + <-i, -e> plural (downsampled)",
+      "<sc> + <-i> plural (downsampled)",
+      "<sc> + <-e> plural (downsampled)",
+      "<sc> + <-i, -e> plural (downsampled)",
+      "<ct> + <-i> plural (downsampled)",
+      "<ct> + <-e> plural (downsampled)",
+      "<ct> + <-i, -e> plural (downsampled)"
+    )) |>
+    transmute(
+      type,
+      N,
+      mutated,
+      `non-mutated` = non_mutated,
+      rate,
+      majority = majority_mutates,
+      tolerated,
+      memo = ""
+    ) |>
+    arrange(type)
+
+  ## 2c. Derivational (N→V, downsampled)
+  deriv_nv_ds <- tibble()
+  if (exists("denom_pairs_ds") && nrow(denom_pairs_ds) > 0) {
+    deriv_nv_ds <- nv_tp_ds |>
+      transmute(
+        type,
+        N,
+        mutated,
+        `non-mutated` = non_mutated,
+        rate,
+        majority,
+        tolerated,
+        memo = ""
+      )
+
+    nv_all_ds <- denom_pairs_ds |>
+      summarise(
+        mutated = sum(mutation_deriv_verb, na.rm = TRUE),
+        non_mutated = sum(!mutation_deriv_verb, na.rm = TRUE),
+        .groups = "drop"
+      ) |>
+      mutate(type = "N→V derivation, ALL (downsampled)") |>
+      tp_table(type, mutated, non_mutated) |>
+      transmute(
+        type,
+        N,
+        mutated,
+        `non-mutated` = non_mutated,
+        rate,
+        majority = majority_mutates,
+        tolerated,
+        memo = ""
+      )
+
+    deriv_nv_ds <- bind_rows(deriv_nv_ds, nv_all_ds)
+  }
+
+  ## 2d. Derivational (N→Adj, downsampled)
+  deriv_na_ds <- tibble()
+  if (exists("noun_adj_pairs_ds") && nrow(noun_adj_pairs_ds) > 0) {
+    deriv_na_ds <- na_tp_ds |>
+      transmute(
+        type,
+        N,
+        mutated,
+        `non-mutated` = non_mutated,
+        rate,
+        majority,
+        tolerated,
+        memo = ""
+      )
+
+    na_all_ds <- noun_adj_pairs_ds |>
+      summarise(
+        mutated = sum(mutation_deriv_adj, na.rm = TRUE),
+        non_mutated = sum(!mutation_deriv_adj, na.rm = TRUE),
+        .groups = "drop"
+      ) |>
+      mutate(type = "N→Adj derivation, ALL (downsampled)") |>
+      tp_table(type, mutated, non_mutated) |>
+      transmute(
+        type,
+        N,
+        mutated,
+        `non-mutated` = non_mutated,
+        rate,
+        majority = majority_mutates,
+        tolerated,
+        memo = ""
+      )
+
+    deriv_na_ds <- bind_rows(deriv_na_ds, na_all_ds)
+  }
+
+  summary_ds <- bind_rows(
+    tibble(
+      type = "NDEB?",
+      N = NA_integer_,
+      mutated = NA_integer_,
+      `non-mutated` = NA_integer_,
+      rate = NA_real_,
+      majority = NA,
+      tolerated = NA,
+      memo = ""
+    ),
+    ndeb_export_ds,
+    blank_row,
+    tibble(
+      type = "Dorsals",
+      N = NA_integer_,
+      mutated = NA_integer_,
+      `non-mutated` = NA_integer_,
+      rate = NA_real_,
+      majority = NA,
+      tolerated = NA,
+      memo = ""
+    ),
+    dorsals_ds,
+    blank_row,
+    tibble(
+      type = "Coronals",
+      N = NA_integer_,
+      mutated = NA_integer_,
+      `non-mutated` = NA_integer_,
+      rate = NA_real_,
+      majority = NA,
+      tolerated = NA,
+      memo = ""
+    ),
+    coronals_ds,
+    blank_row,
+    tibble(
+      type = "Clusters",
+      N = NA_integer_,
+      mutated = NA_integer_,
+      `non-mutated` = NA_integer_,
+      rate = NA_real_,
+      majority = NA,
+      tolerated = NA,
+      memo = ""
+    ),
+    clusters_ds,
+    blank_row,
+    tibble(
+      type = "Derivational (N→V, front suffix)",
+      N = NA_integer_,
+      mutated = NA_integer_,
+      `non-mutated` = NA_integer_,
+      rate = NA_real_,
+      majority = NA,
+      tolerated = NA,
+      memo = ""
+    ),
+    deriv_nv_ds,
+    blank_row,
+    tibble(
+      type = "Derivational (N→Adj, front suffix)",
+      N = NA_integer_,
+      mutated = NA_integer_,
+      `non-mutated` = NA_integer_,
+      rate = NA_real_,
+      majority = NA,
+      tolerated = NA,
+      memo = ""
+    ),
+    deriv_na_ds
+  )
+}
+
+if (nrow(summary_ds) > 0) {
+  summary_ds_export <- summary_ds |>
+    rename(
+      `majority?` = majority,
+      `tolerated?` = tolerated
+    )
+
+  ds_outfile <- file.path("analysis", "romanian_tp_summary_downsampled.csv")
+  readr::write_csv(summary_ds_export, ds_outfile)
+  cat("Wrote downsampled (top 1000) TP summary to:", ds_outfile, "\n\n")
+} else {
+  cat("No downsampled summary created (no reference downsampled lexicon available).\n\n")
+}
+
 cat_section("ANALYSIS FINISHED")
