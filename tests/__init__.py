@@ -1,0 +1,1 @@
+"""Romanian palatalization pipeline tests."""

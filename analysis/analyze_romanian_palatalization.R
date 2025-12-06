@@ -1536,14 +1536,17 @@ if (!RUN_SEGMENT_CLASS_BRMS) {
       !is.na(mutation)
     ) |>
     mutate(
-      segment_class = segment_class_factor(stem_final),
-      suffix_group = suffix_group_factor(lemma_suffix)
+      segment_class = segment_class_factor(stem_final)
     )
+
+  cat("  Note: suffix_group excluded from model - all TP domain items have suffix='none'\n")
+  cat("  (suffix-internal targets are excluded by tp_in_domain filter)\n\n")
 
   invisible(capture.output(
     {
+      # Simpler model: just segment_class, since suffix is constant in TP domain
       model_class_i <- fit_brms_bernoulli(
-        mutation ~ segment_class + suffix_group,
+        mutation ~ segment_class,
         nouns_i_classified,
         seed = 123
       )
@@ -1582,14 +1585,17 @@ if (!RUN_SEGMENT_CLASS_BRMS) {
       opportunity = factor(
         opportunity,
         levels = plural_opportunities # c("i", "e")
-      ),
-      suffix_group = suffix_group_factor(lemma_suffix)
+      )
     )
+
+  cat("  Note: suffix_group excluded from model - all TP domain items have suffix='none'\n")
+  cat("  (suffix-internal targets are excluded by tp_in_domain filter)\n\n")
 
   invisible(capture.output(
     {
+      # Simpler model: segment_class + opportunity, since suffix is constant
       model_class_ie <- fit_brms_bernoulli(
-        mutation ~ segment_class + opportunity + suffix_group,
+        mutation ~ segment_class + opportunity,
         nouns_ie_classified,
         seed = 124
       )
