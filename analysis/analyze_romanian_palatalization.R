@@ -624,6 +624,34 @@ lex <- lex |>
 
 nouns <- filter(lex, pos == "N")
 
+# =============================================================================
+# TP Domain Datasets (IAP-based filtering)
+# =============================================================================
+# The Python pipeline now explicitly marks tp_in_domain based on IAP perspective:
+# - Includes: nouns with i/e opportunity and target consonants that could be
+#   underspecified /K, G, T, S, Z/ alternating segments
+# - Excludes: NDEB families (gimpe/ochi/paduchi), underlying palatals,
+#   suffix-internal targets, and other structural non-alternators
+#
+# This gives us a clean productive palatalization domain where:
+#   N = items that could alternate
+#   exceptions = items in N that don't alternate (mutation=FALSE)
+
+# PRODUCTIVE TP DOMAIN: Use this for segment-level TP tables
+nouns_tp <- nouns |>
+  filter(tp_in_domain == TRUE) |>
+  mutate(
+    # Keep a simple cluster variable for TP-style cluster analyses
+    cluster_simple = if_else(
+      cluster %in% CLUSTER_TYPES,
+      cluster,
+      NA_character_
+    )
+  )
+
+# FULL i/e DOMAIN (including NDEB): Use this for descriptive stats only
+# This is the old nouns_opp - kept for compatibility with existing analyses
+# that want to see NDEB items alongside productive palatalization
 nouns_opp <- nouns |>
   filter(
     opportunity_tp %in% plural_opportunities,
@@ -631,15 +659,12 @@ nouns_opp <- nouns |>
     stem_final %in% segments_of_interest
   ) |>
   mutate(
-    # Use TP-opportunity for all downstream grouping (includes NDEB items in the domain where they are theoretically relevant).
     opportunity = opportunity_tp,
-    # Keep a simple cluster variable that only tracks the clusters we care about in TP-style cluster analyses.
     cluster_simple = if_else(
       cluster %in% CLUSTER_TYPES,
       cluster,
       NA_character_
     ),
-    # High-level exception categories: these are used to see *where* the non-undergoers live.
     exception_category = case_when(
       mutation ~ "undergoes",
       nde_class %in% ndeb_classes ~ paste0("NDEB_", nde_class),
@@ -649,17 +674,22 @@ nouns_opp <- nouns |>
     )
   )
 
-# Core i/e-domain, excluding NDEB, to approximate the productive grammar without the structured DE families.
+# Legacy: nouns_opp excluding NDEB (should be ~same as nouns_tp)
+# Kept for sanity checking that tp_in_domain matches manual NDEB filtering
 nouns_opp_no_ndeb <- nouns_opp |>
   filter(!(nde_class %in% ndeb_classes))
 
+# NDEB-only dataset for descriptive analysis of structured families
 ndeb_rows <- filter(nouns, nde_class %in% ndeb_classes)
 
 cat_section("BASIC COUNTS")
 cat("Total rows:", nrow(lex), "\n")
 cat("Nouns:", nrow(nouns), "\n")
+cat("Nouns in PRODUCTIVE TP domain (tp_in_domain=TRUE):", nrow(nouns_tp), "\n")
+cat("  (excludes NDEB, underlying palatals, suffix-internal targets)\n")
 cat("Nouns in i/e domain with target segments (incl. NDEB):", nrow(nouns_opp), "\n")
-cat("Nouns in i/e domain with target segments (NO NDEB):", nrow(nouns_opp_no_ndeb), "\n\n")
+cat("Nouns in i/e domain with target segments (NO NDEB, legacy):", nrow(nouns_opp_no_ndeb), "\n")
+cat("  Sanity check - should match nouns_tp: diff =", nrow(nouns_tp) - nrow(nouns_opp_no_ndeb), "\n\n")
 
 # =========================================================================
 # Quality Control
@@ -944,32 +974,32 @@ if (!RUN_DERIVATION_ANALYSES) {
 # Descriptive Summaries
 # =========================================================================
 
-cat_section("SEGMENT-WISE MUTATION RATES (I+E COMBINED, NO NDEB)")
-seg_summary <- nouns_opp_no_ndeb |>
+cat_section("SEGMENT-WISE MUTATION RATES (PRODUCTIVE TP DOMAIN)")
+seg_summary <- nouns_tp |>
   group_by(stem_final) |>
   summarise(N_opp = n(), N_mut = sum(mutation, na.rm = TRUE), .groups = "drop") |>
   calc_rate() |>
   arrange(stem_final)
 print_full(seg_summary)
 
-cat_section("MUTATION RATES BY SEGMENT AND PLURAL TYPE (I VS E, NO NDEB)")
-seg_by_opp <- nouns_opp_no_ndeb |>
+cat_section("MUTATION RATES BY SEGMENT AND PLURAL TYPE (PRODUCTIVE TP DOMAIN)")
+seg_by_opp <- nouns_tp |>
   group_by(stem_final, opportunity) |>
   summarise(N_opp = n(), N_mut = sum(mutation, na.rm = TRUE), .groups = "drop") |>
   calc_rate() |>
   arrange(stem_final, opportunity)
 print_full(seg_by_opp)
 
-cat_section("CLUSTER INVENTORY IN I/E DOMAIN (NO NDEB)")
-cluster_inventory <- nouns_opp_no_ndeb |>
+cat_section("CLUSTER INVENTORY (PRODUCTIVE TP DOMAIN)")
+cluster_inventory <- nouns_tp |>
   filter(!is.na(cluster), cluster != "") |>
   count(stem_final, cluster, sort = TRUE)
 print_full(cluster_inventory)
 
-cat_section("CLUSTER EFFECTS ON MUTATION (NO NDEB)")
+cat_section("CLUSTER EFFECTS ON MUTATION (PRODUCTIVE TP DOMAIN)")
 # Here we separate out a small set of clusters that may modulate palatalization
 # (st/sc/ct and orthographic chi/che/ghi/ghe) to see whether they depress/enhance rates.
-cluster_summary <- nouns_opp_no_ndeb |>
+cluster_summary <- nouns_tp |>
   mutate(
     cluster_type = if_else(
       cluster %in% c("st", "sc", "ct", "chi", "che", "ghi", "ghe"),
@@ -1231,9 +1261,9 @@ cat_section("TOLERANCE PRINCIPLE: SEGMENT-LEVEL PATTERNS (FULL DATA)")
 seg_tp_all <- compute_segment_tp_tables(nouns_opp)
 print_full(seg_tp_all)
 
-cat_section("TOLERANCE PRINCIPLE: SEGMENT-LEVEL PATTERNS (FULL DATA, NO NDEB)")
+cat_section("TOLERANCE PRINCIPLE: SEGMENT-LEVEL PATTERNS (PRODUCTIVE TP DOMAIN)")
 
-seg_tp_all_no_ndeb <- compute_segment_tp_tables(nouns_opp_no_ndeb, label_suffix = " (no NDEB)")
+seg_tp_all_no_ndeb <- compute_segment_tp_tables(nouns_tp, label_suffix = " (TP domain)")
 print_full(seg_tp_all_no_ndeb)
 
 # =========================================================================
@@ -1456,8 +1486,8 @@ cat_section("BAYESIAN TOLERANCE PRINCIPLE")
 if (!RUN_BAYESIAN_TP) {
   cat("RUN_BAYESIAN_TP = FALSE; skipping Bayesian TP analysis.\n")
 } else {
-  cat("\nBAYESIAN TOLERANCE PRINCIPLE: SEGMENT × OPPORTUNITY (FULL DATA, NO NDEB)\n")
-  tolerance_bayesian_results <- run_bayesian_tp(nouns_opp_no_ndeb, subset_label = "full_noNDEB", seed_value = 123L)
+  cat("\nBAYESIAN TOLERANCE PRINCIPLE: SEGMENT × OPPORTUNITY (PRODUCTIVE TP DOMAIN)\n")
+  tolerance_bayesian_results <- run_bayesian_tp(nouns_tp, subset_label = "TP_domain", seed_value = 123L)
 
   cat("\nBAYESIAN TOLERANCE PRINCIPLE: SEGMENT × OPPORTUNITY (REFERENCE DOWNSAMPLED, NO NDEB)\n")
   if (!is.null(nouns_opp_down_single) && nrow(nouns_opp_down_single) > 0L) {
@@ -1498,13 +1528,12 @@ cat_section("SEGMENT CLASS COMPARISON")
 if (!RUN_SEGMENT_CLASS_BRMS) {
   cat("RUN_SEGMENT_CLASS_BRMS = FALSE; skipping segment-class brms models.\n")
 } else {
-  cat("\nSEGMENT CLASS COMPARISON: DORSAL VS CORONAL (I-DOMAIN, NO NDEB)\n")
+  cat("\nSEGMENT CLASS COMPARISON: DORSAL VS CORONAL (I-DOMAIN, PRODUCTIVE TP DOMAIN)\n")
 
-  nouns_i_classified <- nouns_opp |>
+  nouns_i_classified <- nouns_tp |>
     filter(
       opportunity == "i",
-      !is.na(mutation),
-      !(nde_class %in% ndeb_classes) # Exclude NDEB so the class contrast reflects the productive grammar
+      !is.na(mutation)
     ) |>
     mutate(
       segment_class = segment_class_factor(stem_final),
@@ -1541,13 +1570,12 @@ if (!RUN_SEGMENT_CLASS_BRMS) {
   ))
   cat("  (OR < 1 ⇒ dorsals more likely to palatalize among /i/ plurals)\n")
 
-  cat("\nSEGMENT CLASS COMPARISON: DORSAL VS CORONAL (I+E DOMAIN, NO NDEB)\n")
+  cat("\nSEGMENT CLASS COMPARISON: DORSAL VS CORONAL (I+E DOMAIN, PRODUCTIVE TP DOMAIN)\n")
 
-  nouns_ie_classified <- nouns_opp |>
+  nouns_ie_classified <- nouns_tp |>
     filter(
       opportunity %in% plural_opportunities,
-      !is.na(mutation),
-      !(nde_class %in% ndeb_classes)
+      !is.na(mutation)
     ) |>
     mutate(
       segment_class = segment_class_factor(stem_final),
