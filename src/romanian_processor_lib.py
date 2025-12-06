@@ -1373,18 +1373,34 @@ def derive_nde_class(row: Dict[str, str]) -> None:
     # ------------------------------------------------------------------
     # Applies to ALL target consonants (dorsals + coronals).
 
-    # GIMPE 3a: Special case for ce→ci / ge→gi (e→i vowel shift)
-    # These are canonical GIMPE: the palatal is already in the lemma
-    # (ce = /tʃe/, ge = /dʒe/), and the plural just shifts the vowel
-    # (e→i) while keeping the same palatal consonant.
-    # Examples: cruce→cruci, indice→indici, fenice→fenici
+    # GIMPE 3a: Special case for dorsal frontstem patterns
+    # These are canonical GIMPE: the palatal is already in the lemma,
+    # and the plural just adds vowels or shifts them.
+    # Examples:
+    #   - ce→ci: cruce→cruci, indice→indici (e→i vowel shift)
+    #   - ci→cii: borci→borcii (tautomorphemic ci, plural adds i)
+    #   - ge→gi: similar pattern with /dʒ/
     if stem_final in {"c", "g"}:
         if lemma.endswith("ce") and plural.endswith("ci"):
+            row["nde_class"] = "gimpe"
+            return
+        elif lemma.endswith("ci") and plural.endswith("cii"):
             row["nde_class"] = "gimpe"
             return
         elif lemma.endswith("ge") and plural.endswith("gi"):
             row["nde_class"] = "gimpe"
             return
+        elif lemma.endswith("gi") and plural.endswith("gii"):
+            row["nde_class"] = "gimpe"
+            return
+
+    # GIMPE 3a-suffix: Diminutive suffix-internal patterns
+    # Diminutive -ică → -icici: C+i is inside suffix, not root-final
+    # Examples: budăcică→budăcicici, drăgucică→drăgucicici
+    # The "target consonant" is in the suffix, so this is tautomorphemic
+    if lemma.endswith("ică") and plural.endswith("icici"):
+        row["nde_class"] = "gimpe"
+        return
 
     # GIMPE 3b: General alignment-based detection
     # We use alignment to ensure the front vowel after stem_final is
@@ -1430,6 +1446,7 @@ def derive_exception_reason(row: Dict[str, str]) -> None:
     to nouns for statistical analysis happens in the R code, not here.
     """
     row["exception_reason"] = ""
+    lemma = row.get("lemma", "")
     plural = row.get("plural", "")
     mutation = row.get("mutation", "")
     opportunity = row.get("opportunity", "")
@@ -1448,15 +1465,25 @@ def derive_exception_reason(row: Dict[str, str]) -> None:
 
     # OCHI, PADUCHI, and GIMPE: NDE cases that apply
     # regardless of opportunity
-    # These have morphological/phonological explanations even without
-    # surface i/e opportunity
-    #
-    # E.g., abazie→abazii (GIMPE with opportunity=none): lemma has 'zie',
-    # showing z+i in root already, so e→i vowel change doesn't create
-    # a new palatalization context
+    # Handle these BEFORE filtering already-palatal stems
     if nde in {"ochi", "paduchi", "gimpe"}:
         row["exception_reason"] = f"nde:{nde}"
         return
+
+    # Already-palatal stems: words with ș/ț/j near the right edge
+    # These have existing palatal consonants, so the stem_final identified
+    # by our algorithm is misleading. Examples:
+    #   - biciușcă→biciuști (ș+c cluster)
+    #   - crenvirșt→crenvirști (ș+t cluster)
+    # These are out of domain for plain C→palatal palatalization
+    # Only apply this filter AFTER checking NDE classes
+    if lemma:
+        lemma_lower = lemma.lower()
+        # Check for palatal consonants in final 4 chars (near stem edge)
+        tail = lemma_lower[-4:] if len(lemma_lower) >= 4 else lemma_lower
+        if any(pal in tail for pal in ["ș", "ț", "j"]):
+            row["exception_reason"] = "non exception"
+            return
 
     # Non-exceptions: no opportunity to mutate (none or uri)
     if opportunity in {"none", "uri"}:
