@@ -85,10 +85,11 @@ def test_full_dorsals_c_i_e(tp_full):
     """Dorsal c + i,e combined (full lexicon)."""
     row = get_row(tp_full, "<c> + <-i, -e> plural")
 
-    # With NDEB included, we expect ~1400-1500
-    assert 1300 <= row["N"] <= 1600, f"Unexpected c i+e N: {row['N']}"
+    # TP domain (excludes NDEB): expect ~450-500
+    assert 450 <= row["N"] <= 500, f"Unexpected c i+e N: {row['N']}"
 
-    # Should have majority mutating
+    # Should have 100% mutation in TP domain
+    assert row["rate"] == 1.0, f"Expected 100% c mutation, got {row['rate']}"
     assert row["majority?"] is True
 
 
@@ -96,19 +97,22 @@ def test_full_dorsals_g_i_e(tp_full):
     """Dorsal g + i,e combined (full lexicon)."""
     row = get_row(tp_full, "<g> + <-i, -e> plural")
 
-    # With NDEB, expect ~800-900
-    assert 750 <= row["N"] <= 1000, f"Unexpected g i+e N: {row['N']}"
+    # TP domain (excludes NDEB): expect ~380-410
+    assert 380 <= row["N"] <= 410, f"Unexpected g i+e N: {row['N']}"
+
+    # Should have 100% mutation in TP domain
+    assert row["rate"] == 1.0, f"Expected 100% g mutation, got {row['rate']}"
 
 
 def test_full_coronals_t_i(tp_full):
     """Coronal t + i (full lexicon)."""
     row = get_row(tp_full, "<t> + <-i> plural")
 
-    # Should have good N
-    assert 1100 <= row["N"] <= 1400, f"Unexpected t+i N: {row['N']}"
+    # TP domain: expect ~1000-1050
+    assert 1000 <= row["N"] <= 1050, f"Unexpected t+i N: {row['N']}"
 
-    # Should have high mutation rate
-    assert row["rate"] > 0.75, f"Unexpected t+i rate: {row['rate']}"
+    # Should have 100% mutation rate in TP domain
+    assert row["rate"] == 1.0, f"Expected 100% t+i mutation, got {row['rate']}"
     assert row["majority?"] is True
 
 
@@ -150,11 +154,11 @@ def test_downsampled_c_i_stable(tp_downsampled):
     """Dorsal c + i in downsampled lexicon."""
     row = get_row(tp_downsampled, "<c> + <-i> plural (downsampled)")
 
-    # Should have ~80-120 items
-    assert 70 <= row["N"] <= 130, f"Unexpected downsampled c+i N: {row['N']}"
+    # TP domain downsampled: expect ~20-30 items
+    assert 20 <= row["N"] <= 30, f"Unexpected downsampled c+i N: {row['N']}"
 
-    # Should have high mutation rate
-    assert row["rate"] > 0.70, f"Unexpected downsampled c+i rate: {row['rate']}"
+    # Should have 100% mutation rate in TP domain
+    assert row["rate"] == 1.0, f"Expected 100% c+i mutation, got {row['rate']}"
     assert row["majority?"] is True
 
 
@@ -162,8 +166,11 @@ def test_downsampled_g_i_stable(tp_downsampled):
     """Dorsal g + i in downsampled lexicon."""
     row = get_row(tp_downsampled, "<g> + <-i> plural (downsampled)")
 
-    # Smaller count
-    assert 30 <= row["N"] <= 60, f"Unexpected downsampled g+i N: {row['N']}"
+    # TP domain downsampled: expect ~15-25 items
+    assert 15 <= row["N"] <= 25, f"Unexpected downsampled g+i N: {row['N']}"
+
+    # Should have 100% mutation rate in TP domain
+    assert row["rate"] == 1.0, f"Expected 100% g+i mutation, got {row['rate']}"
 
 
 def test_downsampled_t_i_stable(tp_downsampled):

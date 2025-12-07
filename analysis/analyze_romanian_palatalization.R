@@ -1256,15 +1256,17 @@ if (!is.null(seg_tp_ie_ds_all)) {
 # Tolerance Principle: Full Data
 # =========================================================================
 
-cat_section("TOLERANCE PRINCIPLE: SEGMENT-LEVEL PATTERNS (FULL DATA)")
-
-seg_tp_all <- compute_segment_tp_tables(nouns_opp)
-print_full(seg_tp_all)
-
 cat_section("TOLERANCE PRINCIPLE: SEGMENT-LEVEL PATTERNS (PRODUCTIVE TP DOMAIN)")
 
-seg_tp_all_no_ndeb <- compute_segment_tp_tables(nouns_tp, label_suffix = " (TP domain)")
-print_full(seg_tp_all_no_ndeb)
+# PRIMARY: Use TP domain (nouns_tp) for main segment-level analysis
+seg_tp_all <- compute_segment_tp_tables(nouns_tp)
+print_full(seg_tp_all)
+
+cat_section("TOLERANCE PRINCIPLE: SEGMENT-LEVEL PATTERNS (FULL i/e OPPORTUNITY DOMAIN)")
+
+# REFERENCE: Full i/e domain including NDEB (for comparison only)
+seg_tp_all_with_ndeb <- compute_segment_tp_tables(nouns_opp, label_suffix = " (with NDEB)")
+print_full(seg_tp_all_with_ndeb)
 
 # =========================================================================
 # NDEB CONTRIBUTION PER TYPE (FULL LEXICON & DOWNSAMPLED)
@@ -1352,18 +1354,20 @@ if (!is.null(nouns_opp_down_single) && nrow(nouns_opp_down_single) > 0L) {
     }
   }
 
-  cat_section("TOLERANCE PRINCIPLE: SEGMENT-LEVEL PATTERNS (REFERENCE DOWNSAMPLED LEXICON)")
+  cat_section("TOLERANCE PRINCIPLE: SEGMENT-LEVEL PATTERNS (REFERENCE DOWNSAMPLED, TP DOMAIN)")
 
-  seg_tp_all_ds <- compute_segment_tp_tables(nouns_opp_down_single, label_suffix = " (downsampled)")
+  # PRIMARY: Use TP domain for downsampled analysis
+  nouns_tp_down_single <- nouns_opp_down_single |>
+    filter(tp_in_domain == TRUE)
+
+  seg_tp_all_ds <- compute_segment_tp_tables(nouns_tp_down_single, label_suffix = " (downsampled)")
   print_full(seg_tp_all_ds)
 
-  cat_section("TOLERANCE PRINCIPLE: SEGMENT-LEVEL PATTERNS (REFERENCE DOWNSAMPLED, NO NDEB)")
+  cat_section("TOLERANCE PRINCIPLE: SEGMENT-LEVEL PATTERNS (REFERENCE DOWNSAMPLED, FULL i/e DOMAIN)")
 
-  nouns_opp_down_single_no_ndeb <- nouns_opp_down_single |>
-    filter(!(nde_class %in% ndeb_classes))
-
-  seg_tp_all_ds_no_ndeb <- compute_segment_tp_tables(nouns_opp_down_single_no_ndeb, label_suffix = " (downsampled, no NDEB)")
-  print_full(seg_tp_all_ds_no_ndeb)
+  # REFERENCE: Full i/e domain including NDEB (for comparison)
+  seg_tp_all_ds_with_ndeb <- compute_segment_tp_tables(nouns_opp_down_single, label_suffix = " (downsampled, with NDEB)")
+  print_full(seg_tp_all_ds_with_ndeb)
 
   cat_section("TOLERANCE PRINCIPLE: SEGMENT-LEVEL COMPARISON (I VS E; FULL VS DOWNSAMPLED)")
 
@@ -1489,15 +1493,15 @@ if (!RUN_BAYESIAN_TP) {
   cat("\nBAYESIAN TOLERANCE PRINCIPLE: SEGMENT × OPPORTUNITY (PRODUCTIVE TP DOMAIN)\n")
   tolerance_bayesian_results <- run_bayesian_tp(nouns_tp, subset_label = "TP_domain", seed_value = 123L)
 
-  cat("\nBAYESIAN TOLERANCE PRINCIPLE: SEGMENT × OPPORTUNITY (REFERENCE DOWNSAMPLED, NO NDEB)\n")
+  cat("\nBAYESIAN TOLERANCE PRINCIPLE: SEGMENT × OPPORTUNITY (REFERENCE DOWNSAMPLED, TP DOMAIN)\n")
   if (!is.null(nouns_opp_down_single) && nrow(nouns_opp_down_single) > 0L) {
-    # Recompute NDEB-filtered downsampled subset locally to keep dependencies explicit
-    nouns_opp_down_single_no_ndeb_for_bayes <- nouns_opp_down_single |>
-      filter(!(nde_class %in% ndeb_classes))
+    # Use tp_in_domain filter for downsampled TP analysis
+    nouns_tp_down_single_for_bayes <- nouns_opp_down_single |>
+      filter(tp_in_domain == TRUE)
 
     tolerance_bayesian_results_ds <- run_bayesian_tp(
-      nouns_opp_down_single_no_ndeb_for_bayes,
-      subset_label = "downsampled_noNDEB",
+      nouns_tp_down_single_for_bayes,
+      subset_label = "downsampled_TP",
       seed_value = 456L
     )
   } else {
@@ -1686,18 +1690,32 @@ dorsals_full <- bind_rows(
   get_seg_row(seg_tp_all, "<c> + <-i> plural"),
   get_seg_row(seg_tp_all, "<c> + <-e> plural"),
   get_seg_row(seg_tp_all, "<c> + <-i, -e> plural"),
-  # no-NDEB row: relabel type to match spreadsheet convention
-  get_seg_row(seg_tp_all_no_ndeb, "<c> + <-i, -e> plural (no NDEB)") |>
+  # Comparison: Show what numbers look like WITH NDEB included (full i/e domain)
+  get_seg_row(seg_tp_all_with_ndeb, "<c> + <-i, -e> plural (with NDEB)") |>
+    mutate(
+      type = "<c> + <-i, -e> plural, WITH NDEB",
+      memo = "Full i/e domain (includes NDEB items for comparison)"
+    ),
+  # Reference: Show TP domain explicitly as "no NDEB" for clarity
+  get_seg_row(seg_tp_all, "<c> + <-i, -e> plural") |>
     mutate(
       type = "<c> + <-i, -e> plural, no NDEB",
-      memo = "only tolerated IFF we give it the maximal benefit of the doubt; downsampling will probably help though"
+      memo = "TP domain (NDEB excluded - productive grammar only)"
     ),
   get_seg_row(seg_tp_all, "<g> + <-i> plural"),
   get_seg_row(seg_tp_all, "<g> + <-e> plural"),
   get_seg_row(seg_tp_all, "<g> + <-i, -e> plural"),
-  get_seg_row(seg_tp_all_no_ndeb, "<g> + <-i, -e> plural (no NDEB)") |>
+  # Comparison: Show what numbers look like WITH NDEB included (full i/e domain)
+  get_seg_row(seg_tp_all_with_ndeb, "<g> + <-i, -e> plural (with NDEB)") |>
     mutate(
-      type = "<g> + <-i, -e> plural, no NDEB"
+      type = "<g> + <-i, -e> plural, WITH NDEB",
+      memo = "Full i/e domain (includes NDEB items for comparison)"
+    ),
+  # Reference: Show TP domain explicitly as "no NDEB" for clarity
+  get_seg_row(seg_tp_all, "<g> + <-i, -e> plural") |>
+    mutate(
+      type = "<g> + <-i, -e> plural, no NDEB",
+      memo = "TP domain (NDEB excluded - productive grammar only)"
     )
 )
 
@@ -1955,19 +1973,37 @@ if (!is.null(nouns_opp_down_single) && nrow(nouns_opp_down_single) > 0L) {
     get_seg_row_ds(seg_tp_all_ds, "<c> + <-i> plural (downsampled)"),
     get_seg_row_ds(seg_tp_all_ds, "<c> + <-e> plural (downsampled)"),
     get_seg_row_ds(seg_tp_all_ds, "<c> + <-i, -e> plural (downsampled)"),
+    # Comparison: Show what numbers look like WITH NDEB included (full i/e domain)
     get_seg_row_ds(
-      seg_tp_all_ds_no_ndeb,
-      "<c> + <-i, -e> plural (downsampled, no NDEB)",
+      seg_tp_all_ds_with_ndeb,
+      "<c> + <-i, -e> plural (downsampled, with NDEB)",
+      "<c> + <-i, -e> plural, downsampled, WITH NDEB"
+    ) |>
+      mutate(memo = "Full i/e domain (includes NDEB items for comparison)"),
+    # Reference: Show TP domain explicitly as "no NDEB" for clarity
+    get_seg_row_ds(
+      seg_tp_all_ds,
+      "<c> + <-i, -e> plural (downsampled)",
       "<c> + <-i, -e> plural, downsampled, no NDEB"
-    ),
+    ) |>
+      mutate(memo = "TP domain (NDEB excluded - productive grammar only)"),
     get_seg_row_ds(seg_tp_all_ds, "<g> + <-i> plural (downsampled)"),
     get_seg_row_ds(seg_tp_all_ds, "<g> + <-e> plural (downsampled)"),
     get_seg_row_ds(seg_tp_all_ds, "<g> + <-i, -e> plural (downsampled)"),
+    # Comparison: Show what numbers look like WITH NDEB included (full i/e domain)
     get_seg_row_ds(
-      seg_tp_all_ds_no_ndeb,
-      "<g> + <-i, -e> plural (downsampled, no NDEB)",
+      seg_tp_all_ds_with_ndeb,
+      "<g> + <-i, -e> plural (downsampled, with NDEB)",
+      "<g> + <-i, -e> plural, downsampled, WITH NDEB"
+    ) |>
+      mutate(memo = "Full i/e domain (includes NDEB items for comparison)"),
+    # Reference: Show TP domain explicitly as "no NDEB" for clarity
+    get_seg_row_ds(
+      seg_tp_all_ds,
+      "<g> + <-i, -e> plural (downsampled)",
       "<g> + <-i, -e> plural, downsampled, no NDEB"
-    )
+    ) |>
+      mutate(memo = "TP domain (NDEB excluded - productive grammar only)")
   )
 
   coronals_ds <- bind_rows(
