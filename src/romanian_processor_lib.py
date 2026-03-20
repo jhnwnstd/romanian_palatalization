@@ -667,7 +667,6 @@ def detect_orth_change_dynamic(lemma: str, plural: str) -> str:
     return f"{lemma_core}→{plural_core}"
 
 
-
 def derive_mutation_and_orth_change(row: Dict[str, str]) -> None:
     """Derive mutation and orth_change via alignment (non-circular approach).
 
@@ -988,7 +987,6 @@ def explode_derived_verbs_row(row: Dict[str, str]) -> List[Dict[str, str]]:
         main_field="derived_verbs",
         companion_fields=["deriv_suffixes", "ipa_derived_verbs"],
     )
-
 
 
 def normalize_unicode_g2p(s: str) -> str:
@@ -1426,7 +1424,6 @@ def fix_nde_mutations(row: Dict[str, str]) -> None:
         row["mutation"] = "False"
         # Clear palatal consonant since it's not a true alternation
         row["palatal_consonant_pl"] = ""
-
 
 
 def lemma_has_palatal_coronal(lemma: str, stem_final: str) -> bool:

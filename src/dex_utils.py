@@ -68,7 +68,6 @@ def norm_lemma(s: str) -> str:
     return s
 
 
-
 def clean_plural_token(pl: str) -> str:
     """Normalize plural token; return '-' if invalid."""
     if not pl or pl in DASHES:

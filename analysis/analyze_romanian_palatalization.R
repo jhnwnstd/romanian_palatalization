@@ -10,7 +10,7 @@
 
 required_pkgs <- c(
   "dplyr", "readr", "stringr", "tidyr", "broom",
-  "brms", "posterior", "loo"
+  "brms", "posterior", "loo", "brglm2", "lme4"
 )
 
 # Keep this block: script should be runnable on a clean machine
@@ -55,38 +55,35 @@ options(dplyr.summarise.inform = FALSE)
 # =========================================================================
 
 segments_of_interest <- c("c", "g", "t", "d", "s", "z") # consonants where palatalization is tracked
-front_verb_suffixes <- c("-i", "-ui") # front-vowel verbalizers (for N→V / Adj→V)
-suffix_interest <- c("-ic", "-ist", "-esc", "-ică", "-ice") # denominal/adjectival suffixes we explicitly track
+front_verb_suffixes <- c("-i", "-ui") # front-vowel verbalizers (for N->V / Adj->V)
+suffix_interest <- c("-ic", "-ist", "-esc", "-ică", "-ice") # denominal/adjectival suffixes we track
 
-# NDEB = non-derived exception base lemmas (gimpe / ochi / păduche patterns)
-# These are lexically special noun bases that behave like exceptions but form structured families.
-# Now stored in exception_reason as "nde:gimpe", "nde:ochi", "nde:paduchi"
-# We derive nde_class field from exception_reason, so we still use class names here
+# NDEB = non-derived exception base lemmas (gimpe / ochi / paduche patterns)
 ndeb_classes <- c("gimpe", "ochi", "paduchi")
-ndeb_observable <- c("ochi", "paduchi") # only these are observable as DE in the plural domain; gimpe-type is hidden
+ndeb_observable <- c("ochi", "paduchi") # only these are observable as DE in the plural domain
 
 plural_opportunities <- c("i", "e") # core i/e opportunity domain
-plural_opportunities_all <- c("i", "e", "uri", "none") # all plural types that can show up in the raw data
+plural_opportunities_all <- c("i", "e", "uri", "none") # all plural types in raw data
 
 # =========================================================================
 # Analysis Constants
 # =========================================================================
 
-MIN_SAMPLE_SIZE_BAYESIAN <- 5L  # avoid running Bayesian TP on tiny cells that give unstable posteriors
-SMALL_CELL_THRESHOLD <- 20L     # flag small downsampled cells for interpretability
+MIN_SAMPLE_SIZE_BAYESIAN <- 5L # avoid Bayesian TP on tiny cells
+SMALL_CELL_THRESHOLD <- 20L # flag small downsampled cells; TP binary unreliable below this
 
-PRECISION_THETA <- 2L # print precision for θ_N
-PRECISION_PROB <- 4L  # print precision for probabilities / rates
+PRECISION_THETA <- 2L # print precision for theta_N
+PRECISION_PROB <- 4L # print precision for probabilities / rates
 
-CLUSTER_TYPES <- c("st", "sc", "ct") # cluster types we care about for TP-style cluster analysis
+CLUSTER_TYPES <- c("st", "sc", "ct") # cluster types for TP cluster analysis
 
 # =========================================================================
 # Run-mode toggles
 # =========================================================================
 
-RUN_BAYESIAN_TP         <- TRUE  # set FALSE to skip Bayesian TP fits
-RUN_SEGMENT_CLASS_BRMS  <- TRUE  # set FALSE to skip segment-class brms models
-RUN_DERIVATION_ANALYSES <- TRUE  # set FALSE to skip inflection vs derivation analyses
+RUN_BAYESIAN_TP <- TRUE # set FALSE to skip Bayesian TP fits
+RUN_SEGMENT_CLASS_BRMS <- TRUE # set FALSE to skip segment-class brms models
+RUN_DERIV_MIXED <- FALSE # set TRUE to add GLMM (1|stem_final) to derivational models
 
 # =========================================================================
 # Helper Functions
@@ -96,16 +93,13 @@ cat_section <- function(title) {
   cat("\n", title, "\n", sep = "")
 }
 
-
 print_full <- function(x) {
   print(x, n = Inf, width = Inf)
 }
 
 calc_rate <- function(df) {
   df |>
-    mutate(
-      rate_mut = if_else(.data$N_opp > 0, .data$N_mut / .data$N_opp, NA_real_)
-    )
+    mutate(rate_mut = if_else(.data$N_opp > 0, .data$N_mut / .data$N_opp, NA_real_))
 }
 
 # Tolerance Principle: θ_N = N / ln N, undefined for N ≤ 1
@@ -123,50 +117,37 @@ tp_table <- function(df, type_col, mutated_col, non_mutated_col) {
     mutate(
       N = .data$mutated + .data$non_mutated,
       rate = if_else(.data$N > 0, .data$mutated / .data$N, NA_real_),
-      # Is the majority direction mutation?
       majority_mutates = case_when(
         .data$N == 0L ~ NA,
         .data$mutated == .data$non_mutated ~ NA,
         TRUE ~ .data$mutated > .data$non_mutated
       ),
-      # Exceptions are ALWAYS non-mutated items.  The question is
-      # always "is mutation productive?", so e = non_mutated.
-      exceptions = if_else(.data$N > 0L,
-        as.numeric(.data$non_mutated),
-        NA_real_
-      ),
+      # Exceptions are ALWAYS non-mutated items; the question is always
+      # "is mutation productive?", so e = non_mutated.
+      exceptions = if_else(.data$N > 0L, as.numeric(.data$non_mutated), NA_real_),
       theta_N = tp_threshold(.data$N),
       tolerated = if_else(
         is.na(.data$exceptions) | is.na(.data$theta_N),
         NA,
         .data$exceptions <= .data$theta_N
-      )
+      ),
+      # Flag small cells where the TP binary is unreliable; see Bayesian TP for these.
+      small_n = !is.na(.data$N) & .data$N < SMALL_CELL_THRESHOLD
     )
 }
 
-# NOTE: updated helper so priors no longer reference undefined Stan identifiers like `intercept_sd`
 fit_brms_bernoulli <- function(formula,
                                data,
                                seed,
                                intercept_sd = 2.5,
                                b_sd = 2.5,
                                include_b_prior = TRUE) {
-  # Build priors as strings (brms evaluates them at Stan generation time)
   intercept_prior_str <- sprintf("normal(0, %s)", format(intercept_sd, scientific = FALSE, trim = TRUE))
-  priors <- brms::set_prior(
-    intercept_prior_str,
-    class = "Intercept"
-  )
+  priors <- brms::set_prior(intercept_prior_str, class = "Intercept")
 
   if (include_b_prior) {
     b_prior_str <- sprintf("normal(0, %s)", format(b_sd, scientific = FALSE, trim = TRUE))
-    priors <- c(
-      priors,
-      brms::set_prior(
-        b_prior_str,
-        class = "b"
-      )
-    )
+    priors <- c(priors, brms::set_prior(b_prior_str, class = "b"))
   }
 
   brm(
@@ -182,27 +163,22 @@ fit_brms_bernoulli <- function(formula,
   )
 }
 
-# Approximate palatalization from IPA for derived forms
-# This is deliberately coarse: it lets us compare derived forms to inflection even when spelling is opaque.
+# Approximate palatalization from IPA for derived forms.
 detect_palatal_from_ipa <- function(stem_final, ipa_str) {
   case_when(
-    stem_final == "c" ~ str_detect(ipa_str, "t͡ʃ|tʃ"),
-    stem_final == "g" ~ str_detect(ipa_str, "d͡ʒ|dʒ"),
-    stem_final == "t" ~ str_detect(ipa_str, "t͡s|ts"),
-    stem_final == "d" ~ str_detect(ipa_str, "z|dʲ"),
-    stem_final == "s" ~ str_detect(ipa_str, "ʃ"),
-    stem_final == "z" ~ str_detect(ipa_str, "ʒ"),
+    stem_final == "c" ~ str_detect(ipa_str, "t\u0361\u0283|t\u0283"),
+    stem_final == "g" ~ str_detect(ipa_str, "d\u0361\u0292|d\u0292"),
+    stem_final == "t" ~ str_detect(ipa_str, "t\u0361s|ts"),
+    stem_final == "d" ~ str_detect(ipa_str, "z|d\u02b2"),
+    stem_final == "s" ~ str_detect(ipa_str, "\u0283"),
+    stem_final == "z" ~ str_detect(ipa_str, "\u0292"),
     TRUE ~ NA
   )
 }
 
-# TP tables for segments (or clusters) and opportunities
-# This keeps all the "how to compute TP" logic in one place so that all segment- and cluster-level
-# tables are constructed in a consistent way and can be compared directly.
 compute_segment_tp_tables <- function(data, label_suffix = "", group_var = stem_final) {
   group_var_name <- rlang::as_name(rlang::enquo(group_var))
 
-  # By opportunity (i vs e)
   by_opp <- data |>
     group_by({{ group_var }}, opportunity) |>
     summarise(
@@ -210,12 +186,9 @@ compute_segment_tp_tables <- function(data, label_suffix = "", group_var = stem_
       non_mutated = sum(!mutation, na.rm = TRUE),
       .groups     = "drop"
     ) |>
-    mutate(
-      type = paste0("<", .data[[group_var_name]], "> + <-", opportunity, "> plural", label_suffix)
-    ) |>
+    mutate(type = paste0("<", .data[[group_var_name]], "> + <-", opportunity, "> plural", label_suffix)) |>
     tp_table(type, mutated, non_mutated)
 
-  # Combined i+e
   combined <- data |>
     group_by({{ group_var }}) |>
     summarise(
@@ -223,16 +196,12 @@ compute_segment_tp_tables <- function(data, label_suffix = "", group_var = stem_
       non_mutated = sum(!mutation, na.rm = TRUE),
       .groups     = "drop"
     ) |>
-    mutate(
-      type = paste0("<", .data[[group_var_name]], "> + <-i, -e> plural", label_suffix)
-    ) |>
+    mutate(type = paste0("<", .data[[group_var_name]], "> + <-i, -e> plural", label_suffix)) |>
     tp_table(type, mutated, non_mutated)
 
-  bind_rows(by_opp, combined) |>
-    arrange(type)
+  bind_rows(by_opp, combined) |> arrange(type)
 }
 
-# Bayesian TP: quantify how often the posterior "violates" the classical TP, given sampling uncertainty.
 run_bayesian_tp <- function(data, subset_label, seed_value = 123L) {
   if (is.null(data) || nrow(data) == 0L) {
     return(list())
@@ -243,14 +212,7 @@ run_bayesian_tp <- function(data, subset_label, seed_value = 123L) {
   for (seg in segments_of_interest) {
     for (opp in plural_opportunities) {
       seg_data <- data |>
-        filter(
-          stem_final == seg,
-          opportunity == opp,
-          !is.na(mutation)
-        ) |>
-        # brms treats logical TRUE/FALSE differently from integer 1/0
-        # when all values are identical; coerce to integer to avoid
-        # corrupted posteriors in degenerate (all-TRUE/all-FALSE) cells.
+        filter(stem_final == seg, opportunity == opp, !is.na(mutation)) |>
         mutate(mutation = as.integer(mutation))
 
       if (nrow(seg_data) < MIN_SAMPLE_SIZE_BAYESIAN) next
@@ -259,21 +221,17 @@ run_bayesian_tp <- function(data, subset_label, seed_value = 123L) {
       theta_N <- tp_threshold(N)
       tolerance_rate <- theta_N / N
 
-      # Diagnostic: verify data before fitting
-      sum_mut_check <- sum(seg_data$mutation, na.rm = TRUE)
-      sum_non_check <- sum(!seg_data$mutation, na.rm = TRUE)
-
+      sum_mut <- sum(seg_data$mutation, na.rm = TRUE)
+      sum_non <- N - sum_mut
       cat(sprintf(
         "  Fitting <%s> + <-%s> (%s): N=%d, mutated=%d, non-mutated=%d\n",
-        seg, opp, subset_label, N, sum_mut_check, sum_non_check
+        seg, opp, subset_label, N, sum_mut, sum_non
       ))
 
       invisible(capture.output(
         {
-          # Intercept-only model: we suppress b-priors so brms doesn't create priors for non-existent b’s
           model_tp <- fit_brms_bernoulli(
-            mutation ~ 1,
-            seg_data,
+            mutation ~ 1, seg_data,
             seed = seed_value,
             intercept_sd = 1.5,
             b_sd = 1.5,
@@ -285,62 +243,47 @@ run_bayesian_tp <- function(data, subset_label, seed_value = 123L) {
 
       post_samples <- as_draws_df(model_tp)
       p_mutate <- plogis(post_samples$b_Intercept)
-      p_nonmutate <- 1 - p_mutate
-
-      sum_mut <- sum(seg_data$mutation, na.rm = TRUE)
-      sum_non <- sum(!seg_data$mutation, na.rm = TRUE)
-      majority <- sum_mut > sum_non
-
-      # Exceptions are ALWAYS non-mutators: the question is always
-      # "is mutation productive?" so p_exception = P(non-mutation).
-      p_exception <- p_nonmutate
+      p_exception <- 1 - p_mutate
       prob_intolerable <- mean(p_exception > tolerance_rate)
 
       results[[paste(seg, opp, subset_label, sep = "_")]] <- data.frame(
-        segment = seg,
-        opportunity = opp,
-        subset = subset_label,
-        majority_mutates = majority,
-        N = N,
-        theta_N = round(theta_N, PRECISION_THETA),
-        tolerance_rate = round(tolerance_rate, PRECISION_PROB),
-        median_p_mutate = round(median(p_mutate), PRECISION_PROB),
-        ci_lower = round(quantile(p_mutate, 0.025), PRECISION_PROB),
-        ci_upper = round(quantile(p_mutate, 0.975), PRECISION_PROB),
+        segment          = seg,
+        opportunity      = opp,
+        subset           = subset_label,
+        majority_mutates = sum_mut > sum_non,
+        N                = N,
+        theta_N          = round(theta_N, PRECISION_THETA),
+        tolerance_rate   = round(tolerance_rate, PRECISION_PROB),
+        median_p_mutate  = round(median(p_mutate), PRECISION_PROB),
+        ci_lower         = round(quantile(p_mutate, 0.025), PRECISION_PROB),
+        ci_upper         = round(quantile(p_mutate, 0.975), PRECISION_PROB),
         prob_exceeds_tol = round(prob_intolerable, PRECISION_PROB)
       )
     }
   }
-
   results
 }
 
-# -------------------------------------------------------------------------
-# Analytic helpers to keep later code DRY
-# -------------------------------------------------------------------------
-
-# Collapse detailed suffix tags into a small set of theoretically relevant groups,
-# so that regression models don't chase micro-suffix idiosyncrasies.
-# Collapse individual consonants into dorsal vs coronal classes,
-# so the segment-class models reflect the theoretical contrast of interest.
 segment_class_factor <- function(stem_final) {
-  cls <- dplyr::if_else(stem_final %in% c("c", "g"), "dorsal", "coronal")
-  factor(cls, levels = c("dorsal", "coronal"))
+  factor(if_else(stem_final %in% c("c", "g"), "dorsal", "coronal"),
+    levels = c("dorsal", "coronal")
+  )
 }
 
-# DRY helper for inflection vs derivation comparisons
-# Analyzes agreement patterns between inflectional and derivational palatalization,
-# runs McNemar test and logistic regression.
+# Inflection vs derivation: Firth-penalized logistic regression (handles complete
+# separation), with and without frequency covariate.  McNemar is retained as a
+# descriptive count of discordant pairs only — it is severely underpowered here.
+#
+# Expects df to contain columns: base_col, deriv_col, and (optionally) lemma_freq.
 analyze_inf_vs_deriv <- function(df, base_col, deriv_col, label) {
   if (is.null(df) || nrow(df) == 0) {
     cat("\n(No data for ", label, ")\n\n", sep = "")
     return(invisible(NULL))
   }
 
-  # Rename columns to standardized names for easier processing
   df <- df |>
     mutate(
-      base_mut = .data[[base_col]],
+      base_mut  = .data[[base_col]],
       deriv_mut = .data[[deriv_col]]
     ) |>
     filter(!is.na(base_mut), !is.na(deriv_mut))
@@ -350,36 +293,96 @@ analyze_inf_vs_deriv <- function(df, base_col, deriv_col, label) {
     return(invisible(NULL))
   }
 
-  # Agreement patterns
+  # Agreement pattern counts
   cat("\nInflection vs derivation agreement patterns (", label, "):\n", sep = "")
   patterns <- df |>
-    mutate(
-      pattern = dplyr::case_when(
-        base_mut & deriv_mut ~ "both_mutate",
-        !base_mut & !deriv_mut ~ "both_nonmutate",
-        base_mut & !deriv_mut ~ "inflection_only",
-        !base_mut & deriv_mut ~ "derivation_only",
-        TRUE ~ NA_character_
-      )
-    ) |>
+    mutate(pattern = case_when(
+      base_mut & deriv_mut ~ "both_mutate",
+      !base_mut & !deriv_mut ~ "both_nonmutate",
+      base_mut & !deriv_mut ~ "inflection_only",
+      !base_mut & deriv_mut ~ "derivation_only",
+      TRUE ~ NA_character_
+    )) |>
     count(pattern, sort = TRUE) |>
     mutate(prop = n / sum(n))
   print_full(patterns)
 
-  # McNemar test
+  # McNemar — descriptive only; underpowered for the sample sizes here
   tab <- with(df, table(base_mut, deriv_mut))
   if (all(dim(tab) == c(2L, 2L))) {
-    cat("\nMcNemar test (", label, "):\n", sep = "")
+    cat("\nMcNemar test (", label, ", descriptive only — see Firth regression for inference):\n", sep = "")
     print_full(broom::tidy(stats::mcnemar.test(tab)))
-  } else {
-    cat("\nContingency table (", label, ") not 2×2; skipping McNemar test.\n", sep = "")
-    print(tab)
+    n_disc <- tab[1, 2] + tab[2, 1]
+    if (n_disc < 20L) {
+      cat("  NOTE: only", n_disc, "discordant pairs — McNemar has insufficient power.\n")
+    }
   }
 
-  # Logistic regression
-  cat("\nLogistic regression: does derivational palatalization track inflection? (", label, ")\n", sep = "")
-  model <- glm(deriv_mut ~ base_mut, data = df, family = binomial())
-  print_full(broom::tidy(model))
+  # Firth-penalized logistic regression: base mutation as predictor of deriv mutation.
+  # brglmFit guarantees finite estimates even under complete or quasi-complete separation.
+  cat("\nFirth logistic (brglm2): deriv_mut ~ base_mut (", label, ")\n", sep = "")
+  model_base <- glm(deriv_mut ~ base_mut,
+    data   = df,
+    family = binomial(),
+    method = brglm2::brglmFit
+  )
+  tidy_base <- broom::tidy(model_base)
+  print_full(tidy_base)
+  # Report OR directly
+  or_base <- exp(coef(model_base)["base_mutTRUE"])
+  or_ci <- exp(confint(model_base)["base_mutTRUE", ])
+  cat(sprintf(
+    "  OR(base_mutTRUE) = %.3f [95%% CI: %.3f, %.3f]\n",
+    or_base, or_ci[1], or_ci[2]
+  ))
+
+  # Frequency-controlled model: does base_mut predict deriv_mut after accounting
+  # for lemma frequency?  If base_mut remains significant, the effect is not
+  # a frequency-of-lexicalization artefact.
+  has_freq <- "lemma_freq" %in% names(df) &&
+    sum(!is.na(df$lemma_freq) & df$lemma_freq > 0) >= 5L
+
+  if (has_freq) {
+    cat("\nFirth logistic (brglm2): deriv_mut ~ base_mut + log(lemma_freq) (",
+      label, ")\n",
+      sep = ""
+    )
+    df_freq <- df |> mutate(log_freq = log(lemma_freq + 1))
+    model_freq <- glm(deriv_mut ~ base_mut + log_freq,
+      data   = df_freq,
+      family = binomial(),
+      method = brglm2::brglmFit
+    )
+    print_full(broom::tidy(model_freq))
+    or_freq <- exp(coef(model_freq)["base_mutTRUE"])
+    or_freq_ci <- exp(confint(model_freq)["base_mutTRUE", ])
+    cat(sprintf(
+      "  OR(base_mutTRUE | freq controlled) = %.3f [95%% CI: %.3f, %.3f]\n",
+      or_freq, or_freq_ci[1], or_freq_ci[2]
+    ))
+    freq_coef <- broom::tidy(model_freq) |> filter(term == "log_freq")
+    if (nrow(freq_coef) > 0 && freq_coef$p.value > 0.05) {
+      cat("  => log_freq is NOT significant: base_mut effect is not driven by frequency.\n")
+    } else if (nrow(freq_coef) > 0) {
+      cat("  => log_freq IS significant: frequency partially predicts derivational mutation.\n")
+    }
+  }
+
+  # Optional GLMM with stem_final random effect (requires lme4 and RUN_DERIV_MIXED)
+  if (exists("RUN_DERIV_MIXED") && RUN_DERIV_MIXED &&
+    requireNamespace("lme4", quietly = TRUE) &&
+    n_distinct(df$stem_final) >= 3L) {
+    cat("\nGLMM (lme4): deriv_mut ~ base_mut + log(lemma_freq) + (1|stem_final) (",
+      label, ")\n",
+      sep = ""
+    )
+    df_mixed <- df |> mutate(log_freq = log(coalesce(lemma_freq, 0) + 1))
+    model_mixed <- lme4::glmer(deriv_mut ~ base_mut + log_freq + (1 | stem_final),
+      data   = df_mixed,
+      family = binomial()
+    )
+    print(summary(model_mixed))
+  }
 
   invisible(df)
 }
@@ -393,107 +396,42 @@ make_deriv_summary <- function(df, deriv_col, label_yes, label_no) {
       non_mutated = sum(!.data[[deriv_col]], na.rm = TRUE),
       .groups     = "drop"
     ) |>
-    mutate(
-      type = if_else(
-        base_plural_mutates,
-        label_yes,
-        label_no
-      )
-    ) |>
+    mutate(type = if_else(base_plural_mutates, label_yes, label_no)) |>
     tp_table(type, mutated, non_mutated) |>
-    select(
-      type,
-      N,
-      mutated,
-      non_mutated,
-      rate,
-      majority = majority_mutates,
-      tolerated
-    )
+    select(type, N, mutated, non_mutated, rate, majority = majority_mutates, tolerated)
 }
 
-build_downsampled_lexica <- function(nouns_opp, sample_sizes = c(1000L, 2500L, 5000L, 10000L)) {
-  nouns_opp_freq <- nouns_opp |>
+# Build reference (top-1000) downsampled lexicon.
+build_downsampled_lexicon <- function(nouns_opp, n_lex = 1000L) {
+  freq_summary <- nouns_opp |>
     group_by(lemma) |>
     summarise(
-      lemma_freq = max(freq_ron_wikipedia_2021_1M, na.rm = TRUE),
-      .groups = "drop"
+      lemma_freq = max(freq_ron_news_2024_1M, na.rm = TRUE),
+      .groups    = "drop"
     ) |>
-    mutate(
-      lemma_freq = if_else(is.na(lemma_freq) | !is.finite(lemma_freq), 0, lemma_freq)
-    )
+    mutate(lemma_freq = if_else(is.na(lemma_freq) | !is.finite(lemma_freq), 0, lemma_freq)) |>
+    filter(lemma_freq > 0)
 
-  nouns_opp_freq_pos <- filter(nouns_opp_freq, lemma_freq > 0)
-
-  if (nrow(nouns_opp_freq_pos) == 0L) {
-    return(list(
-      reference = NULL,
-      tp_table = NULL,
-      freq_table = nouns_opp_freq_pos
-    ))
+  if (nrow(freq_summary) == 0L) {
+    return(NULL)
   }
 
-  nouns_opp_with_freq <- nouns_opp |>
-    left_join(nouns_opp_freq_pos, by = "lemma")
+  top_lemmas <- freq_summary |>
+    arrange(desc(lemma_freq)) |>
+    slice_head(n = min(n_lex, nrow(freq_summary))) |>
+    pull(lemma)
 
-  seg_tp_ie_ds_list <- vector("list", length(sample_sizes))
-  reference <- NULL
+  reference <- nouns_opp |>
+    left_join(freq_summary, by = "lemma") |>
+    filter(lemma %in% top_lemmas) |>
+    arrange(desc(lemma_freq), lemma, plural) |>
+    distinct(lemma, .keep_all = TRUE)
 
-  for (i in seq_along(sample_sizes)) {
-    n_lex <- sample_sizes[[i]]
-    target_n_lex <- min(n_lex, nrow(nouns_opp_freq_pos))
+  cat("Downsampled lexicon (top", length(top_lemmas), "most frequent lemmas):\n")
+  cat("  unique lemmas:", n_distinct(reference$lemma), "\n")
+  cat("  rows:", nrow(reference), "\n\n")
 
-    top_lemmas <- nouns_opp_freq_pos |>
-      arrange(desc(lemma_freq)) |>
-      slice_head(n = target_n_lex) |>
-      pull(lemma)
-
-    nouns_opp_down <- nouns_opp_with_freq |>
-      filter(lemma %in% top_lemmas) |>
-      arrange(desc(lemma_freq), lemma, plural) |>
-      distinct(lemma, .keep_all = TRUE)
-
-    if (is.null(reference) && n_lex == 1000L) {
-      reference <- nouns_opp_down
-      cat("Reference downsampled lexicon (top 1000 most frequent lemmas):\n")
-      cat("  target_lexemes:", target_n_lex, "\n")
-      cat("  unique lemmas:", n_distinct(reference$lemma), "\n")
-      cat("  rows:", nrow(reference), "\n\n")
-    }
-
-    seg_tp_ie_ds_list[[i]] <- nouns_opp_down |>
-      group_by(stem_final, opportunity) |>
-      summarise(
-        mutated     = sum(mutation, na.rm = TRUE),
-        non_mutated = sum(!mutation, na.rm = TRUE),
-        .groups     = "drop"
-      ) |>
-      mutate(sample_lexemes = n_lex)
-  }
-
-  seg_tp_ie_ds_all <- bind_rows(seg_tp_ie_ds_list) |>
-    mutate(
-      N = mutated + non_mutated,
-      rate = if_else(N > 0, mutated / N, NA_real_),
-      majority_mutates = case_when(
-        N == 0L ~ NA,
-        mutated == non_mutated ~ NA,
-        TRUE ~ mutated > non_mutated
-      ),
-      exceptions = case_when(
-        is.na(majority_mutates) ~ NA_real_,
-        majority_mutates ~ as.numeric(non_mutated),
-        !majority_mutates ~ as.numeric(mutated)
-      ),
-      theta_N = tp_threshold(N),
-      tolerated = if_else(is.na(exceptions) | is.na(theta_N), NA, exceptions <= theta_N)
-    )
-
-  list(
-    reference = reference,
-    tp_table = seg_tp_ie_ds_all,
-    freq_table = nouns_opp_freq_pos
-  )
+  reference
 }
 
 # =========================================================================
@@ -507,9 +445,15 @@ output_log <- file.path("analysis", "romanian_palatalization_analysis.log")
 cat("Working directory:", getwd(), "\n")
 cat("Log file:", normalizePath(output_log, mustWork = FALSE), "\n")
 
-# Log to file, but keep echoing to console for interactive runs
-sink(output_log, split = TRUE)
-on.exit(sink(NULL), add = TRUE)
+# Capture output to the log file (and echo to terminal via split)
+log_con <- file(output_log, open = "wt")
+sink(log_con, split = TRUE)
+sink(log_con, type = "message")
+on.exit({
+  sink(type = "message")
+  sink()
+  close(log_con)
+}, add = TRUE)
 
 options(
   width = 200,
@@ -524,20 +468,17 @@ cat("READING DATA\n")
 cat("File:", input_file, "\n\n")
 
 lex <- suppressWarnings(
-  read_csv(
-    input_file,
+  read_csv(input_file,
     show_col_types = FALSE,
-    # Explicit types for columns that sometimes get parsed as non-character
     col_types = cols(
-      derived_adj = col_character(),
+      derived_adj     = col_character(),
       ipa_derived_adj = col_character(),
-      ipa_raw_lemma = col_character(),
-      ipa_raw_pl = col_character()
+      ipa_raw_lemma   = col_character(),
+      ipa_raw_pl      = col_character()
     )
   )
 )
 
-# Surface any CSV parsing problems early, so later patterns aren't silently skewed.
 parse_problems <- problems(lex)
 if (nrow(parse_problems) > 0) {
   cat("\nWARNING: Found", nrow(parse_problems), "parsing issue(s):\n")
@@ -549,30 +490,17 @@ if (nrow(parse_problems) > 0) {
 }
 
 lex <- lex |>
+  mutate(freq_ron_news_2024_1M = as.numeric(freq_ron_news_2024_1M)) |>
   mutate(
-    # Some frequency fields come in as character; normalize so they can be ranked / downsampled.
-    freq_ron_wikipedia_2021_1M = as.numeric(freq_ron_wikipedia_2021_1M)
-  ) |>
-  mutate(
-    # Normalize basic categorical tags so downstream filters don't have to worry about stray whitespace / cases.
     across(c(pos, gender, stem_final, cluster, plural), ~ trimws(as.character(.))),
     pos = toupper(pos),
-    # Ensure "opportunity" is NA outside the explicitly supported set, so the TP domain is well-defined.
     opportunity = if_else(opportunity %in% plural_opportunities_all, opportunity, NA_character_),
-    # Extract nde_class from exception_reason field (Python already applied correct logic)
-    # exception_reason has values like "nde:gimpe", "nde:ochi", "nde:paduchi"
-    # This avoids replicating complex logic and ensures consistency with Python pipeline
     nde_class = case_when(
       str_starts(exception_reason, "nde:") ~ str_remove(exception_reason, "^nde:"),
       TRUE ~ "none"
     ),
-    # Read target_is_suffix from Python pipeline output (avoids
-    # duplicating suffix-matching logic and divergence risk).
     target_is_suffix = target_is_suffix == "True",
-    # Make suffix tags explicit "none" rather than NA/blank, so grouping is well-behaved.
     lemma_suffix = if_else(is.na(lemma_suffix) | lemma_suffix == "", "none", lemma_suffix),
-    # Coarse-grain plural endings, used to determine whether an item sits in the i/e domain even when
-    # the original "opportunity" annotation is absent or "none".
     plural_ending = case_when(
       is.na(plural) | plural == "" ~ "none",
       str_ends(plural, "uri") ~ "uri",
@@ -580,19 +508,9 @@ lex <- lex |>
       str_ends(plural, "e") ~ "e",
       TRUE ~ "other"
     ),
-    # TP-specific "opportunity" that pulls NDEB lemmas into the i/e domain whenever their surface plural
-    # transparently reflects that environment. This lets us count NDEB as exceptions where they are *visible*.
     opportunity_tp = case_when(
-      nde_class %in% ndeb_classes &
-        opportunity == "none" &
-        plural_ending %in% c("i", "e") ~ plural_ending,
-
-      # NDEB with plural in -uri: treat them as i-type environments, since the triggering front vowel is still present.
-      nde_class %in% ndeb_classes &
-        opportunity == "none" &
-        plural_ending == "uri" ~ "i",
-
-      # everyone else: keep the original opportunity value
+      nde_class %in% ndeb_classes & opportunity == "none" & plural_ending %in% c("i", "e") ~ plural_ending,
+      nde_class %in% ndeb_classes & opportunity == "none" & plural_ending == "uri" ~ "i",
       TRUE ~ opportunity
     )
   )
@@ -600,24 +518,12 @@ lex <- lex |>
 nouns <- filter(lex, pos == "N")
 
 # =============================================================================
-# TP Domain Datasets (IAP-based filtering)
+# TP Domain Datasets
 # =============================================================================
-# The Python pipeline now explicitly marks tp_in_domain based on IAP perspective:
-# - Includes: nouns with i/e opportunity and target consonants that could be
-#   underspecified /K, G, T, S, Z/ alternating segments
-# - Excludes: NDEB families (gimpe/ochi/paduchi), underlying palatals,
-#   suffix-internal targets, and other structural non-alternators
-#
-# This gives us a clean productive palatalization domain where:
-#   N = items that could alternate
-#   exceptions = items in N that don't alternate (mutation=FALSE)
 
-# PRODUCTIVE TP DOMAIN: Use this for segment-level TP tables
 nouns_tp <- nouns |>
   filter(tp_in_domain == TRUE) |>
   mutate(
-    # Keep a simple cluster variable for TP-style cluster analyses.
-    # Match by prefix (e.g., "scă" matches cluster type "sc").
     cluster_simple = case_when(
       startsWith(cluster, "st") ~ "st",
       startsWith(cluster, "sc") ~ "sc",
@@ -626,13 +532,9 @@ nouns_tp <- nouns |>
     )
   )
 
-# FULL i/e DOMAIN (including NDEB): Use this for descriptive stats only
-# This is the old nouns_opp - kept for compatibility with existing analyses
-# that want to see NDEB items alongside productive palatalization
 nouns_opp <- nouns |>
   filter(
-    opportunity_tp %in% plural_opportunities,
-    !is.na(stem_final),
+    opportunity_tp %in% plural_opportunities, !is.na(stem_final),
     stem_final %in% segments_of_interest
   ) |>
   mutate(
@@ -652,12 +554,20 @@ nouns_opp <- nouns |>
     )
   )
 
-# Legacy: nouns_opp excluding NDEB (should be ~same as nouns_tp)
-# Kept for sanity checking that tp_in_domain matches manual NDEB filtering
-nouns_opp_no_ndeb <- nouns_opp |>
-  filter(!(nde_class %in% ndeb_classes))
+# Decompose the diff between nouns_tp and manual NDEB filter to confirm
+# what tp_in_domain excludes beyond NDEB.
+nouns_opp_no_ndeb_check <- nouns_opp |> filter(!(nde_class %in% ndeb_classes))
+tp_vs_opp_diff <- nrow(nouns_tp) - nrow(nouns_opp_no_ndeb_check)
+cat("TP domain vs manual NDEB filter diff:", tp_vs_opp_diff, "\n")
+if (tp_vs_opp_diff != 0L) {
+  cat("Items excluded from TP beyond NDEB (by reason and suffix):\n")
+  nouns_opp_no_ndeb_check |>
+    filter(!tp_in_domain) |>
+    count(exception_reason, lemma_suffix, sort = TRUE) |>
+    print_full()
+}
+rm(nouns_opp_no_ndeb_check)
 
-# NDEB-only dataset for descriptive analysis of structured families
 ndeb_rows <- filter(nouns, nde_class %in% ndeb_classes)
 
 cat_section("BASIC COUNTS")
@@ -666,15 +576,13 @@ cat("Nouns:", nrow(nouns), "\n")
 cat("Nouns in PRODUCTIVE TP domain (tp_in_domain=TRUE):", nrow(nouns_tp), "\n")
 cat("  (excludes NDEB, underlying palatals, suffix-internal targets)\n")
 cat("Nouns in i/e domain with target segments (incl. NDEB):", nrow(nouns_opp), "\n")
-cat("Nouns in i/e domain with target segments (NO NDEB, legacy):", nrow(nouns_opp_no_ndeb), "\n")
-cat("  Sanity check - should match nouns_tp: diff =", nrow(nouns_tp) - nrow(nouns_opp_no_ndeb), "\n\n")
+cat("TP vs manual NDEB diff:", tp_vs_opp_diff, "\n\n")
 
 # =========================================================================
 # Quality Control
 # =========================================================================
 
 cat_section("QC: GENDER ON NOUN ROWS")
-# Gender is needed mainly for sanity: errors here can hint at mis-labeled POS or mis-parsed rows.
 nouns_missing_gender <- filter(nouns, is.na(gender) | gender == "")
 cat("Missing gender:", nrow(nouns_missing_gender), "\n")
 if (nrow(nouns_missing_gender) > 0) {
@@ -685,7 +593,6 @@ if (nrow(nouns_missing_gender) > 0) {
 }
 
 cat_section("QC: MUTATION VS OPPORTUNITY")
-# Any mutated item outside the i/e opportunity domain is suspect and usually indicates inconsistent annotation.
 bad_mut_opp <- filter(nouns, mutation, !(opportunity %in% plural_opportunities))
 cat("Mutation outside i/e opportunity:", nrow(bad_mut_opp), "\n")
 if (nrow(bad_mut_opp) > 0) {
@@ -701,8 +608,6 @@ count(ndeb_rows, nde_class) |> print()
 
 ndeb_ochi_pad <- filter(ndeb_rows, nde_class %in% ndeb_observable)
 ndeb_gimpe <- filter(ndeb_rows, nde_class == "gimpe")
-
-# Ochi/păduche types are observable as DE exceptions; gimpe-type are hidden and should not inflate exception counts.
 cat("\nNDEB nouns of ochi/păduche type (observable DE exceptions):", nrow(ndeb_ochi_pad), "\n")
 if (nrow(ndeb_ochi_pad) > 0) {
   ndeb_ochi_pad |>
@@ -710,11 +615,9 @@ if (nrow(ndeb_ochi_pad) > 0) {
     arrange(nde_class, stem_final, lemma) |>
     print_full()
 }
-
 cat("\nNDEB nouns of gimpe type (unobservable as DE; excluded from exception counts):", nrow(ndeb_gimpe), "\n")
 
 cat_section("QC: OPPORTUNITY VS PLURAL ENDING")
-# This table is a quick way to see whether the i/e/uri tags line up with actual surface plurals.
 nouns |>
   count(opportunity, plural_ending) |>
   arrange(opportunity, plural_ending) |>
@@ -736,64 +639,54 @@ if (nrow(inconsistent) > 0) {
 }
 
 cat_section("QC: SUFFIX ANNOTATIONS")
-# Check basic suffix tagging consistency
 suffix_rows <- filter(nouns, lemma_suffix %in% suffix_interest)
 cat("Nouns with tracked suffixes:", nrow(suffix_rows), "\n")
 count(suffix_rows, lemma_suffix) |> print()
 
 cat_section("QC: PALATAL CONSONANT IN PLURAL")
-# palatal_consonant_pl is used as a more fine-grained sanity check on the binary mutation flag.
 palatal_nouns <- filter(nouns, !is.na(palatal_consonant_pl), palatal_consonant_pl != "")
 cat("Nouns with palatal_consonant_pl populated:", nrow(palatal_nouns), "\n")
-
-palatal_summary <- count(palatal_nouns, stem_final, palatal_consonant_pl, sort = TRUE)
-cat("\nPalatal consonant distribution by stem_final:\n")
-print_full(palatal_summary)
+count(palatal_nouns, stem_final, palatal_consonant_pl, sort = TRUE) |> print_full()
 
 palatal_no_mutation <- filter(nouns, !is.na(palatal_consonant_pl), palatal_consonant_pl != "", !mutation)
 cat("\nNouns with palatal_consonant_pl but mutation=FALSE:", nrow(palatal_no_mutation), "\n")
-if (nrow(palatal_no_mutation) > 0) {
-  palatal_no_mutation |>
-    select(lemma, plural, stem_final, palatal_consonant_pl, mutation, opportunity) |>
-    head(10) |>
-    print_full()
-}
 
 mutation_no_palatal <- filter(
-  nouns,
-  mutation,
-  opportunity %in% plural_opportunities,
+  nouns, mutation, opportunity %in% plural_opportunities,
   is.na(palatal_consonant_pl) | palatal_consonant_pl == ""
 )
-cat("\nNouns with mutation=TRUE in i/e domain but missing palatal_consonant_pl:", nrow(mutation_no_palatal), "\n")
-if (nrow(mutation_no_palatal) > 0) {
-  mutation_no_palatal |>
-    select(lemma, plural, stem_final, opportunity, mutation, palatal_consonant_pl) |>
-    head(10) |>
-    print_full()
-}
+cat("Nouns with mutation=TRUE but missing palatal_consonant_pl:", nrow(mutation_no_palatal), "\n")
 
 cat_section("QC: DUPLICATE LEMMAS")
-# Duplicated (lemma, pos) pairs hint at double entries from different sources; they matter for lemma-based counts.
 lemma_dups <- count(lex, lemma, pos, sort = TRUE) |> filter(n > 1)
 cat("Duplicate (lemma, pos) pairs:", nrow(lemma_dups), "\n")
 if (nrow(lemma_dups) > 0) head(lemma_dups, 25) |> print()
+
+cat_section("QC: SUFFIX EXCLUSION FROM TP DOMAIN")
+suffix_excluded <- nouns |>
+  filter(target_is_suffix, lemma_suffix %in% suffix_interest) |>
+  count(lemma_suffix, tp_in_domain = tp_in_domain == TRUE)
+cat("Suffix-internal items by TP domain membership:\n")
+print_full(suffix_excluded)
+# Machine-verifiable: all suffix-internal tracked-suffix items must be outside TP domain
+stopifnot(all(suffix_excluded$tp_in_domain == FALSE))
+cat("CONFIRMED: no suffix-internal targets remain in TP domain\n")
 
 # =========================================================================
 # Inflection vs Derivation
 # =========================================================================
 
-cat_section("INFLECTION VS DERIVATION: LEMMA-BASED PATTERNS (NOUNS & ADJECTIVES)")
+cat_section("INFLECTION VS DERIVATION: LEMMA-BASED PATTERNS")
 
 has_verb_deriv_cols <- all(c("derived_verbs", "ipa_derived_verbs", "deriv_suffixes") %in% names(lex))
 has_adj_deriv_cols <- all(c("derived_adj", "ipa_derived_adj") %in% names(lex))
 
-if (!RUN_DERIVATION_ANALYSES) {
-  cat("RUN_DERIVATION_ANALYSES = FALSE; skipping all inflection/derivation checks.\n")
-} else if (!has_verb_deriv_cols && !has_adj_deriv_cols) {
+if (!has_verb_deriv_cols && !has_adj_deriv_cols) {
   cat("No derivational columns present; skipping all inflection/derivation checks.\n")
 } else {
-  # Focus on lemmas that participate in the i/e domain and have a clear mutation flag.
+  # Build base dataset.  lemma_freq is standardized here so it flows through
+  # to denom_pairs / noun_adj_pairs and into analyze_inf_vs_deriv's
+  # frequency-controlled model without any further renaming.
   noun_base_inflect <- nouns |>
     filter(
       opportunity %in% plural_opportunities,
@@ -801,13 +694,14 @@ if (!RUN_DERIVATION_ANALYSES) {
       stem_final %in% segments_of_interest,
       !is.na(mutation)
     ) |>
-    mutate(mutation_inflect = as.logical(mutation))
+    mutate(
+      mutation_inflect = as.logical(mutation),
+      lemma_freq       = freq_ron_news_2024_1M # standardize name for downstream models
+    )
 
   # -----------------------------------------------------------------------
-  # (1) Noun lemmas: inflectional plurals vs denominal verbs
+  # (1) Noun → Verb
   # -----------------------------------------------------------------------
-  # This probes whether N→V derivations respect the same palatalization pattern
-  # as the plural, i.e. whether derivation "copies" inflection.
   cat_section("(1) NOUN LEMMAS: INFLECTIONAL PLURALS VS DENOMINAL VERBS")
 
   if (has_verb_deriv_cols) {
@@ -820,35 +714,34 @@ if (!RUN_DERIVATION_ANALYSES) {
         verb_suffix_front = deriv_suffixes %in% front_verb_suffixes,
         mutation_deriv_verb = detect_palatal_from_ipa(stem_final, ipa_derived_verbs)
       ) |>
-      # Discard cases where the IPA is too underspecified to tell what happened.
       filter(!is.na(mutation_deriv_verb)) |>
       arrange(lemma) |>
       distinct(lemma, .keep_all = TRUE)
 
-    cat("Denominal N–V lemmas in i/e domain with usable IPA:", nrow(denom_pairs), "\n")
-    cat("  (of which with front-vowel verbal suffix -i/-ui:", sum(denom_pairs$verb_suffix_front, na.rm = TRUE), ")\n")
+    cat("Denominal N-V lemmas in i/e domain with usable IPA:", nrow(denom_pairs), "\n")
+    cat(
+      "  (of which with front-vowel verbal suffix -i/-ui:",
+      sum(denom_pairs$verb_suffix_front, na.rm = TRUE), ")\n"
+    )
 
     if (nrow(denom_pairs) > 0) {
-      # Use DRY helper for inflection vs derivation analysis
-      analyze_inf_vs_deriv(denom_pairs, "mutation_inflect", "mutation_deriv_verb", "N → V")
+      analyze_inf_vs_deriv(denom_pairs, "mutation_inflect", "mutation_deriv_verb", "N -> V")
 
-      cat("\nDERIVATIONAL SUMMARY TABLE (N → V, FULL LEXICON; GOOGLE SHEET FORMAT)\n")
+      cat("\nDERIVATIONAL SUMMARY TABLE (N -> V, FULL LEXICON)\n")
       nv_tp_full <- make_deriv_summary(
-        denom_pairs,
-        "mutation_deriv_verb",
-        "N→V derivation, base plural mutated",
-        "N→V derivation, base plural non-mut."
+        denom_pairs, "mutation_deriv_verb",
+        "N->V derivation, base plural mutated",
+        "N->V derivation, base plural non-mut."
       )
       print_full(nv_tp_full)
     }
   } else {
-    cat("No denominal verb columns found; skipping N → V comparison.\n")
+    cat("No denominal verb columns found; skipping N -> V comparison.\n")
   }
 
   # -----------------------------------------------------------------------
-  # (2) Noun lemmas: inflectional plurals vs denominal adjectives
+  # (2) Noun → Adjective
   # -----------------------------------------------------------------------
-  # Same logic for N→Adj: do derived adjectives behave like the plural?
   cat_section("(2) NOUN LEMMAS: INFLECTIONAL PLURALS VS DENOMINAL ADJECTIVES")
 
   if (has_adj_deriv_cols) {
@@ -862,44 +755,37 @@ if (!RUN_DERIVATION_ANALYSES) {
       arrange(lemma) |>
       distinct(lemma, .keep_all = TRUE)
 
-    cat("Denominal N–Adj lemmas in i/e domain with usable IPA:", nrow(noun_adj_pairs), "\n")
+    cat("Denominal N-Adj lemmas in i/e domain with usable IPA:", nrow(noun_adj_pairs), "\n")
 
     if (nrow(noun_adj_pairs) > 0) {
-      # Use DRY helper for inflection vs derivation analysis
-      analyze_inf_vs_deriv(noun_adj_pairs, "mutation_inflect", "mutation_deriv_adj", "N → Adj")
+      analyze_inf_vs_deriv(noun_adj_pairs, "mutation_inflect", "mutation_deriv_adj", "N -> Adj")
 
-      cat("\nDERIVATIONAL SUMMARY TABLE (N → Adj, FULL LEXICON; GOOGLE SHEET FORMAT)\n")
+      cat("\nDERIVATIONAL SUMMARY TABLE (N -> Adj, FULL LEXICON)\n")
       na_tp_full <- make_deriv_summary(
-        noun_adj_pairs,
-        "mutation_deriv_adj",
-        "N→Adj derivation, base plural mutated",
-        "N→Adj derivation, base plural non-mut."
+        noun_adj_pairs, "mutation_deriv_adj",
+        "N->Adj derivation, base plural mutated",
+        "N->Adj derivation, base plural non-mut."
       )
       print_full(na_tp_full)
     }
   } else {
-    cat("No denominal adjective columns found; skipping N → Adj comparison.\n")
+    cat("No denominal adjective columns found; skipping N -> Adj comparison.\n")
   }
 
   # -----------------------------------------------------------------------
-  # (3) Adjective lemmas: inflectional plurals vs derivations
+  # (3) Adjective lemmas — kept for completeness; consistently empty
   # -----------------------------------------------------------------------
-  # This mirrors the noun analysis, but for adjectives as bases.
   cat_section("(3) ADJECTIVE LEMMAS: INFLECTIONAL PLURALS VS DERIVATIONS")
 
   adj_base_inflect <- lex |>
     filter(
-      pos == "ADJ",
-      opportunity %in% plural_opportunities,
-      !is.na(stem_final),
-      stem_final %in% segments_of_interest,
-      !is.na(mutation)
+      pos == "ADJ", opportunity %in% plural_opportunities,
+      !is.na(stem_final), stem_final %in% segments_of_interest, !is.na(mutation)
     ) |>
-    mutate(mutation_inflect = as.logical(mutation))
+    mutate(mutation_inflect = as.logical(mutation), lemma_freq = freq_ron_news_2024_1M)
 
   cat("Adjective lemmas with i/e plural & target segments:", nrow(adj_base_inflect), "\n")
 
-  # Adjectives → Verbs
   if (has_verb_deriv_cols && nrow(adj_base_inflect) > 0) {
     adj_verb_pairs <- adj_base_inflect |>
       filter(
@@ -915,22 +801,16 @@ if (!RUN_DERIVATION_ANALYSES) {
       distinct(lemma, .keep_all = TRUE)
 
     cat("Adjective lemmas with both plural + derived verb:", nrow(adj_verb_pairs), "\n")
-
     if (nrow(adj_verb_pairs) > 0) {
-      # Use DRY helper for inflection vs derivation analysis
-      analyze_inf_vs_deriv(adj_verb_pairs, "mutation_inflect", "mutation_deriv_verb", "Adj → V")
+      analyze_inf_vs_deriv(adj_verb_pairs, "mutation_inflect", "mutation_deriv_verb", "Adj -> V")
     }
-  } else {
-    cat("No adjective lemmas with both plural and derived verbs; skipping Adj → V comparison.\n")
   }
 
-  # Adjectives → Adjectives
   if (has_adj_deriv_cols && nrow(adj_base_inflect) > 0) {
     adj_adj_pairs <- adj_base_inflect |>
       filter(
         !is.na(derived_adj), derived_adj != "",
-        !is.na(ipa_derived_adj), ipa_derived_adj != "",
-        derived_adj != lemma
+        !is.na(ipa_derived_adj), ipa_derived_adj != "", derived_adj != lemma
       ) |>
       mutate(mutation_deriv_adj = detect_palatal_from_ipa(stem_final, ipa_derived_adj)) |>
       filter(!is.na(mutation_deriv_adj)) |>
@@ -938,13 +818,9 @@ if (!RUN_DERIVATION_ANALYSES) {
       distinct(lemma, .keep_all = TRUE)
 
     cat("Adjective lemmas with plural + non-trivial derived Adj:", nrow(adj_adj_pairs), "\n")
-
     if (nrow(adj_adj_pairs) > 0) {
-      # Use DRY helper for inflection vs derivation analysis
-      analyze_inf_vs_deriv(adj_adj_pairs, "mutation_inflect", "mutation_deriv_adj", "Adj → Adj")
+      analyze_inf_vs_deriv(adj_adj_pairs, "mutation_inflect", "mutation_deriv_adj", "Adj -> Adj")
     }
-  } else {
-    cat("No adjective lemmas with both plural and non-trivial derived adjectives; skipping Adj → Adj comparison.\n")
   }
 }
 
@@ -953,230 +829,67 @@ if (!RUN_DERIVATION_ANALYSES) {
 # =========================================================================
 
 cat_section("SEGMENT-WISE MUTATION RATES (PRODUCTIVE TP DOMAIN)")
-seg_summary <- nouns_tp |>
+nouns_tp |>
   group_by(stem_final) |>
   summarise(N_opp = n(), N_mut = sum(mutation, na.rm = TRUE), .groups = "drop") |>
   calc_rate() |>
-  arrange(stem_final)
-print_full(seg_summary)
+  arrange(stem_final) |>
+  print_full()
 
 cat_section("MUTATION RATES BY SEGMENT AND PLURAL TYPE (PRODUCTIVE TP DOMAIN)")
-seg_by_opp <- nouns_tp |>
+nouns_tp |>
   group_by(stem_final, opportunity) |>
   summarise(N_opp = n(), N_mut = sum(mutation, na.rm = TRUE), .groups = "drop") |>
   calc_rate() |>
-  arrange(stem_final, opportunity)
-print_full(seg_by_opp)
+  arrange(stem_final, opportunity) |>
+  print_full()
 
 cat_section("CLUSTER INVENTORY (PRODUCTIVE TP DOMAIN)")
-cluster_inventory <- nouns_tp |>
+nouns_tp |>
   filter(!is.na(cluster), cluster != "") |>
-  count(stem_final, cluster, sort = TRUE)
-print_full(cluster_inventory)
+  count(stem_final, cluster, sort = TRUE) |>
+  print_full()
 
 cat_section("CLUSTER EFFECTS ON MUTATION (PRODUCTIVE TP DOMAIN)")
-# Here we separate out a small set of clusters that may modulate palatalization
-# (st/sc/ct and orthographic chi/che/ghi/ghe) to see whether they depress/enhance rates.
-cluster_summary <- nouns_tp |>
-  mutate(
-    cluster_type = if_else(
-      cluster %in% c("st", "sc", "ct", "chi", "che", "ghi", "ghe"),
-      cluster,
-      "none"
-    )
-  ) |>
+nouns_tp |>
+  mutate(cluster_type = if_else(
+    cluster %in% c("st", "sc", "ct", "chi", "che", "ghi", "ghe"), cluster, "none"
+  )) |>
   group_by(stem_final, cluster_type, opportunity) |>
   summarise(N_opp = n(), N_mut = sum(mutation, na.rm = TRUE), .groups = "drop") |>
   calc_rate() |>
-  arrange(cluster_type, opportunity, stem_final)
-print_full(cluster_summary)
+  arrange(cluster_type, opportunity, stem_final) |>
+  print_full()
 
 cat_section("STRUCTURE OF NON-UNDERGOERS (I/E DOMAIN)")
-# This shows how the non-undergoers are distributed across suffixal classes, NDEB types, and true exceptions.
-non_under_summary <- nouns_opp |>
+nouns_opp |>
   filter(!mutation) |>
   group_by(stem_final, exception_category) |>
   summarise(N = n(), .groups = "drop") |>
   group_by(stem_final) |>
   mutate(total_non_under = sum(N), prop = N / total_non_under) |>
-  arrange(exception_category, stem_final, desc(prop))
-print_full(non_under_summary)
+  arrange(exception_category, stem_final, desc(prop)) |>
+  print_full()
 
 cat_section("NDE DISTRIBUTION BY SEGMENT")
-# NDEB statistics are useful to see which segments are most affected by lexically idiosyncratic patterns.
-nde_by_seg <- ndeb_rows |>
+ndeb_rows |>
   group_by(nde_class, stem_final) |>
   summarise(N = n(), .groups = "drop") |>
-  arrange(nde_class, stem_final)
-print_full(nde_by_seg)
-
-cat_section("PALATALIZATION RATES FOR <-că, -gă> NOUNS")
-# These are classic textbook examples of "c/g before -ă" patterns; we break them out separately.
-cg_cag_summary <- nouns |>
-  filter(
-    pos == "N",
-    str_ends(lemma, "că") | str_ends(lemma, "gă"),
-    opportunity %in% plural_opportunities,
-    stem_final %in% c("c", "g")
-  ) |>
-  group_by(stem_final, opportunity) |>
-  summarise(
-    N_opp = n(),
-    N_mut = sum(mutation, na.rm = TRUE),
-    rate_mut = if_else(N_opp > 0, N_mut / N_opp, NA_real_),
-    .groups = "drop"
-  )
-print_full(cg_cag_summary)
-
-cat_section("SUFFIX PATTERNS (ALL TRACKED SUFFIXES)")
-suffix_summary_all <- nouns |>
-  filter(lemma_suffix %in% suffix_interest) |>
-  group_by(lemma_suffix, stem_final, opportunity) |>
-  summarise(
-    N = n(),
-    N_mut = sum(mutation, na.rm = TRUE),
-    rate_mut = if_else(N > 0, N_mut / N, NA_real_),
-    .groups = "drop"
-  ) |>
-  arrange(lemma_suffix, opportunity, stem_final)
-print_full(suffix_summary_all)
-
-cat_section("SUFFIX PATTERNS WHERE SUFFIX IS TARGET")
-suffix_target_summary <- nouns |>
-  filter(lemma_suffix %in% suffix_interest, target_is_suffix) |>
-  group_by(lemma_suffix, stem_final, opportunity) |>
-  summarise(
-    N = n(),
-    N_mut = sum(mutation, na.rm = TRUE),
-    rate_mut = if_else(N > 0, N_mut / N, NA_real_),
-    .groups = "drop"
-  ) |>
-  arrange(lemma_suffix, opportunity, stem_final)
-print_full(suffix_target_summary)
-
-cat_section("COMPARISON: 'HAS SUFFIX' VS 'SUFFIX IS TARGET'")
-suffix_diff <- anti_join(
-  suffix_summary_all,
-  suffix_target_summary,
-  by = c("lemma_suffix", "stem_final", "opportunity")
-)
-if (nrow(suffix_diff) > 0) {
-  cat("Suffix present but not annotated as target in these cells:\n")
-  print_full(suffix_diff)
-} else {
-  cat("All tracked suffix rows are also marked as targets.\n")
-}
-
-cat_section("SUFFIX-INTERNAL VS ROOT-FINAL TARGETS: GIMPE ANALYSIS")
-
-# Key question from email.txt: Does GIMPE (root-internal C+i) behave differently
-# when the C+i is suffix-internal (e.g., "-ic" has c+i) vs. truly root-internal?
-#
-# Prediction: Suffix-internal C+i should be lexicalized (never mutate in plural),
-# while root-final targets at suffix boundary might still show variation.
-
-cat("\nGIMPE cases by suffix status:\n")
-gimpe_by_suffix <- nouns_opp |>
-  filter(nde_class == "gimpe") |>
-  group_by(target_is_suffix, lemma_suffix) |>
-  summarise(
-    N = n(),
-    N_with_opp = sum(opportunity %in% c("i", "e"), na.rm = TRUE),
-    .groups = "drop"
-  ) |>
-  arrange(desc(target_is_suffix), desc(N))
-print_full(gimpe_by_suffix)
-
-cat("\nSuffix-internal GIMPE examples:\n")
-gimpe_suffix_internal <- nouns_opp |>
-  filter(nde_class == "gimpe", target_is_suffix) |>
-  select(lemma, plural, stem_final, lemma_suffix, opportunity, exception_reason) |>
-  head(20)
-print_full(gimpe_suffix_internal)
-
-cat("\nRoot-final GIMPE examples (not in tracked suffix):\n")
-gimpe_root_final <- nouns_opp |>
-  filter(nde_class == "gimpe", !target_is_suffix) |>
-  select(lemma, plural, stem_final, lemma_suffix, opportunity, exception_reason) |>
-  head(20)
-print_full(gimpe_root_final)
-
-cat_section("SUFFIX TARGET ANALYSIS: MUTATION RATES BY POSITION")
-
-# Compare mutation rates when target is suffix-internal vs. root-final
-# This tests whether suffixes behave as "inalterable" vs. normal targets
-
-cat("\nMutation rates: Suffix-internal vs. Root-final targets (i/e domain):\n")
-suffix_position_comparison <- nouns_opp |>
-  mutate(
-    target_position = case_when(
-      target_is_suffix ~ "suffix_internal",
-      lemma_suffix != "none" ~ "root_final_with_suffix",
-      TRUE ~ "root_final_no_suffix"
-    )
-  ) |>
-  group_by(target_position, stem_final, opportunity) |>
-  summarise(
-    N = n(),
-    N_mut = sum(mutation, na.rm = TRUE),
-    rate_mut = if_else(N > 0, N_mut / N, NA_real_),
-    N_gimpe = sum(nde_class == "gimpe", na.rm = TRUE),
-    .groups = "drop"
-  ) |>
-  arrange(target_position, stem_final, opportunity)
-print_full(suffix_position_comparison)
-
-cat("\nSuffix-specific analysis (only suffix-internal targets):\n")
-suffix_specific <- nouns_opp |>
-  filter(target_is_suffix) |>
-  group_by(lemma_suffix, stem_final, opportunity) |>
-  summarise(
-    N = n(),
-    N_mut = sum(mutation, na.rm = TRUE),
-    rate_mut = if_else(N > 0, N_mut / N, NA_real_),
-    N_gimpe = sum(nde_class == "gimpe", na.rm = TRUE),
-    N_unexplained = sum(exception_reason == "unexplained", na.rm = TRUE),
-    .groups = "drop"
-  ) |>
-  arrange(lemma_suffix, opportunity, stem_final)
-print_full(suffix_specific)
+  arrange(nde_class, stem_final) |>
+  print_full()
 
 cat_section("TRUE EXCEPTIONS IN I/E DOMAIN (NON-NDEB)")
-
-# Use exception_reason to identify unexplained exceptions
-# Still:
-#   - restrict to the i/e opportunity domain
-#   - exclude NDEB classes (handled separately)
 true_exc <- nouns |>
   filter(
-    exception_reason == "unexplained",
-    opportunity %in% plural_opportunities,
+    exception_reason == "unexplained", opportunity %in% plural_opportunities,
     !(nde_class %in% ndeb_classes)
   )
-
 cat("Flagged true-exception nouns in i/e domain (non-NDEB):", nrow(true_exc), "\n")
-
-true_exc_by_seg <- true_exc |>
+true_exc |>
   group_by(stem_final) |>
   summarise(N_true_exc = n(), .groups = "drop") |>
-  arrange(stem_final)
-print_full(true_exc_by_seg)
-
-cat_section("NDEB EXCEPTIONS OF OCHI/PĂDUCHE TYPE (OUTSIDE ALIGNMENT-BASED I/E OPPORTUNITY)")
-ndeb_exc_ochi_pad <- nouns |>
-  filter(
-    nde_class %in% ndeb_observable,
-    !mutation
-  )
-
-cat("Non-mutating NDEB nouns of ochi/păduche type:", nrow(ndeb_exc_ochi_pad), "\n")
-
-if (nrow(ndeb_exc_ochi_pad) > 0) {
-  ndeb_exc_ochi_pad |>
-    select(lemma, plural, stem_final, opportunity, nde_class, lemma_suffix, notes) |>
-    arrange(nde_class, stem_final, lemma) |>
-    print_full()
-}
+  arrange(stem_final) |>
+  print_full()
 
 if (nrow(true_exc) > 0) {
   cat("\nSample of true exceptions:\n")
@@ -1184,7 +897,6 @@ if (nrow(true_exc) > 0) {
     select(lemma, plural, stem_final, opportunity, nde_class, lemma_suffix, notes) |>
     head(30) |>
     print()
-
   cat("\nSuffix distribution among true exceptions (top 10):\n")
   true_exc |>
     count(lemma_suffix, sort = TRUE) |>
@@ -1192,17 +904,115 @@ if (nrow(true_exc) > 0) {
     print()
 }
 
-cat_section("STRUCTURAL NON-UNDERGOERS IN I/E DOMAIN (NON-NDEB)")
+# Machine-verifiable assertion: dorsals have ZERO true exceptions anywhere in
+# the i/e domain.  This is a stronger claim than the TP alone can make.
+dorsal_true_exc <- nouns_opp |>
+  filter(stem_final %in% c("c", "g"), exception_category == "true_exception")
+stopifnot(nrow(dorsal_true_exc) == 0)
+cat("CONFIRMED: dorsals have zero true exceptions in i/e domain\n")
 
-# For reference: all non-mutating items regardless of flagging
-struct_non_under <- nouns |>
+# s+e decomposition: confirm that all s+e mutations come from sc clusters,
+# i.e. bare /s/ before -e never mutates.
+cat("\ns+e mutation decomposed by cluster presence:\n")
+nouns_tp |>
+  filter(stem_final == "s", opportunity == "e") |>
+  mutate(has_cluster = !is.na(cluster_simple)) |>
+  group_by(has_cluster) |>
+  summarise(N = n(), N_mut = sum(mutation), rate = N_mut / N, .groups = "drop") |>
+  print_full()
+
+cat_section("NDEB EXCEPTIONS OF OCHI/PADUCHE TYPE")
+ndeb_exc_ochi_pad <- filter(nouns, nde_class %in% ndeb_observable, !mutation)
+cat("Non-mutating NDEB nouns of ochi/paduche type:", nrow(ndeb_exc_ochi_pad), "\n")
+if (nrow(ndeb_exc_ochi_pad) > 0) {
+  ndeb_exc_ochi_pad |>
+    select(lemma, plural, stem_final, opportunity, nde_class, lemma_suffix, notes) |>
+    arrange(nde_class, stem_final, lemma) |>
+    print_full()
+}
+
+# =========================================================================
+# Frequency and Exception Status
+# =========================================================================
+# Key test: does log(lemma_freq) predict non-mutation in the TP domain, after
+# conditioning on segment and opportunity?
+#
+# If NOT significant: exceptions are distributed across the frequency range,
+# consistent with phonological (underspecification) conditioning rather than
+# high-frequency lexical entrenchment (Bybee 1995).
+#
+# If significant: a frequency-of-lexicalization story cannot be ruled out for
+# the residual exceptions, and this warrants a footnote.
+#
+# Dorsals are excluded: they have zero exceptions regardless of frequency,
+# so including them would trivially suppress any frequency effect without
+# adding information.  The z-segment is included as a strong negative control
+# (categorically non-mutating; any frequency effect there would indicate
+# that the measure is picking up something other than exception status).
+
+cat_section("FREQUENCY AND EXCEPTION STATUS (TP DOMAIN)")
+
+freq_exc_data <- nouns_tp |>
   filter(
+    stem_final %in% c("d", "s", "t", "z"), # coronals only; dorsals have no exceptions
     opportunity %in% plural_opportunities,
-    !mutation,
-    !(nde_class %in% ndeb_classes)
+    !is.na(freq_ron_news_2024_1M),
+    freq_ron_news_2024_1M > 0,
+    !is.na(mutation)
+  ) |>
+  mutate(
+    is_exception = as.integer(!mutation),
+    log_freq     = log(freq_ron_news_2024_1M),
+    seg_opp      = paste(stem_final, opportunity, sep = "_")
   )
 
-cat("Non-mutating, non-NDEB nouns in i/e domain (structural):", nrow(struct_non_under), "\n")
+cat("Items with frequency data (coronal TP domain):", nrow(freq_exc_data), "\n")
+cat("Segment x opportunity breakdown:\n")
+freq_exc_data |>
+  group_by(stem_final, opportunity) |>
+  summarise(N = n(), N_exc = sum(is_exception), .groups = "drop") |>
+  print_full()
+
+if (nrow(freq_exc_data) >= 20L) {
+  cat("\nFirth logistic: exception ~ log_freq + stem_final * opportunity\n")
+  model_freq_exc <- glm(
+    is_exception ~ log_freq + stem_final * opportunity,
+    data   = freq_exc_data,
+    family = binomial(),
+    method = brglm2::brglmFit
+  )
+  print_full(broom::tidy(model_freq_exc))
+
+  freq_main <- broom::tidy(model_freq_exc) |> filter(term == "log_freq")
+  cat(sprintf(
+    "\nlog_freq coefficient: b = %.4f, p = %.4f\n",
+    freq_main$estimate, freq_main$p.value
+  ))
+  if (freq_main$p.value > 0.05) {
+    cat("=> frequency does NOT predict exception status after conditioning on segment/opportunity.\n")
+    cat("   This supports phonological (not usage-based) conditioning of non-mutation.\n")
+  } else {
+    cat("=> frequency IS a significant predictor (consider footnote).\n")
+    cat("   Direction:", if_else(freq_main$estimate > 0,
+      "higher-frequency items are MORE likely to be exceptions",
+      "higher-frequency items are LESS likely to be exceptions"
+    ), "\n")
+  }
+
+  # Descriptive: median frequency of exceptions vs non-exceptions by segment
+  cat("\nMedian lemma frequency: exceptions vs non-exceptions (coronal TP domain)\n")
+  freq_exc_data |>
+    group_by(stem_final, opportunity, is_exception) |>
+    summarise(
+      N           = n(),
+      median_freq = median(freq_ron_news_2024_1M),
+      .groups     = "drop"
+    ) |>
+    arrange(stem_final, opportunity, is_exception) |>
+    print_full()
+} else {
+  cat("Insufficient data for frequency ~ exception model.\n")
+}
 
 # =========================================================================
 # Frequency-Based Downsampling
@@ -1210,76 +1020,53 @@ cat("Non-mutating, non-NDEB nouns in i/e domain (structural):", nrow(struct_non_
 
 cat("DOWNSAMPLING (FREQUENCY-BASED) FOR TOLERANCE PRINCIPLE ANALYSIS\n")
 
-# The TP is sensitive to overall N. Here we rebuild the grammar from the top N most
-# frequent lemmas to approximate a learner exposed primarily to high-frequency items.
-sample_lexeme_sizes <- c(1000L, 2500L, 5000L, 10000L)
-
-downsampled <- build_downsampled_lexica(nouns_opp, sample_lexeme_sizes)
-nouns_opp_down_single <- downsampled$reference
-seg_tp_ie_ds_all <- downsampled$tp_table
-nouns_opp_freq_pos <- downsampled$freq_table
-
-cat("Unique lemmas in i/e domain (all):", n_distinct(nouns_opp$lemma), "\n")
-cat("Unique lemmas with freq > 0:", nrow(nouns_opp_freq_pos), "\n\n")
-
-if (!is.null(seg_tp_ie_ds_all)) {
-  cat("Segment × opportunity mutation / TP summary across frequency-filtered lexicons (top N most frequent):\n")
-  print_full(seg_tp_ie_ds_all)
-  cat("\n")
-} else {
-  cat("No positive-frequency lemmas in i/e domain; skipping frequency downsampling.\n\n")
-}
+nouns_opp_down_single <- build_downsampled_lexicon(nouns_opp, n_lex = 1000L)
+cat("Unique lemmas in i/e domain (all):", n_distinct(nouns_opp$lemma), "\n\n")
 
 # =========================================================================
 # Tolerance Principle: Full Data
 # =========================================================================
 
 cat_section("TOLERANCE PRINCIPLE: SEGMENT-LEVEL PATTERNS (PRODUCTIVE TP DOMAIN)")
-
-# PRIMARY: Use TP domain (nouns_tp) for main segment-level analysis
 seg_tp_all <- compute_segment_tp_tables(nouns_tp)
 print_full(seg_tp_all)
-
-cat_section("TOLERANCE PRINCIPLE: SEGMENT-LEVEL PATTERNS (FULL i/e OPPORTUNITY DOMAIN)")
-
-# REFERENCE: Full i/e domain including NDEB (for comparison only)
-seg_tp_all_with_ndeb <- compute_segment_tp_tables(nouns_opp, label_suffix = " (with NDEB)")
-print_full(seg_tp_all_with_ndeb)
-
-# =========================================================================
-# NDEB CONTRIBUTION PER TYPE (FULL LEXICON & DOWNSAMPLED)
-# =========================================================================
-
-cat_section("TOLERANCE PRINCIPLE: NDEB CONTRIBUTION PER TYPE (FULL LEXICON)")
-
-nouns_opp_ndeb <- nouns_opp |>
-  filter(nde_class %in% ndeb_classes)
-
-seg_tp_all_ndeb <- compute_segment_tp_tables(nouns_opp_ndeb, label_suffix = " (NDEB)")
-print_full(seg_tp_all_ndeb)
-
-cat_section("TOLERANCE PRINCIPLE: NDEB CONTRIBUTION PER TYPE (REFERENCE DOWNSAMPLED LEXICON)")
-
-if (!is.null(nouns_opp_down_single) && nrow(nouns_opp_down_single) > 0L) {
-  nouns_opp_down_ndeb <- nouns_opp_down_single |>
-    filter(nde_class %in% ndeb_classes)
-
-  seg_tp_all_ds_ndeb <- compute_segment_tp_tables(nouns_opp_down_ndeb, label_suffix = " (downsampled, NDEB)")
-  print_full(seg_tp_all_ds_ndeb)
-} else {
-  cat("No reference downsampled lexicon available; skipping NDEB-by-type counts (downsampled).\n")
+if (any(seg_tp_all$small_n, na.rm = TRUE)) {
+  cat("\nSmall-N cells (N <", SMALL_CELL_THRESHOLD, ") — TP binary unreliable; see Bayesian TP:\n")
+  seg_tp_all |>
+    filter(small_n) |>
+    select(type, N, mutated, non_mutated, tolerated) |>
+    print_full()
 }
 
 # =========================================================================
-# Tolerance Principle: Downsampled Data
+# NDEB Contribution
+# =========================================================================
+
+cat_section("TOLERANCE PRINCIPLE: NDEB CONTRIBUTION PER TYPE (FULL LEXICON)")
+seg_tp_all_ndeb <- compute_segment_tp_tables(nouns_opp |> filter(nde_class %in% ndeb_classes),
+  label_suffix = " (NDEB)"
+)
+print_full(seg_tp_all_ndeb)
+
+cat_section("TOLERANCE PRINCIPLE: NDEB CONTRIBUTION PER TYPE (DOWNSAMPLED)")
+if (!is.null(nouns_opp_down_single) && nrow(nouns_opp_down_single) > 0L) {
+  compute_segment_tp_tables(nouns_opp_down_single |> filter(nde_class %in% ndeb_classes),
+    label_suffix = " (downsampled, NDEB)"
+  ) |> print_full()
+} else {
+  cat("No downsampled lexicon available.\n")
+}
+
+# =========================================================================
+# Tolerance Principle + Derivational: Downsampled
 # =========================================================================
 
 if (!is.null(nouns_opp_down_single) && nrow(nouns_opp_down_single) > 0L) {
-  cat_section("DERIVATIONAL SUMMARY TABLES (REFERENCE DOWNSAMPLED LEXICON: TOP 1000 MOST FREQUENT LEMMAS)")
-
   lemmas_ds <- unique(nouns_opp_down_single$lemma)
 
-  if (has_verb_deriv_cols && RUN_DERIVATION_ANALYSES) {
+  cat_section("DERIVATIONAL ANALYSIS (REFERENCE DOWNSAMPLED LEXICON: TOP 1000)")
+
+  if (has_verb_deriv_cols && exists("noun_base_inflect")) {
     denom_pairs_ds <- noun_base_inflect |>
       filter(
         lemma %in% lemmas_ds,
@@ -1294,20 +1081,21 @@ if (!is.null(nouns_opp_down_single) && nrow(nouns_opp_down_single) > 0L) {
       arrange(lemma) |>
       distinct(lemma, .keep_all = TRUE)
 
-    cat("  Denominal N–V lemmas in reference downsampled lexicon:", nrow(denom_pairs_ds), "\n")
-
+    cat("Denominal N-V lemmas (downsampled):", nrow(denom_pairs_ds), "\n")
     if (nrow(denom_pairs_ds) > 0) {
+      # Full analysis on downsampled pairs (not just summary table)
+      analyze_inf_vs_deriv(denom_pairs_ds, "mutation_inflect", "mutation_deriv_verb", "N -> V (downsampled)")
+
       nv_tp_ds <- make_deriv_summary(
-        denom_pairs_ds,
-        "mutation_deriv_verb",
-        "N→V derivation, base plural mutated (downsampled)",
-        "N→V derivation, base plural non-mut. (downsampled)"
+        denom_pairs_ds, "mutation_deriv_verb",
+        "N->V derivation, base plural mutated (downsampled)",
+        "N->V derivation, base plural non-mut. (downsampled)"
       )
       print_full(nv_tp_ds)
     }
   }
 
-  if (has_adj_deriv_cols && RUN_DERIVATION_ANALYSES) {
+  if (has_adj_deriv_cols && exists("noun_base_inflect")) {
     noun_adj_pairs_ds <- noun_base_inflect |>
       filter(
         lemma %in% lemmas_ds,
@@ -1319,108 +1107,195 @@ if (!is.null(nouns_opp_down_single) && nrow(nouns_opp_down_single) > 0L) {
       arrange(lemma) |>
       distinct(lemma, .keep_all = TRUE)
 
-    cat("  Denominal N–Adj lemmas in reference downsampled lexicon:", nrow(noun_adj_pairs_ds), "\n")
-
+    cat("Denominal N-Adj lemmas (downsampled):", nrow(noun_adj_pairs_ds), "\n")
     if (nrow(noun_adj_pairs_ds) > 0) {
+      # Full analysis on downsampled pairs
+      analyze_inf_vs_deriv(noun_adj_pairs_ds, "mutation_inflect", "mutation_deriv_adj", "N -> Adj (downsampled)")
+
       na_tp_ds <- make_deriv_summary(
-        noun_adj_pairs_ds,
-        "mutation_deriv_adj",
-        "N→Adj derivation, base plural mutated (downsampled)",
-        "N→Adj derivation, base plural non-mut. (downsampled)"
+        noun_adj_pairs_ds, "mutation_deriv_adj",
+        "N->Adj derivation, base plural mutated (downsampled)",
+        "N->Adj derivation, base plural non-mut. (downsampled)"
       )
       print_full(na_tp_ds)
     }
   }
 
-  cat_section("TOLERANCE PRINCIPLE: SEGMENT-LEVEL PATTERNS (REFERENCE DOWNSAMPLED, TP DOMAIN)")
-
-  # PRIMARY: Use TP domain for downsampled analysis
-  nouns_tp_down_single <- nouns_opp_down_single |>
-    filter(tp_in_domain == TRUE)
-
+  cat_section("TOLERANCE PRINCIPLE: SEGMENT-LEVEL PATTERNS (DOWNSAMPLED, TP DOMAIN)")
+  nouns_tp_down_single <- nouns_opp_down_single |> filter(tp_in_domain == TRUE)
   seg_tp_all_ds <- compute_segment_tp_tables(nouns_tp_down_single, label_suffix = " (downsampled)")
   print_full(seg_tp_all_ds)
+  if (any(seg_tp_all_ds$small_n, na.rm = TRUE)) {
+    cat("\nSmall-N downsampled cells — Bayesian TP is more reliable for these:\n")
+    seg_tp_all_ds |>
+      filter(small_n) |>
+      select(type, N, mutated, non_mutated, tolerated) |>
+      print_full()
+  }
 
-  cat_section("TOLERANCE PRINCIPLE: SEGMENT-LEVEL PATTERNS (REFERENCE DOWNSAMPLED, FULL i/e DOMAIN)")
-
-  # REFERENCE: Full i/e domain including NDEB (for comparison)
-  seg_tp_all_ds_with_ndeb <- compute_segment_tp_tables(nouns_opp_down_single, label_suffix = " (downsampled, with NDEB)")
-  print_full(seg_tp_all_ds_with_ndeb)
-
-  cat_section("TOLERANCE PRINCIPLE: SEGMENT-LEVEL COMPARISON (I VS E; FULL VS DOWNSAMPLED)")
-
-  # This lets us see whether the downsampled grammar "looks like" the full one.
+  cat_section("TOLERANCE PRINCIPLE: FULL VS DOWNSAMPLED COMPARISON")
   seg_tp_ie_raw_full <- nouns_opp |>
     group_by(stem_final, opportunity) |>
-    summarise(mutated = sum(mutation, na.rm = TRUE), non_mutated = sum(!mutation, na.rm = TRUE), .groups = "drop")
+    summarise(
+      mutated = sum(mutation, na.rm = TRUE),
+      non_mutated = sum(!mutation, na.rm = TRUE), .groups = "drop"
+    )
 
   seg_tp_ie_raw_ds <- nouns_opp_down_single |>
     group_by(stem_final, opportunity) |>
-    summarise(mutated = sum(mutation, na.rm = TRUE), non_mutated = sum(!mutation, na.rm = TRUE), .groups = "drop")
+    summarise(
+      mutated = sum(mutation, na.rm = TRUE),
+      non_mutated = sum(!mutation, na.rm = TRUE), .groups = "drop"
+    )
 
-  seg_tp_ie_compare <- seg_tp_ie_raw_full |>
-    select(stem_final, opportunity, mutated, non_mutated) |>
+  seg_tp_ie_raw_full |>
     rename(mutated_full = mutated, non_mutated_full = non_mutated) |>
     left_join(
-      seg_tp_ie_raw_ds |>
-        select(stem_final, opportunity, mutated, non_mutated) |>
-        rename(mutated_ds = mutated, non_mutated_ds = non_mutated),
+      seg_tp_ie_raw_ds |> rename(mutated_ds = mutated, non_mutated_ds = non_mutated),
       by = c("stem_final", "opportunity")
     ) |>
     mutate(
-      N_full = mutated_full + non_mutated_full,
-      N_ds = mutated_ds + non_mutated_ds,
+      N_full    = mutated_full + non_mutated_full,
+      N_ds      = mutated_ds + non_mutated_ds,
       rate_full = if_else(N_full > 0, mutated_full / N_full, NA_real_),
-      rate_ds = if_else(N_ds > 0, mutated_ds / N_ds, NA_real_)
+      rate_ds   = if_else(N_ds > 0, mutated_ds / N_ds, NA_real_)
     ) |>
-    arrange(stem_final, opportunity)
-  print_full(seg_tp_ie_compare)
-
-  small_ds <- filter(seg_tp_ie_compare, !is.na(N_ds), N_ds < SMALL_CELL_THRESHOLD)
-  if (nrow(small_ds) > 0) {
-    cat(sprintf("\nCells with N_ds < %d in segment × opportunity (downsampled):\n", SMALL_CELL_THRESHOLD))
-    select(small_ds, stem_final, opportunity, N_ds, rate_ds) |> print()
-  }
-} else {
-  cat("\nNo reference downsampled lexicon; skipping single-sample TP comparison.\n")
+    arrange(stem_final, opportunity) |>
+    print_full()
 }
 
 # =========================================================================
-# Tolerance Principle: Cluster Patterns
+# Tolerance Principle: Clusters
 # =========================================================================
 
 cat_section("TOLERANCE PRINCIPLE: CLUSTER PATTERNS (FULL DATA)")
+nouns_tp |>
+  filter(!is.na(cluster_simple)) |>
+  compute_segment_tp_tables(group_var = cluster_simple) |>
+  print_full()
 
-# Use nouns_tp (productive TP domain, NDEB excluded) for consistency
-# with segment-level TP tables.  Using nouns_opp would include NDEB
-# items that inflate the non-mutated count for st clusters.
-nouns_tp_clusters <- nouns_tp |>
-  filter(!is.na(cluster_simple))
-
-cluster_tp_all <- compute_segment_tp_tables(nouns_tp_clusters, group_var = cluster_simple)
-print_full(cluster_tp_all)
-
-cat_section("TOLERANCE PRINCIPLE: CLUSTER PATTERNS (REFERENCE DOWNSAMPLED LEXICON)")
-
+cat_section("TOLERANCE PRINCIPLE: CLUSTER PATTERNS (DOWNSAMPLED)")
 if (!is.null(nouns_opp_down_single) && nrow(nouns_opp_down_single) > 0L) {
-  nouns_tp_down_clusters <- nouns_opp_down_single |>
-    filter(tp_in_domain == TRUE, !is.na(cluster_simple))
-
-  cluster_tp_all_ds <- compute_segment_tp_tables(nouns_tp_down_clusters, label_suffix = " (downsampled)", group_var = cluster_simple)
-  print_full(cluster_tp_all_ds)
-} else {
-  cat("No reference downsampled lexicon available; skipping cluster TP (downsampled).\n")
+  nouns_opp_down_single |>
+    filter(tp_in_domain == TRUE, !is.na(cluster_simple)) |>
+    compute_segment_tp_tables(label_suffix = " (downsampled)", group_var = cluster_simple) |>
+    print_full()
 }
 
 # =========================================================================
-# Tolerance Principle: NDEB Counts
+# NDEB Counts by Class
+# =========================================================================
+# -ist analysis: two independent questions
+# =========================================================================
+#
+# Q1 (TRIGGER): Does -ist palatalize the ROOT consonant before it?
+#     ci/gi before ist = root dorsal palatalized
+#     chi/ghi before ist = root dorsal preserved
+#
+# Q2 (TARGET): Does the -ist suffix's own st cluster palatalize
+#     in the plural?
+#     -ist → -iști = suffix st palatalizes
+#     -ist → -iste/-isturi = suffix st does NOT palatalize
+
+cat_section("-ist AS TRIGGER: ROOT CONSONANT BEHAVIOR")
+
+ist_words <- nouns |>
+  filter(lemma_suffix == "-ist") |>
+  mutate(
+    pre_ist = str_extract(lemma, ".{1,3}(?=ist$)"),
+    # Q1: root dorsal status
+    root_dorsal_status = case_when(
+      str_detect(pre_ist, "ch$") ~ "preserved_k",
+      str_detect(pre_ist, "gh$") ~ "preserved_g",
+      str_detect(pre_ist, "c$") ~ "palatalized_c",
+      str_detect(pre_ist, "g$") ~ "palatalized_g",
+      TRUE ~ "non_dorsal"
+    ),
+    root_class = case_when(
+      root_dorsal_status %in% c("preserved_k", "palatalized_c") ~ "c/k",
+      root_dorsal_status %in% c("preserved_g", "palatalized_g") ~ "g",
+      TRUE ~ "other"
+    ),
+    root_palatalized = root_dorsal_status %in% c(
+      "palatalized_c", "palatalized_g"
+    ),
+    # Q2: suffix st palatalization in plural
+    suffix_st_palatalizes = case_when(
+      is.na(plural) | plural == "" ~ NA,
+      str_ends(plural, "i\u0219ti") ~ TRUE,
+      str_ends(plural, "iste") ~ FALSE,
+      str_ends(plural, "isturi") ~ FALSE,
+      TRUE ~ NA
+    )
+  )
+
+# Q1 results: root dorsal trigger
+ist_dorsal <- ist_words |> filter(root_class != "other")
+cat("Dorsal-final roots before -ist:", nrow(ist_dorsal), "\n\n")
+
+ist_dorsal |>
+  group_by(root_class, root_dorsal_status) |>
+  summarise(N = n(), .groups = "drop") |>
+  arrange(root_class, root_dorsal_status) |>
+  print_full()
+
+if (nrow(ist_dorsal) > 0) {
+  cat("\nRoot dorsal palatalization rate before -ist:\n")
+  ist_dorsal |>
+    group_by(root_class) |>
+    summarise(
+      N = n(),
+      N_palatalized = sum(root_palatalized),
+      rate = N_palatalized / N,
+      .groups = "drop"
+    ) |>
+    print_full()
+}
+
+cat_section("-ist AS TARGET: SUFFIX st PALATALIZATION IN PLURAL")
+
+ist_target <- ist_words |> filter(!is.na(suffix_st_palatalizes))
+cat("Words with classifiable plural:", nrow(ist_target), "\n\n")
+
+ist_target |>
+  count(suffix_st_palatalizes) |>
+  mutate(
+    label = if_else(suffix_st_palatalizes,
+                    "st \u2192 \u0219ti (palatalizes)",
+                    "st unchanged (-iste/-isturi)")
+  ) |>
+  select(label, n) |>
+  print_full()
+
+# Cross-tab: root dorsal × suffix palatalization
+ist_cross <- ist_words |>
+  filter(root_class != "other", !is.na(suffix_st_palatalizes))
+
+if (nrow(ist_cross) > 0) {
+  cat("\nCross-tab: root dorsal status × suffix palatalization:\n")
+  ist_cross |>
+    count(root_dorsal_status, suffix_st_palatalizes) |>
+    mutate(
+      suffix = if_else(suffix_st_palatalizes,
+                       "st\u2192\u0219ti", "st unchanged")
+    ) |>
+    select(root_dorsal_status, suffix, n) |>
+    print_full()
+
+  cat("\nFull listing:\n")
+  ist_cross |>
+    select(lemma, plural, root_dorsal_status,
+           suffix_st_palatalizes) |>
+    arrange(root_dorsal_status, suffix_st_palatalizes, lemma) |>
+    print_full()
+}
+
 # =========================================================================
 
-cat_section("NDEB BY CLASS (FULL LEXICON AND REFERENCE DOWNSAMPLED)")
+cat_section("NDEB BY CLASS (FULL LEXICON AND DOWNSAMPLED)")
 
-# These labels match the terminology used in the write-up and spreadsheets.
 ndeb_label <- function(x) {
-  dplyr::case_when(
+  case_when(
     x == "gimpe" ~ "gimpe type",
     x == "ochi" ~ "ochi-ochi type",
     x == "paduchi" ~ "paduche-paduchi type",
@@ -1432,35 +1307,31 @@ ndeb_tp_full <- nouns_opp |>
   filter(nde_class %in% ndeb_classes) |>
   group_by(nde_class) |>
   summarise(
-    mutated     = sum(mutation, na.rm = TRUE),
-    non_mutated = sum(!mutation, na.rm = TRUE),
-    .groups     = "drop"
+    mutated = sum(mutation, na.rm = TRUE),
+    non_mutated = sum(!mutation, na.rm = TRUE), .groups = "drop"
   ) |>
   mutate(type = ndeb_label(nde_class)) |>
   tp_table(type, mutated, non_mutated) |>
   mutate(subset = "full")
 
-ndeb_tp_ds <- if (!is.null(nouns_opp_down_single) &&
-  nrow(nouns_opp_down_single) > 0L) {
+ndeb_tp_ds <- if (!is.null(nouns_opp_down_single) && nrow(nouns_opp_down_single) > 0L) {
   nouns_opp_down_single |>
     filter(nde_class %in% ndeb_classes) |>
     group_by(nde_class) |>
     summarise(
-      mutated     = sum(mutation, na.rm = TRUE),
-      non_mutated = sum(!mutation, na.rm = TRUE),
-      .groups     = "drop"
+      mutated = sum(mutation, na.rm = TRUE),
+      non_mutated = sum(!mutation, na.rm = TRUE), .groups = "drop"
     ) |>
     mutate(type = ndeb_label(nde_class)) |>
     tp_table(type, mutated, non_mutated) |>
     mutate(subset = "downsampled")
 } else {
-  tibble() # empty, safe for bind_rows()
+  tibble()
 }
 
-ndeb_tp_all <- bind_rows(ndeb_tp_full, ndeb_tp_ds) |>
-  arrange(subset, type)
-
-print_full(ndeb_tp_all)
+bind_rows(ndeb_tp_full, ndeb_tp_ds) |>
+  arrange(subset, type) |>
+  print_full()
 
 # =========================================================================
 # Bayesian Tolerance Principle
@@ -1469,69 +1340,48 @@ print_full(ndeb_tp_all)
 cat_section("BAYESIAN TOLERANCE PRINCIPLE")
 
 if (!RUN_BAYESIAN_TP) {
-  cat("RUN_BAYESIAN_TP = FALSE; skipping Bayesian TP analysis.\n")
+  cat("RUN_BAYESIAN_TP = FALSE; skipping.\n")
 } else {
-  cat("\nBAYESIAN TOLERANCE PRINCIPLE: SEGMENT × OPPORTUNITY (PRODUCTIVE TP DOMAIN)\n")
-  tolerance_bayesian_results <- run_bayesian_tp(nouns_tp, subset_label = "TP_domain", seed_value = 123L)
+  cat("\nBAYESIAN TP: SEGMENT x OPPORTUNITY (PRODUCTIVE TP DOMAIN)\n")
+  tp_bayes_full <- run_bayesian_tp(nouns_tp, subset_label = "TP_domain", seed_value = 123L)
 
-  cat("\nBAYESIAN TOLERANCE PRINCIPLE: SEGMENT × OPPORTUNITY (REFERENCE DOWNSAMPLED, TP DOMAIN)\n")
-  if (!is.null(nouns_opp_down_single) && nrow(nouns_opp_down_single) > 0L) {
-    # Use tp_in_domain filter for downsampled TP analysis
-    nouns_tp_down_single_for_bayes <- nouns_opp_down_single |>
-      filter(tp_in_domain == TRUE)
-
-    tolerance_bayesian_results_ds <- run_bayesian_tp(
-      nouns_tp_down_single_for_bayes,
-      subset_label = "downsampled_TP",
-      seed_value = 456L
+  cat("\nBAYESIAN TP: SEGMENT x OPPORTUNITY (DOWNSAMPLED, TP DOMAIN)\n")
+  tp_bayes_ds <- if (!is.null(nouns_opp_down_single) && nrow(nouns_opp_down_single) > 0L) {
+    run_bayesian_tp(nouns_opp_down_single |> filter(tp_in_domain == TRUE),
+      subset_label = "downsampled_TP", seed_value = 456L
     )
   } else {
-    tolerance_bayesian_results_ds <- list()
-    cat("No reference downsampled lexicon available; skipping Bayesian TP for downsampled subset.\n")
+    list()
   }
 
-  if (length(tolerance_bayesian_results) > 0 || length(tolerance_bayesian_results_ds) > 0) {
-    tolerance_bayesian_df <- bind_rows(
-      if (length(tolerance_bayesian_results) > 0) bind_rows(tolerance_bayesian_results) else tibble(),
-      if (length(tolerance_bayesian_results_ds) > 0) bind_rows(tolerance_bayesian_results_ds) else tibble()
+  if (length(tp_bayes_full) > 0 || length(tp_bayes_ds) > 0) {
+    bind_rows(
+      if (length(tp_bayes_full) > 0) bind_rows(tp_bayes_full) else tibble(),
+      if (length(tp_bayes_ds) > 0) bind_rows(tp_bayes_ds) else tibble()
     ) |>
-      arrange(segment, opportunity, subset)
-
-    cat("\nBayesian TP results (full vs reference downsampled):\n")
-    print_full(as_tibble(tolerance_bayesian_df))
-  } else {
-    cat("\nInsufficient data for Bayesian TP analysis (both subsets)\n\n")
+      arrange(segment, opportunity, subset) |>
+      as_tibble() |>
+      print_full()
   }
 }
 
 # =========================================================================
-# Segment Class Comparison
+# Segment Class Comparison (Bayesian brms)
 # =========================================================================
 
 cat_section("SEGMENT CLASS COMPARISON")
 
 if (!RUN_SEGMENT_CLASS_BRMS) {
-  cat("RUN_SEGMENT_CLASS_BRMS = FALSE; skipping segment-class brms models.\n")
+  cat("RUN_SEGMENT_CLASS_BRMS = FALSE; skipping.\n")
 } else {
-  cat("\nSEGMENT CLASS COMPARISON: DORSAL VS CORONAL (I-DOMAIN, PRODUCTIVE TP DOMAIN)\n")
-
   nouns_i_classified <- nouns_tp |>
-    filter(
-      opportunity == "i",
-      !is.na(mutation)
-    ) |>
-    mutate(
-      segment_class = segment_class_factor(stem_final)
-    )
+    filter(opportunity == "i", !is.na(mutation)) |>
+    mutate(segment_class = segment_class_factor(stem_final))
 
-  cat("  Note: suffix_group excluded from model - all TP domain items have suffix='none'\n")
-  cat("  (suffix-internal targets are excluded by tp_in_domain filter)\n\n")
-
+  cat("\nSEGMENT CLASS COMPARISON: DORSAL VS CORONAL (I-DOMAIN)\n")
   invisible(capture.output(
     {
-      # Simpler model: just segment_class, since suffix is constant in TP domain
-      model_class_i <- fit_brms_bernoulli(
-        mutation ~ segment_class,
+      model_class_i <- fit_brms_bernoulli(mutation ~ segment_class,
         nouns_i_classified,
         seed = 123
       )
@@ -1539,48 +1389,29 @@ if (!RUN_SEGMENT_CLASS_BRMS) {
     type = "output"
   ))
 
-  cat("\nSUMMARY: SEGMENT CLASS MODEL (I-DOMAIN ONLY)\n")
   print(summary(model_class_i))
-
   draws_i <- as_draws_df(model_class_i)
-  beta_seg_i <- draws_i[["b_segment_classcoronal"]] # log-odds(coronal) - log-odds(dorsal)
-  prob_dorsals_gt_coronals_i <- mean(beta_seg_i < 0)
-  or_coronal_vs_dorsal_i <- exp(beta_seg_i)
-  or_ci_i <- quantile(or_coronal_vs_dorsal_i, probs = c(0.025, 0.975))
-
-  cat("\nSEGMENT CLASS COMPARISON (DORSAL VS CORONAL; I-DOMAIN)\n")
-  cat(sprintf("P(dorsals > coronals | i-domain) = %.3f\n", prob_dorsals_gt_coronals_i))
+  beta_i <- draws_i[["b_segment_classcoronal"]]
+  or_i <- exp(beta_i)
+  or_ci_i <- quantile(or_i, probs = c(0.025, 0.975))
+  cat(sprintf("\nP(dorsals > coronals | i-domain) = %.3f\n", mean(beta_i < 0)))
   cat(sprintf(
-    "OR_coronal_vs_dorsal (i-domain) = %.3f [95%% CI: %.3f, %.3f]\n",
-    median(or_coronal_vs_dorsal_i),
-    or_ci_i[1],
-    or_ci_i[2]
+    "OR_coronal_vs_dorsal (i-domain)  = %.3f [95%% CI: %.3f, %.3f]\n",
+    median(or_i), or_ci_i[1], or_ci_i[2]
   ))
-  cat("  (OR < 1 ⇒ dorsals more likely to palatalize among /i/ plurals)\n")
-
-  cat("\nSEGMENT CLASS COMPARISON: DORSAL VS CORONAL (I+E DOMAIN, PRODUCTIVE TP DOMAIN)\n")
+  cat("  (OR < 1 => dorsals more likely to palatalize)\n")
 
   nouns_ie_classified <- nouns_tp |>
-    filter(
-      opportunity %in% plural_opportunities,
-      !is.na(mutation)
-    ) |>
+    filter(opportunity %in% plural_opportunities, !is.na(mutation)) |>
     mutate(
       segment_class = segment_class_factor(stem_final),
-      opportunity = factor(
-        opportunity,
-        levels = plural_opportunities # c("i", "e")
-      )
+      opportunity = factor(opportunity, levels = plural_opportunities)
     )
 
-  cat("  Note: suffix_group excluded from model - all TP domain items have suffix='none'\n")
-  cat("  (suffix-internal targets are excluded by tp_in_domain filter)\n\n")
-
+  cat("\nSEGMENT CLASS COMPARISON: DORSAL VS CORONAL (I+E DOMAIN)\n")
   invisible(capture.output(
     {
-      # Simpler model: segment_class + opportunity, since suffix is constant
-      model_class_ie <- fit_brms_bernoulli(
-        mutation ~ segment_class + opportunity,
+      model_class_ie <- fit_brms_bernoulli(mutation ~ segment_class + opportunity,
         nouns_ie_classified,
         seed = 124
       )
@@ -1588,605 +1419,259 @@ if (!RUN_SEGMENT_CLASS_BRMS) {
     type = "output"
   ))
 
-  cat("\nSUMMARY: SEGMENT CLASS MODEL (I+E DOMAIN)\n")
   print(summary(model_class_ie))
-
   draws_ie <- as_draws_df(model_class_ie)
-  beta_seg_ie <- draws_ie[["b_segment_classcoronal"]] # still coronal vs dorsal
-  prob_dorsals_gt_coronals_ie <- mean(beta_seg_ie < 0)
-  or_coronal_vs_dorsal_ie <- exp(beta_seg_ie)
-  or_ci_ie <- quantile(or_coronal_vs_dorsal_ie, probs = c(0.025, 0.975))
-
-  cat("\nSEGMENT CLASS COMPARISON (DORSAL VS CORONAL; I+E DOMAIN)\n")
-  cat(sprintf("P(dorsals > coronals | i+e) = %.3f\n", prob_dorsals_gt_coronals_ie))
+  beta_ie <- draws_ie[["b_segment_classcoronal"]]
+  or_ie <- exp(beta_ie)
+  or_ci_ie <- quantile(or_ie, probs = c(0.025, 0.975))
+  cat(sprintf("\nP(dorsals > coronals | i+e) = %.3f\n", mean(beta_ie < 0)))
   cat(sprintf(
-    "OR_coronal_vs_dorsal (i+e) = %.3f [95%% CI: %.3f, %.3f]\n",
-    median(or_coronal_vs_dorsal_ie),
-    or_ci_ie[1],
-    or_ci_ie[2]
+    "OR_coronal_vs_dorsal (i+e)  = %.3f [95%% CI: %.3f, %.3f]\n",
+    median(or_ie), or_ci_ie[1], or_ci_ie[2]
   ))
-  cat("  (OR < 1 ⇒ dorsals more likely to palatalize across /i/ and /e/ plurals)\n")
 }
 
 # =========================================================================
-# EXPORT: TP SUMMARY TABLES FOR FULL AND DOWNSAMPLED LEXICA
+# EXPORT: TP Summary Tables
 # =========================================================================
+# Compute with-NDEB comparison rows here, close to where they're used.
+seg_tp_all_with_ndeb <- compute_segment_tp_tables(nouns_opp, label_suffix = " (with NDEB)")
+seg_tp_all_ds_with_ndeb <- if (!is.null(nouns_opp_down_single) && nrow(nouns_opp_down_single) > 0L) {
+  compute_segment_tp_tables(nouns_opp_down_single, label_suffix = " (downsampled, with NDEB)")
+} else {
+  NULL
+}
 
 cat_section("EXPORT: TP SUMMARY TABLES (FULL & DOWNSAMPLED)")
 
-# Helper: blank separator row
 blank_row <- tibble(
-  type = "",
-  N = NA_integer_,
-  mutated = NA_integer_,
-  `non-mutated` = NA_integer_,
-  rate = NA_real_,
-  majority = NA,
-  tolerated = NA,
-  memo = ""
+  type = "", N = NA_integer_, mutated = NA_integer_,
+  `non-mutated` = NA_integer_, rate = NA_real_,
+  majority = NA, tolerated = NA, memo = ""
 )
 
-# ---------- 1. FULL LEXICON SUMMARY ----------
+header_row <- function(label) {
+  tibble(
+    type = label, N = NA_integer_, mutated = NA_integer_,
+    `non-mutated` = NA_integer_, rate = NA_real_,
+    majority = NA, tolerated = NA, memo = ""
+  )
+}
 
-## 1a. NDEB block (full lexicon)
+get_seg_row <- function(tbl, label, new_label = NULL, memo_str = "") {
+  out <- tbl |>
+    filter(type == label) |>
+    transmute(type, N, mutated,
+      `non-mutated` = non_mutated,
+      rate, majority = majority_mutates, tolerated, memo = memo_str
+    )
+  if (!is.null(new_label)) out$type <- new_label
+  out
+}
+
+# ---- Full lexicon ----
+
 ndeb_export_full <- ndeb_tp_full |>
-  transmute(
-    type,
-    N,
-    mutated,
-    `non-mutated` = non_mutated,
-    rate,
-    majority = majority_mutates,
-    tolerated,
-    memo = dplyr::case_when(
+  transmute(type, N, mutated,
+    `non-mutated` = non_mutated, rate,
+    majority = majority_mutates, tolerated,
+    memo = case_when(
       type == "gimpe type" ~ "classic NDEB",
-      type == "ochi-ochi type" ~ "maybe NDEB if you assume the <i> is part of the root; an exception if you don't",
-      type == "paduche-paduchi type" ~ "maybe NDEB in the singular if you assume the <e> is part of the root, but more dubious in the plural (counterfeeding ordering of stem vowel truncation and palatalization?)",
+      type == "ochi-ochi type" ~ "NDEB if <i> is root-final; exception otherwise",
+      type == "paduche-paduchi type" ~ "NDEB in singular; plural ordering ambiguous",
       TRUE ~ ""
     )
   ) |>
   arrange(type)
 
-## 1b. Dorsals block (full lexicon)
-
-# segment-level TP tables already computed:
-#   seg_tp_all          (full)
-#   seg_tp_all_no_ndeb  (no NDEB)
-get_seg_row <- function(tbl, label) {
-  tbl |>
-    filter(type == label) |>
-    transmute(
-      type,
-      N,
-      mutated,
-      `non-mutated` = non_mutated,
-      rate,
-      majority = majority_mutates,
-      tolerated,
-      memo = ""
-    )
-}
-
 dorsals_full <- bind_rows(
   get_seg_row(seg_tp_all, "<c> + <-i> plural"),
   get_seg_row(seg_tp_all, "<c> + <-e> plural"),
   get_seg_row(seg_tp_all, "<c> + <-i, -e> plural"),
-  # Comparison: Show what numbers look like WITH NDEB included (full i/e domain)
-  get_seg_row(seg_tp_all_with_ndeb, "<c> + <-i, -e> plural (with NDEB)") |>
-    mutate(
-      type = "<c> + <-i, -e> plural, WITH NDEB",
-      memo = "Full i/e domain (includes NDEB items for comparison)"
-    ),
-  # Reference: Show TP domain explicitly as "no NDEB" for clarity
-  get_seg_row(seg_tp_all, "<c> + <-i, -e> plural") |>
-    mutate(
-      type = "<c> + <-i, -e> plural, no NDEB",
-      memo = "TP domain (NDEB excluded - productive grammar only)"
-    ),
+  get_seg_row(
+    seg_tp_all_with_ndeb, "<c> + <-i, -e> plural (with NDEB)",
+    "<c> + <-i, -e> plural, WITH NDEB",
+    "Full i/e domain (includes NDEB)"
+  ),
   get_seg_row(seg_tp_all, "<g> + <-i> plural"),
   get_seg_row(seg_tp_all, "<g> + <-e> plural"),
   get_seg_row(seg_tp_all, "<g> + <-i, -e> plural"),
-  # Comparison: Show what numbers look like WITH NDEB included (full i/e domain)
-  get_seg_row(seg_tp_all_with_ndeb, "<g> + <-i, -e> plural (with NDEB)") |>
-    mutate(
-      type = "<g> + <-i, -e> plural, WITH NDEB",
-      memo = "Full i/e domain (includes NDEB items for comparison)"
-    ),
-  # Reference: Show TP domain explicitly as "no NDEB" for clarity
-  get_seg_row(seg_tp_all, "<g> + <-i, -e> plural") |>
-    mutate(
-      type = "<g> + <-i, -e> plural, no NDEB",
-      memo = "TP domain (NDEB excluded - productive grammar only)"
-    )
+  get_seg_row(
+    seg_tp_all_with_ndeb, "<g> + <-i, -e> plural (with NDEB)",
+    "<g> + <-i, -e> plural, WITH NDEB",
+    "Full i/e domain (includes NDEB)"
+  )
 )
-
-## 1c. Coronals block (full lexicon)
 
 coronals_full <- bind_rows(
-  get_seg_row(seg_tp_all, "<s> + <-i> plural"),
-  get_seg_row(seg_tp_all, "<s> + <-e> plural"),
-  get_seg_row(seg_tp_all, "<s> + <-i, -e> plural"),
-  get_seg_row(seg_tp_all, "<z> + <-i> plural"),
-  get_seg_row(seg_tp_all, "<z> + <-e> plural"),
-  get_seg_row(seg_tp_all, "<z> + <-i, -e> plural"),
-  get_seg_row(seg_tp_all, "<t> + <-i> plural"),
-  get_seg_row(seg_tp_all, "<t> + <-e> plural"),
-  get_seg_row(seg_tp_all, "<t> + <-i, -e> plural"),
-  get_seg_row(seg_tp_all, "<d> + <-i> plural"),
-  get_seg_row(seg_tp_all, "<d> + <-e> plural"),
-  get_seg_row(seg_tp_all, "<d> + <-i, -e> plural")
+  lapply(c("s", "z", "t", "d"), function(seg) {
+    bind_rows(
+      get_seg_row(seg_tp_all, paste0("<", seg, "> + <-i> plural")),
+      get_seg_row(seg_tp_all, paste0("<", seg, "> + <-e> plural")),
+      get_seg_row(seg_tp_all, paste0("<", seg, "> + <-i, -e> plural"))
+    )
+  })
 )
 
-## 1d. Cluster block (full lexicon)
-
-# cluster_tp_all has type like "<st> + <-i> plural"
-clusters_full <- cluster_tp_all |>
-  filter(type %in% c(
-    "<st> + <-i> plural",
-    "<st> + <-e> plural",
-    "<st> + <-i, -e> plural",
-    "<sc> + <-i> plural",
-    "<sc> + <-e> plural",
-    "<sc> + <-i, -e> plural",
-    "<ct> + <-i> plural",
-    "<ct> + <-e> plural",
-    "<ct> + <-i, -e> plural"
-  )) |>
-  transmute(
-    type,
-    N,
-    mutated,
-    `non-mutated` = non_mutated,
-    rate,
-    majority = majority_mutates,
-    tolerated,
-    memo = ""
-  ) |>
-  arrange(type)
-
-## 1e. Derivational (N→V, full lexicon)
-
-deriv_nv_full <- tibble()
-
-if (exists("denom_pairs") && nrow(denom_pairs) > 0) {
-  # base-conditioned rows: already in nv_tp_full
-  deriv_nv_full <- nv_tp_full |>
-    transmute(
-      type,
-      N,
-      mutated,
+cluster_rows <- function(tbl) {
+  tbl |>
+    filter(str_starts(type, "<ct>|<sc>|<st>")) |>
+    transmute(type, N, mutated,
       `non-mutated` = non_mutated,
-      rate,
-      majority,
-      tolerated,
-      memo = ""
-    )
-
-  # ALL row
-  nv_all_full <- denom_pairs |>
-    summarise(
-      mutated = sum(mutation_deriv_verb, na.rm = TRUE),
-      non_mutated = sum(!mutation_deriv_verb, na.rm = TRUE),
-      .groups = "drop"
+      rate, majority = majority_mutates, tolerated, memo = ""
     ) |>
-    mutate(type = "N→V derivation, ALL") |>
-    tp_table(type, mutated, non_mutated) |>
-    transmute(
-      type,
-      N,
-      mutated,
-      `non-mutated` = non_mutated,
-      rate,
-      majority = majority_mutates,
-      tolerated,
-      memo = ""
-    )
-
-  deriv_nv_full <- bind_rows(deriv_nv_full, nv_all_full)
+    arrange(type)
 }
 
-## 1f. Derivational (N→Adj, full lexicon)
+cluster_tp_full <- nouns_tp |>
+  filter(!is.na(cluster_simple)) |>
+  compute_segment_tp_tables(group_var = cluster_simple)
 
-deriv_na_full <- tibble()
+clusters_full <- cluster_rows(cluster_tp_full)
 
-if (exists("noun_adj_pairs") && nrow(noun_adj_pairs) > 0) {
-  deriv_na_full <- na_tp_full |>
-    transmute(
-      type,
-      N,
-      mutated,
+make_deriv_export <- function(tp_tbl, all_pairs, deriv_col, all_label) {
+  if (is.null(tp_tbl) || nrow(tp_tbl) == 0) {
+    return(tibble())
+  }
+  summary_rows <- tp_tbl |>
+    transmute(type, N, mutated,
       `non-mutated` = non_mutated,
-      rate,
-      majority,
-      tolerated,
-      memo = ""
+      rate, majority, tolerated, memo = ""
     )
-
-  na_all_full <- noun_adj_pairs |>
+  if (is.null(all_pairs) || nrow(all_pairs) == 0) {
+    return(summary_rows)
+  }
+  all_row <- all_pairs |>
     summarise(
-      mutated = sum(mutation_deriv_adj, na.rm = TRUE),
-      non_mutated = sum(!mutation_deriv_adj, na.rm = TRUE),
-      .groups = "drop"
+      mutated = sum(.data[[deriv_col]], na.rm = TRUE),
+      non_mutated = sum(!.data[[deriv_col]], na.rm = TRUE)
     ) |>
-    mutate(type = "N→Adj derivation, ALL") |>
+    mutate(type = all_label) |>
     tp_table(type, mutated, non_mutated) |>
-    transmute(
-      type,
-      N,
-      mutated,
+    transmute(type, N, mutated,
       `non-mutated` = non_mutated,
-      rate,
-      majority = majority_mutates,
-      tolerated,
-      memo = ""
+      rate, majority = majority_mutates, tolerated, memo = ""
     )
-
-  deriv_na_full <- bind_rows(deriv_na_full, na_all_full)
+  bind_rows(summary_rows, all_row)
 }
 
-## 1g. Assemble full-lexicon spreadsheet table
+deriv_nv_full <- if (exists("nv_tp_full") && exists("denom_pairs")) {
+  make_deriv_export(nv_tp_full, denom_pairs, "mutation_deriv_verb", "N->V derivation, ALL")
+} else {
+  tibble()
+}
 
-summary_full <- bind_rows(
-  tibble(
-    type = "NDEB?",
-    N = NA_integer_,
-    mutated = NA_integer_,
-    `non-mutated` = NA_integer_,
-    rate = NA_real_,
-    majority = NA,
-    tolerated = NA,
-    memo = ""
-  ),
-  ndeb_export_full,
-  blank_row,
-  tibble(
-    type = "Dorsals",
-    N = NA_integer_,
-    mutated = NA_integer_,
-    `non-mutated` = NA_integer_,
-    rate = NA_real_,
-    majority = NA,
-    tolerated = NA,
-    memo = ""
-  ),
-  dorsals_full,
-  blank_row,
-  tibble(
-    type = "Coronals",
-    N = NA_integer_,
-    mutated = NA_integer_,
-    `non-mutated` = NA_integer_,
-    rate = NA_real_,
-    majority = NA,
-    tolerated = NA,
-    memo = ""
-  ),
-  coronals_full,
-  blank_row,
-  tibble(
-    type = "Clusters",
-    N = NA_integer_,
-    mutated = NA_integer_,
-    `non-mutated` = NA_integer_,
-    rate = NA_real_,
-    majority = NA,
-    tolerated = NA,
-    memo = ""
-  ),
-  clusters_full,
-  blank_row,
-  tibble(
-    type = "Derivational (N→V, front suffix)",
-    N = NA_integer_,
-    mutated = NA_integer_,
-    `non-mutated` = NA_integer_,
-    rate = NA_real_,
-    majority = NA,
-    tolerated = NA,
-    memo = ""
-  ),
-  deriv_nv_full,
-  blank_row,
-  tibble(
-    type = "Derivational (N→Adj, front suffix)",
-    N = NA_integer_,
-    mutated = NA_integer_,
-    `non-mutated` = NA_integer_,
-    rate = NA_real_,
-    majority = NA,
-    tolerated = NA,
-    memo = ""
-  ),
-  deriv_na_full
-)
+deriv_na_full <- if (exists("na_tp_full") && exists("noun_adj_pairs")) {
+  make_deriv_export(na_tp_full, noun_adj_pairs, "mutation_deriv_adj", "N->Adj derivation, ALL")
+} else {
+  tibble()
+}
 
-# Rename columns to have the "?" in the header for the CSV
-summary_full_export <- summary_full |>
-  rename(
-    `majority?` = majority,
-    `tolerated?` = tolerated
+assemble_summary <- function(ndeb_blk, dorsals_blk, coronals_blk,
+                             clusters_blk, nv_blk, na_blk) {
+  bind_rows(
+    header_row("NDEB?"), ndeb_blk, blank_row,
+    header_row("Dorsals"), dorsals_blk, blank_row,
+    header_row("Coronals"), coronals_blk, blank_row,
+    header_row("Clusters"), clusters_blk, blank_row,
+    header_row("Derivational (N->V, front suffix)"), nv_blk, blank_row,
+    header_row("Derivational (N->Adj, front suffix)"), na_blk
   )
+}
 
-full_outfile <- file.path("analysis", "romanian_tp_summary_full.csv")
-readr::write_csv(summary_full_export, full_outfile)
-cat("Wrote full-lexicon TP summary to:", full_outfile, "\n\n")
+summary_full <- assemble_summary(
+  ndeb_export_full, dorsals_full, coronals_full,
+  clusters_full, deriv_nv_full, deriv_na_full
+)
+readr::write_csv(
+  summary_full |> rename(`majority?` = majority, `tolerated?` = tolerated),
+  file.path("analysis", "romanian_tp_summary_full.csv")
+)
+cat("Wrote full-lexicon TP summary to: analysis/romanian_tp_summary_full.csv\n\n")
 
-
-# ---------- 2. DOWNSAMPLED (TOP 1000) SUMMARY ----------
-
-summary_ds <- tibble()
+# ---- Downsampled lexicon ----
 
 if (!is.null(nouns_opp_down_single) && nrow(nouns_opp_down_single) > 0L) {
-  ## 2a. NDEB block (downsampled)
   ndeb_export_ds <- ndeb_tp_ds |>
-    transmute(
-      type,
-      N,
-      mutated,
+    transmute(type, N, mutated,
       `non-mutated` = non_mutated,
-      rate,
-      majority = majority_mutates,
-      tolerated,
-      memo = "" # re-use or hand-edit memos as desired
+      rate, majority = majority_mutates, tolerated, memo = ""
     ) |>
     arrange(type)
 
-  ## 2b. Segment TP tables (downsampled)
-  # seg_tp_all_ds  and seg_tp_all_ds_no_ndeb were computed earlier
-  get_seg_row_ds <- function(tbl, label, new_label = NULL) {
-    out <- tbl |>
-      filter(type == label) |>
-      transmute(
-        type,
-        N,
-        mutated,
-        `non-mutated` = non_mutated,
-        rate,
-        majority = majority_mutates,
-        tolerated,
-        memo = ""
-      )
-    if (!is.null(new_label)) out$type <- new_label
-    out
+  get_seg_row_ds <- function(label, new_label = NULL, memo_str = "") {
+    get_seg_row(seg_tp_all_ds, label, new_label, memo_str)
   }
 
   dorsals_ds <- bind_rows(
-    get_seg_row_ds(seg_tp_all_ds, "<c> + <-i> plural (downsampled)"),
-    get_seg_row_ds(seg_tp_all_ds, "<c> + <-e> plural (downsampled)"),
-    get_seg_row_ds(seg_tp_all_ds, "<c> + <-i, -e> plural (downsampled)"),
-    # Comparison: Show what numbers look like WITH NDEB included (full i/e domain)
-    get_seg_row_ds(
-      seg_tp_all_ds_with_ndeb,
-      "<c> + <-i, -e> plural (downsampled, with NDEB)",
-      "<c> + <-i, -e> plural, downsampled, WITH NDEB"
-    ) |>
-      mutate(memo = "Full i/e domain (includes NDEB items for comparison)"),
-    # Reference: Show TP domain explicitly as "no NDEB" for clarity
-    get_seg_row_ds(
-      seg_tp_all_ds,
-      "<c> + <-i, -e> plural (downsampled)",
-      "<c> + <-i, -e> plural, downsampled, no NDEB"
-    ) |>
-      mutate(memo = "TP domain (NDEB excluded - productive grammar only)"),
-    get_seg_row_ds(seg_tp_all_ds, "<g> + <-i> plural (downsampled)"),
-    get_seg_row_ds(seg_tp_all_ds, "<g> + <-e> plural (downsampled)"),
-    get_seg_row_ds(seg_tp_all_ds, "<g> + <-i, -e> plural (downsampled)"),
-    # Comparison: Show what numbers look like WITH NDEB included (full i/e domain)
-    get_seg_row_ds(
-      seg_tp_all_ds_with_ndeb,
-      "<g> + <-i, -e> plural (downsampled, with NDEB)",
-      "<g> + <-i, -e> plural, downsampled, WITH NDEB"
-    ) |>
-      mutate(memo = "Full i/e domain (includes NDEB items for comparison)"),
-    # Reference: Show TP domain explicitly as "no NDEB" for clarity
-    get_seg_row_ds(
-      seg_tp_all_ds,
-      "<g> + <-i, -e> plural (downsampled)",
-      "<g> + <-i, -e> plural, downsampled, no NDEB"
-    ) |>
-      mutate(memo = "TP domain (NDEB excluded - productive grammar only)")
+    get_seg_row_ds("<c> + <-i> plural (downsampled)"),
+    get_seg_row_ds("<c> + <-e> plural (downsampled)"),
+    get_seg_row_ds("<c> + <-i, -e> plural (downsampled)"),
+    if (!is.null(seg_tp_all_ds_with_ndeb)) {
+      get_seg_row(
+        seg_tp_all_ds_with_ndeb,
+        "<c> + <-i, -e> plural (downsampled, with NDEB)",
+        "<c> + <-i, -e> plural, downsampled, WITH NDEB",
+        "Full i/e domain (includes NDEB)"
+      )
+    },
+    get_seg_row_ds("<g> + <-i> plural (downsampled)"),
+    get_seg_row_ds("<g> + <-e> plural (downsampled)"),
+    get_seg_row_ds("<g> + <-i, -e> plural (downsampled)"),
+    if (!is.null(seg_tp_all_ds_with_ndeb)) {
+      get_seg_row(
+        seg_tp_all_ds_with_ndeb,
+        "<g> + <-i, -e> plural (downsampled, with NDEB)",
+        "<g> + <-i, -e> plural, downsampled, WITH NDEB",
+        "Full i/e domain (includes NDEB)"
+      )
+    }
   )
 
   coronals_ds <- bind_rows(
-    get_seg_row_ds(seg_tp_all_ds, "<s> + <-i> plural (downsampled)"),
-    get_seg_row_ds(seg_tp_all_ds, "<s> + <-e> plural (downsampled)"),
-    get_seg_row_ds(seg_tp_all_ds, "<s> + <-i, -e> plural (downsampled)"),
-    get_seg_row_ds(seg_tp_all_ds, "<z> + <-i> plural (downsampled)"),
-    get_seg_row_ds(seg_tp_all_ds, "<z> + <-e> plural (downsampled)"),
-    get_seg_row_ds(seg_tp_all_ds, "<z> + <-i, -e> plural (downsampled)"),
-    get_seg_row_ds(seg_tp_all_ds, "<t> + <-i> plural (downsampled)"),
-    get_seg_row_ds(seg_tp_all_ds, "<t> + <-e> plural (downsampled)"),
-    get_seg_row_ds(seg_tp_all_ds, "<t> + <-i, -e> plural (downsampled)"),
-    get_seg_row_ds(seg_tp_all_ds, "<d> + <-i> plural (downsampled)"),
-    get_seg_row_ds(seg_tp_all_ds, "<d> + <-e> plural (downsampled)"),
-    get_seg_row_ds(seg_tp_all_ds, "<d> + <-i, -e> plural (downsampled)")
+    lapply(c("s", "z", "t", "d"), function(seg) {
+      bind_rows(
+        get_seg_row_ds(paste0("<", seg, "> + <-i> plural (downsampled)")),
+        get_seg_row_ds(paste0("<", seg, "> + <-e> plural (downsampled)")),
+        get_seg_row_ds(paste0("<", seg, "> + <-i, -e> plural (downsampled)"))
+      )
+    })
   )
 
-  clusters_ds <- cluster_tp_all_ds |>
-    filter(type %in% c(
-      "<st> + <-i> plural (downsampled)",
-      "<st> + <-e> plural (downsampled)",
-      "<st> + <-i, -e> plural (downsampled)",
-      "<sc> + <-i> plural (downsampled)",
-      "<sc> + <-e> plural (downsampled)",
-      "<sc> + <-i, -e> plural (downsampled)",
-      "<ct> + <-i> plural (downsampled)",
-      "<ct> + <-e> plural (downsampled)",
-      "<ct> + <-i, -e> plural (downsampled)"
-    )) |>
-    transmute(
-      type,
-      N,
-      mutated,
-      `non-mutated` = non_mutated,
-      rate,
-      majority = majority_mutates,
-      tolerated,
-      memo = ""
-    ) |>
-    arrange(type)
+  cluster_tp_ds <- nouns_opp_down_single |>
+    filter(tp_in_domain == TRUE, !is.na(cluster_simple)) |>
+    compute_segment_tp_tables(label_suffix = " (downsampled)", group_var = cluster_simple)
+  clusters_ds <- cluster_rows(cluster_tp_ds)
 
-  ## 2c. Derivational (N→V, downsampled)
-  deriv_nv_ds <- tibble()
-  if (exists("denom_pairs_ds") && nrow(denom_pairs_ds) > 0) {
-    deriv_nv_ds <- nv_tp_ds |>
-      transmute(
-        type,
-        N,
-        mutated,
-        `non-mutated` = non_mutated,
-        rate,
-        majority,
-        tolerated,
-        memo = ""
-      )
-
-    nv_all_ds <- denom_pairs_ds |>
-      summarise(
-        mutated = sum(mutation_deriv_verb, na.rm = TRUE),
-        non_mutated = sum(!mutation_deriv_verb, na.rm = TRUE),
-        .groups = "drop"
-      ) |>
-      mutate(type = "N→V derivation, ALL (downsampled)") |>
-      tp_table(type, mutated, non_mutated) |>
-      transmute(
-        type,
-        N,
-        mutated,
-        `non-mutated` = non_mutated,
-        rate,
-        majority = majority_mutates,
-        tolerated,
-        memo = ""
-      )
-
-    deriv_nv_ds <- bind_rows(deriv_nv_ds, nv_all_ds)
-  }
-
-  ## 2d. Derivational (N→Adj, downsampled)
-  deriv_na_ds <- tibble()
-  if (exists("noun_adj_pairs_ds") && nrow(noun_adj_pairs_ds) > 0) {
-    deriv_na_ds <- na_tp_ds |>
-      transmute(
-        type,
-        N,
-        mutated,
-        `non-mutated` = non_mutated,
-        rate,
-        majority,
-        tolerated,
-        memo = ""
-      )
-
-    na_all_ds <- noun_adj_pairs_ds |>
-      summarise(
-        mutated = sum(mutation_deriv_adj, na.rm = TRUE),
-        non_mutated = sum(!mutation_deriv_adj, na.rm = TRUE),
-        .groups = "drop"
-      ) |>
-      mutate(type = "N→Adj derivation, ALL (downsampled)") |>
-      tp_table(type, mutated, non_mutated) |>
-      transmute(
-        type,
-        N,
-        mutated,
-        `non-mutated` = non_mutated,
-        rate,
-        majority = majority_mutates,
-        tolerated,
-        memo = ""
-      )
-
-    deriv_na_ds <- bind_rows(deriv_na_ds, na_all_ds)
-  }
-
-  summary_ds <- bind_rows(
-    tibble(
-      type = "NDEB?",
-      N = NA_integer_,
-      mutated = NA_integer_,
-      `non-mutated` = NA_integer_,
-      rate = NA_real_,
-      majority = NA,
-      tolerated = NA,
-      memo = ""
-    ),
-    ndeb_export_ds,
-    blank_row,
-    tibble(
-      type = "Dorsals",
-      N = NA_integer_,
-      mutated = NA_integer_,
-      `non-mutated` = NA_integer_,
-      rate = NA_real_,
-      majority = NA,
-      tolerated = NA,
-      memo = ""
-    ),
-    dorsals_ds,
-    blank_row,
-    tibble(
-      type = "Coronals",
-      N = NA_integer_,
-      mutated = NA_integer_,
-      `non-mutated` = NA_integer_,
-      rate = NA_real_,
-      majority = NA,
-      tolerated = NA,
-      memo = ""
-    ),
-    coronals_ds,
-    blank_row,
-    tibble(
-      type = "Clusters",
-      N = NA_integer_,
-      mutated = NA_integer_,
-      `non-mutated` = NA_integer_,
-      rate = NA_real_,
-      majority = NA,
-      tolerated = NA,
-      memo = ""
-    ),
-    clusters_ds,
-    blank_row,
-    tibble(
-      type = "Derivational (N→V, front suffix)",
-      N = NA_integer_,
-      mutated = NA_integer_,
-      `non-mutated` = NA_integer_,
-      rate = NA_real_,
-      majority = NA,
-      tolerated = NA,
-      memo = ""
-    ),
-    deriv_nv_ds,
-    blank_row,
-    tibble(
-      type = "Derivational (N→Adj, front suffix)",
-      N = NA_integer_,
-      mutated = NA_integer_,
-      `non-mutated` = NA_integer_,
-      rate = NA_real_,
-      majority = NA,
-      tolerated = NA,
-      memo = ""
-    ),
-    deriv_na_ds
-  )
-}
-
-if (nrow(summary_ds) > 0) {
-  summary_ds_export <- summary_ds |>
-    rename(
-      `majority?` = majority,
-      `tolerated?` = tolerated
+  deriv_nv_ds <- if (exists("nv_tp_ds") && exists("denom_pairs_ds")) {
+    make_deriv_export(
+      nv_tp_ds, denom_pairs_ds, "mutation_deriv_verb",
+      "N->V derivation, ALL (downsampled)"
     )
+  } else {
+    tibble()
+  }
 
-  ds_outfile <- file.path("analysis", "romanian_tp_summary_downsampled.csv")
-  readr::write_csv(summary_ds_export, ds_outfile)
-  cat("Wrote downsampled (top 1000) TP summary to:", ds_outfile, "\n\n")
+  deriv_na_ds <- if (exists("na_tp_ds") && exists("noun_adj_pairs_ds")) {
+    make_deriv_export(
+      na_tp_ds, noun_adj_pairs_ds, "mutation_deriv_adj",
+      "N->Adj derivation, ALL (downsampled)"
+    )
+  } else {
+    tibble()
+  }
+
+  summary_ds <- assemble_summary(
+    ndeb_export_ds, dorsals_ds, coronals_ds,
+    clusters_ds, deriv_nv_ds, deriv_na_ds
+  )
+  readr::write_csv(
+    summary_ds |> rename(`majority?` = majority, `tolerated?` = tolerated),
+    file.path("analysis", "romanian_tp_summary_downsampled.csv")
+  )
+  cat("Wrote downsampled TP summary to: analysis/romanian_tp_summary_downsampled.csv\n\n")
 } else {
-  cat("No downsampled summary created (no reference downsampled lexicon available).\n\n")
+  cat("No downsampled summary created (no downsampled lexicon available).\n\n")
 }
 
 cat_section("ANALYSIS FINISHED")

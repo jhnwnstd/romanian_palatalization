@@ -20,6 +20,7 @@ import json
 import os
 import random
 import re
+import sqlite3
 import time
 import unicodedata
 from collections import defaultdict
@@ -27,7 +28,7 @@ from collections.abc import Mapping
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, DefaultDict, Optional, Set
-from urllib.parse import quote
+from urllib.parse import quote, unquote
 
 import pandas as pd
 import requests
@@ -62,16 +63,17 @@ UA = (
     "(https://example.edu/your-project-page; your.email@example.edu)"
 )
 
-# Discovery limits
-VERB_LIMIT = 15000
-NOUN_LIMIT = 40000
+# Discovery limits (EN Wiktionary has ~63k nouns, ~18k adj, ~7k verbs)
+VERB_LIMIT = 20000
+NOUN_LIMIT = 70000
 ADJ_LIMIT = 25000
-RO_NOUN_LIMIT = 10000
-RO_ADJ_LIMIT = 8000
-RO_VERB_LIMIT = 8000
+RO_NOUN_LIMIT = 30000
+RO_ADJ_LIMIT = 15000
+RO_VERB_LIMIT = 15000
 
-# Rate limiting
-THROTTLE_DELAY = 0.20
+# Rate limiting — Wikimedia allows ~200 req/s for identified bots.
+# maxlag=5 handles server-side throttling; this is client-side politeness.
+THROTTLE_DELAY = 0.05
 
 # Output CSV
 OUTPUT_CSV = Path(__file__).parent.parent / "data" / "romanian_lexicon_raw.csv"
@@ -82,8 +84,9 @@ _base_dir.mkdir(parents=True, exist_ok=True)
 CACHE_EN_PATH = str(_base_dir / "wt_cache_en.json")
 CACHE_RO_PATH = str(_base_dir / "wt_cache_ro.json")
 IPA_CACHE_PATH = str(_base_dir / "ipa_cache.json")
-HTML_EN_CACHE_PATH = str(_base_dir / "html_cache_en.json")
-HTML_RO_CACHE_PATH = str(_base_dir / "html_cache_ro.json")
+# HTML caches use SQLite for performance (the JSON versions were 2.7GB+
+# and caused multi-minute load/save pauses and OOM kills)
+HTML_DB_PATH = str(_base_dir / "html_cache.db")
 
 # Enable IPA fetch from HTML
 ENABLE_IPA_FETCH = True
@@ -93,7 +96,6 @@ ENABLE_IPA_FETCH = True
 # ============================================================================
 
 ROMANIAN_CHARS = set("abcdefghijklmnopqrstuvwxyzăâîșț")
-ASCII_LETTERS = set("abcdefghijklmnopqrstuvwxyz")
 
 # IPA extraction patterns
 IPA_SPAN_SELECTOR = "span.IPA, span.ipa, span.mw-IPA, span.mw-ipa"
@@ -156,12 +158,6 @@ PLURAL_KEYS = [
     re.compile(r"\|\s*plural\s*=\s*([^\n\|\}]+)", re.I),
 ]
 
-FEM_KEYS = [
-    re.compile(r"\|\s*f\s*=\s*([^\n\|\}]+)", re.I),
-    re.compile(r"\|\s*fem\s*=\s*([^\n\|\}]+)", re.I),
-    re.compile(r"\|\s*feminine\s*=\s*([^\n\|\}]+)", re.I),
-]
-
 TABLE_ANY_PL_RE = re.compile(
     r"\{\{\s*ro-noun-table[^}]*\|\s*(?:pl|plural)\s*=\s*([^\n\|}\]]+)",
     re.I,
@@ -171,17 +167,6 @@ TABLE_ANY_PL_RE = re.compile(
 ETYM_LANG_RE = re.compile(
     r"\{\{\s*(?:bor|der|inh|lbor|calque)\s*\|\s*ro\s*\|\s*"
     r"([a-z]{2,3})\s*(?:\||}})",
-    re.I,
-)
-
-# Derivational affix templates
-AFFIX_GENERIC_RE = re.compile(
-    r"\{\{\s*af\s*\|\s*ro\s*\|\s*([a-zăâîșțA-ZĂÂÎȘȚ\-]+)",
-    re.I,
-)
-AFFIX_ADJ_RE = re.compile(
-    r"\{\{\s*af\s*\|\s*ro\s*\|\s*([a-zăâîșțA-ZĂÂÎȘȚ\-]+)\s*\|\s*"
-    r"\-os\s*\|\s*pos1\s*=\s*n",
     re.I,
 )
 
@@ -410,8 +395,67 @@ _WT_CACHE_EN: dict[str, str] = {}
 _WT_CACHE_RO: dict[str, str] = {}
 _IPA_CACHE: dict[str, list[str]] = {}
 
-_HTML_CACHE_EN: dict[str, str] = {}
-_HTML_CACHE_RO: dict[str, str] = {}
+
+class _SqliteCache:
+    """SQLite-backed key-value cache for HTML pages.
+
+    Avoids loading multi-GB JSON into memory. Lookups and inserts
+    are instant; no bulk load/save needed.
+    """
+
+    def __init__(self, db_path: str, table: str) -> None:
+        self._table = table
+        self._conn = sqlite3.connect(db_path)
+        self._conn.execute("PRAGMA journal_mode=WAL")
+        self._conn.execute("PRAGMA synchronous=NORMAL")
+        self._conn.execute(
+            f"CREATE TABLE IF NOT EXISTS {table} "
+            f"(key TEXT PRIMARY KEY, value TEXT)"
+        )
+        self._conn.commit()
+
+    def __contains__(self, key: str) -> bool:
+        row = self._conn.execute(
+            f"SELECT 1 FROM {self._table} WHERE key=? LIMIT 1",
+            (key,),
+        ).fetchone()
+        return row is not None
+
+    def __getitem__(self, key: str) -> str:
+        row = self._conn.execute(
+            f"SELECT value FROM {self._table} WHERE key=?",
+            (key,),
+        ).fetchone()
+        if row is None:
+            raise KeyError(key)
+        return row[0]
+
+    def __setitem__(self, key: str, value: str) -> None:
+        self._conn.execute(
+            f"INSERT OR REPLACE INTO {self._table} (key, value) "
+            f"VALUES (?, ?)",
+            (key, value),
+        )
+        self._conn.commit()
+
+    def get(self, key: str, default: str = "") -> str:
+        try:
+            return self[key]
+        except KeyError:
+            return default
+
+    def __len__(self) -> int:
+        row = self._conn.execute(
+            f"SELECT COUNT(*) FROM {self._table}"
+        ).fetchone()
+        return row[0] if row else 0
+
+    def close(self) -> None:
+        self._conn.close()
+
+
+_HTML_CACHE_EN: _SqliteCache = None  # type: ignore[assignment]
+_HTML_CACHE_RO: _SqliteCache = None  # type: ignore[assignment]
 
 # Avoids repeated BeautifulSoup parsing
 _PLURAL_TABLE_CACHE: dict[str, Optional[str]] = {}
@@ -500,8 +544,6 @@ def clean_ipa_raw(ipa_str: str) -> str:
 
     # Multiple rounds of URL decoding (some are double-encoded)
     try:
-        from urllib.parse import unquote
-
         for _ in range(3):
             decoded = unquote(s)
             if decoded == s:
@@ -545,6 +587,28 @@ def clean_ipa_raw(ipa_str: str) -> str:
             deduped.append(tok)
     s = " ".join(deduped)
 
+    # Reject strings contaminated with foreign language labels
+    _FOREIGN_MARKERS = (
+        "français",
+        "türkçe",
+        "português",
+        "español",
+        "deutsch",
+        "italiano",
+        "english",
+        "polski",
+        "русский",
+        "العربية",
+        "中文",
+        "日本語",
+        "한국어",
+        "wikipedia",
+        "wiktionary",
+    )
+    s_lower = s.lower()
+    if any(marker in s_lower for marker in _FOREIGN_MARKERS):
+        return ""
+
     return s.strip()
 
 
@@ -568,13 +632,10 @@ def clean_plural(s: str) -> str:
     return cleaned[:100]
 
 
-def normalize_gloss(gloss: str) -> tuple[str, list[str], list[str]]:
-    """Normalize gloss field with enhanced HTML/template cleanup.
-
-    Returns: (normalized_gloss, empty_list, empty_list)
-    """
+def normalize_gloss(gloss: str) -> str:
+    """Normalize gloss field with enhanced HTML/template cleanup."""
     if not gloss:
-        return ("", [], [])
+        return ""
 
     # Remove HTML comments
     s = re.sub(r"<!--.*?-->", "", gloss, flags=re.DOTALL)
@@ -595,14 +656,14 @@ def normalize_gloss(gloss: str) -> tuple[str, list[str], list[str]]:
     s = re.sub(r",\s*\}\}+", "", s)  # , followed by }}
 
     # Clean up leading/trailing punctuation artifacts
-    s = re.sub(r"^[,\s]+|[,\s]+$", "", s)
+    s = re.sub(r"^[,:;\s]+|[,:;\s]+$", "", s)
 
     # Remove parenthetical notes (but keep if entire gloss is in parens)
     if not re.match(r"^\([^)]+\)$", s):
         s = re.sub(r"\s*\([^)]*\)\s*", " ", s)
 
     s = normalize_ws(s)
-    return (s, [], [])
+    return s
 
 
 def extract_best_gloss(block: str) -> str:
@@ -614,7 +675,7 @@ def extract_best_gloss(block: str) -> str:
         raw = mg.group(1) or ""
         # Strip simple link brackets early
         raw = normalize_ws(re.sub(r"\[\[|\]\]", "", raw))
-        gloss_norm, _, _ = normalize_gloss(raw)
+        gloss_norm = normalize_gloss(raw)
         if not gloss_norm:
             continue
 
@@ -658,7 +719,7 @@ def is_candidate_title(t: str) -> bool:
         if not (t[0].isupper() and (len(t) == 1 or t[1:].islower())):
             return False
     low = t.lower()
-    return all(ch in ROMANIAN_CHARS or ch in ASCII_LETTERS for ch in low)
+    return all(ch in ROMANIAN_CHARS for ch in low)
 
 
 def has_romanian_section(wt: str) -> bool:
@@ -831,13 +892,6 @@ def augment_denominal_verbs_with_heuristics(
         verb_norm = normalize_unicode(verb)
         verb_lower = verb_norm.lower()
 
-        # Optional: Restrict heuristic to verbs starting with a
-        # derivational prefix. To activate, uncomment the `continue`
-        # and delete `pass` below.
-        if not any(verb_lower.startswith(p) for p in DERIV_PREFIXES):
-            # continue
-            pass
-
         # Check each allowed denominal suffix
         suffix_matched = None
         for suff in DENOMINAL_VERB_SUFFIXES:
@@ -949,6 +1003,179 @@ def register_adj_derivations(title: str, ro_section: str) -> None:
         else:
             # Assume noun base if not clearly adjectival
             DENOMINAL_ADJS[base].add(title)
+
+
+# Regex for extracting base nouns from etymology text using {{m|ro|...}}
+# Stops at |, }, <, or whitespace to avoid template parameter artifacts
+_ETYM_M_RE = re.compile(
+    r"\{\{\s*(?:m|mention|l|link)\s*\|\s*ro\s*\|\s*"
+    r"([a-zăâîșțA-ZĂÂÎȘȚ][a-zăâîșțA-ZĂÂÎȘȚ\-]*?)(?=[|}<\s])",
+    re.I,
+)
+
+# Derived terms section pattern
+_DERIVED_TERMS_RE = re.compile(
+    r"={3,4}\s*(?:Derived terms|Termeni derivați)\s*={3,4}"
+    r"\s*(.*?)(?=\n={2,4}\s|\Z)",
+    re.DOTALL | re.I,
+)
+
+# Suffix categories for derivational mining
+DERIV_SUFFIX_CATEGORIES = [
+    # Verbalizers (front-vowel → palatalization triggers)
+    ("Category:Romanian terms suffixed with -i", "V"),
+    ("Category:Romanian terms suffixed with -ui", "V"),
+    ("Category:Romanian terms suffixed with -a", "V"),
+    # Adjective-forming suffixes
+    ("Category:Romanian terms suffixed with -esc", "ADJ"),
+    ("Category:Romanian terms suffixed with -ic", "ADJ"),
+    ("Category:Romanian terms suffixed with -ică", "ADJ"),
+    ("Category:Romanian terms suffixed with -ist", "ADJ"),
+]
+
+# Limit for suffix category mining
+SUFFIX_CAT_LIMIT = 5000
+
+
+def mine_derivation_categories() -> int:
+    """Mine Wiktionary suffix categories to discover N→V and N→Adj links.
+
+    For each suffix category, fetches members and then checks their
+    etymology to find the base noun/adjective.  Populates the global
+    DENOMINAL_VERBS / DENOMINAL_ADJS / DEADJECTIVAL_VERBS maps.
+
+    Returns total number of new pairs added.
+    """
+    total_added = 0
+
+    for cat_name, derived_pos in DERIV_SUFFIX_CATEGORIES:
+        print(f"  Mining {cat_name}...")
+        members = fetch_category_members(
+            WIKI_API_EN, cat_name, limit=SUFFIX_CAT_LIMIT
+        )
+        if not members:
+            print("    No members found")
+            continue
+
+        # Batch prefetch uncached members for efficiency
+        uncached = [
+            t
+            for t in members
+            if t not in _WT_CACHE_EN and t not in _WT_CACHE_RO
+        ]
+        if uncached:
+            print(f"    Batch-prefetching {len(uncached)} uncached...")
+            for i in range(0, len(uncached), 800):
+                chunk = uncached[i : i + 800]
+                batch_fetch_wikitext(WIKI_API_EN, chunk, _WT_CACHE_EN)
+
+        added = 0
+        for title in members:
+            title_norm = normalize_unicode(title)
+            wt = get_wikitext_cached(title_norm)
+            if not wt:
+                continue
+            m = ROMANIAN_SECTION_RE.search(wt)
+            if not m:
+                continue
+            ro_section = m.group(1)
+
+            # Extract base words from etymology via multiple patterns
+            bases = set()
+
+            # Pattern 1: {{af|ro|base|-suffix}} (already used by
+            # register_verb/adj_derivations, but we re-check here
+            # for items not in the verb/adj title sets)
+            for af_m in re.finditer(
+                r"\{\{\s*af\s*\|\s*ro\s*\|([^{}]+)\}\}",
+                ro_section,
+                flags=re.I,
+            ):
+                parts = [
+                    p.strip() for p in af_m.group(1).split("|") if p.strip()
+                ]
+                if parts:
+                    base = normalize_unicode(parts[0])
+                    if base and base != title_norm:
+                        bases.add(base)
+
+            # Pattern 2: {{m|ro|base}} in etymology prose
+            for m_m in _ETYM_M_RE.finditer(ro_section):
+                base = normalize_unicode(m_m.group(1))
+                if base and base != title_norm and len(base) >= 2:
+                    bases.add(base)
+
+            # Register discovered links
+            for base in bases:
+                if derived_pos == "V":
+                    if title_norm not in DENOMINAL_VERBS.get(base, set()):
+                        DENOMINAL_VERBS[base].add(title_norm)
+                        added += 1
+                elif derived_pos == "ADJ":
+                    if title_norm not in DENOMINAL_ADJS.get(base, set()):
+                        DENOMINAL_ADJS[base].add(title_norm)
+                        added += 1
+
+        print(f"    {len(members)} members, {added} new pairs")
+        total_added += added
+
+    return total_added
+
+
+def extract_derived_terms_from_entry(title: str, ro_section: str) -> None:
+    """Extract derivational links from the Derived terms section.
+
+    Looks for ====Derived terms==== sections in the Romanian entry
+    and parses linked terms, checking if they are verbs or adjectives.
+    Populates DENOMINAL_VERBS and DENOMINAL_ADJS.
+    """
+    title_norm = normalize_unicode(title)
+
+    m = _DERIVED_TERMS_RE.search(ro_section)
+    if not m:
+        return
+
+    derived_block = m.group(1)
+
+    # Extract linked terms: [[word]] or {{l|ro|word}}
+    terms = set()
+    for link_m in re.finditer(r"\[\[([^\]|]+)", derived_block):
+        term = normalize_unicode(link_m.group(1).strip())
+        if term and term != title_norm:
+            terms.add(term)
+    for l_m in re.finditer(
+        r"\{\{\s*(?:l|m)\s*\|\s*ro\s*\|\s*([^|}]+)",
+        derived_block,
+        flags=re.I,
+    ):
+        term = normalize_unicode(l_m.group(1).strip())
+        if term and term != title_norm:
+            terms.add(term)
+
+    # For each derived term, check its POS from cached wikitext only
+    # (avoid triggering API calls for uncached terms)
+    for term in terms:
+        if term not in _WT_CACHE_EN and term not in _WT_CACHE_RO:
+            continue
+        wt = get_wikitext_cached(term)
+        if not wt:
+            continue
+        sec_m = ROMANIAN_SECTION_RE.search(wt)
+        if not sec_m:
+            continue
+        ro = sec_m.group(1)
+
+        is_verb = has_verb_pos(ro)
+        is_adj = False
+        for pos_m in POS_HEAD_RE.finditer(ro):
+            if POS_MAP.get(pos_m.group(1).lower()) == "ADJ":
+                is_adj = True
+                break
+
+        if is_verb:
+            DENOMINAL_VERBS[title_norm].add(term)
+        if is_adj:
+            DENOMINAL_ADJS[title_norm].add(term)
 
 
 # ============================================================================
@@ -1166,11 +1393,43 @@ def confirm_plural_via_tables_or_templates(
 # ============================================================================
 
 
+def _migrate_json_to_sqlite(
+    json_path: str, db: _SqliteCache, label: str
+) -> None:
+    """One-time migration: load old JSON cache into SQLite DB."""
+    if not os.path.exists(json_path):
+        return
+    if len(db) > 0:
+        # SQLite already has data; skip migration
+        return
+    print(f"  Migrating {label} JSON → SQLite...")
+    try:
+        with open(json_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        count = 0
+        # Batch insert for speed
+        conn = db._conn
+        conn.execute("BEGIN")
+        for key, value in data.items():
+            conn.execute(
+                f"INSERT OR IGNORE INTO {db._table} "
+                f"(key, value) VALUES (?, ?)",
+                (key, value),
+            )
+            count += 1
+        conn.commit()
+        print(f"  Migrated {count} {label} entries")
+        # Rename old JSON so we don't re-migrate
+        os.rename(json_path, json_path + ".migrated")
+    except (json.JSONDecodeError, IOError, MemoryError) as e:
+        print(f"  WARNING: migration failed for {label}: {e}")
+
+
 def load_disk_cache():
-    """Load wikitext and HTML caches from disk."""
+    """Load wikitext caches from JSON, HTML caches from SQLite."""
     global _WT_CACHE_EN, _WT_CACHE_RO, _HTML_CACHE_EN, _HTML_CACHE_RO
 
-    # Wikitext EN
+    # Wikitext EN (JSON — small, ~55MB)
     if os.path.exists(CACHE_EN_PATH):
         try:
             with open(CACHE_EN_PATH, "r", encoding="utf-8") as f:
@@ -1179,7 +1438,7 @@ def load_disk_cache():
         except (json.JSONDecodeError, IOError):
             _WT_CACHE_EN = {}
 
-    # Wikitext RO
+    # Wikitext RO (JSON — small, ~38MB)
     if os.path.exists(CACHE_RO_PATH):
         try:
             with open(CACHE_RO_PATH, "r", encoding="utf-8") as f:
@@ -1188,27 +1447,24 @@ def load_disk_cache():
         except (json.JSONDecodeError, IOError):
             _WT_CACHE_RO = {}
 
-    # HTML EN
-    if os.path.exists(HTML_EN_CACHE_PATH):
-        try:
-            with open(HTML_EN_CACHE_PATH, "r", encoding="utf-8") as f:
-                _HTML_CACHE_EN = json.load(f)
-            print(f"Loaded {len(_HTML_CACHE_EN)} EN HTML cache entries")
-        except (json.JSONDecodeError, IOError):
-            _HTML_CACHE_EN = {}
+    # HTML caches: SQLite (instant open, no bulk load)
+    _HTML_CACHE_EN = _SqliteCache(HTML_DB_PATH, "html_en")
+    _HTML_CACHE_RO = _SqliteCache(HTML_DB_PATH, "html_ro")
 
-    # HTML RO
-    if os.path.exists(HTML_RO_CACHE_PATH):
-        try:
-            with open(HTML_RO_CACHE_PATH, "r", encoding="utf-8") as f:
-                _HTML_CACHE_RO = json.load(f)
-            print(f"Loaded {len(_HTML_CACHE_RO)} RO HTML cache entries")
-        except (json.JSONDecodeError, IOError):
-            _HTML_CACHE_RO = {}
+    # Migrate old JSON caches to SQLite if they exist
+    old_en = str(_base_dir / "html_cache_en.json")
+    old_ro = str(_base_dir / "html_cache_ro.json")
+    _migrate_json_to_sqlite(old_en, _HTML_CACHE_EN, "EN HTML")
+    _migrate_json_to_sqlite(old_ro, _HTML_CACHE_RO, "RO HTML")
+
+    print(
+        f"HTML cache (SQLite): "
+        f"{len(_HTML_CACHE_EN)} EN, {len(_HTML_CACHE_RO)} RO"
+    )
 
 
 def save_disk_cache():
-    """Save wikitext and HTML caches to disk."""
+    """Save wikitext caches to JSON. HTML is in SQLite (auto-saved)."""
     # Wikitext EN
     try:
         with open(CACHE_EN_PATH, "w", encoding="utf-8") as f:
@@ -1225,21 +1481,11 @@ def save_disk_cache():
     except IOError as e:
         print(f"Warning: failed to save RO wikitext cache: {e}")
 
-    # HTML EN
-    try:
-        with open(HTML_EN_CACHE_PATH, "w", encoding="utf-8") as f:
-            json.dump(_HTML_CACHE_EN, f, ensure_ascii=False)
-        print(f"Saved {len(_HTML_CACHE_EN)} EN HTML cache entries")
-    except IOError as e:
-        print(f"Warning: failed to save EN HTML cache: {e}")
-
-    # HTML RO
-    try:
-        with open(HTML_RO_CACHE_PATH, "w", encoding="utf-8") as f:
-            json.dump(_HTML_CACHE_RO, f, ensure_ascii=False)
-        print(f"Saved {len(_HTML_CACHE_RO)} RO HTML cache entries")
-    except IOError as e:
-        print(f"Warning: failed to save RO HTML cache: {e}")
+    # HTML caches are SQLite — already persisted on each insert
+    print(
+        f"HTML cache (SQLite): "
+        f"{len(_HTML_CACHE_EN)} EN, {len(_HTML_CACHE_RO)} RO"
+    )
 
 
 def load_ipa_cache():
@@ -1304,6 +1550,7 @@ def batch_fetch_wikitext(
                 "prop": "revisions",
                 "rvprop": "content",
                 "rvslots": "main",
+                "redirects": "",
                 "format": "json",
             }
             data = get(api, params)
@@ -1315,7 +1562,8 @@ def batch_fetch_wikitext(
                     if "revisions" in page:
                         content = page["revisions"][0]["slots"]["main"]["*"]
                         cache[title] = content
-        except (requests.RequestException, KeyError, ValueError):
+        except (requests.RequestException, KeyError, ValueError) as exc:
+            print(f"  WARNING: batch fetch failed: {exc}")
             continue
 
 
@@ -1328,6 +1576,7 @@ def _fetch_wikitext_from_api(api_url: str, title: str) -> Optional[str]:
             "prop": "revisions",
             "rvprop": "content",
             "rvslots": "main",
+            "redirects": "",
             "format": "json",
         }
         data = get(api_url, params)
@@ -1713,7 +1962,44 @@ def harvest_data() -> pd.DataFrame:
         f"and de-adjectival adjectives for {len(DEADJECTIVAL_ADJS)} bases"
     )
 
-    # Third pass: parse only nouns / adjectives into rows.
+    # Derivation category mining: discover N→V and N→Adj from
+    # Wiktionary suffix categories (e.g., "terms suffixed with -i")
+    print("\nMining Wiktionary suffix categories for derivations...")
+    cat_added = mine_derivation_categories()
+    print(f"  Category mining added {cat_added} derivation pairs")
+    print(
+        f"  Total denominal verbs: "
+        f"{sum(len(v) for v in DENOMINAL_VERBS.values())} pairs "
+        f"across {len(DENOMINAL_VERBS)} bases"
+    )
+    print(
+        f"  Total denominal adjs: "
+        f"{sum(len(v) for v in DENOMINAL_ADJS.values())} pairs "
+        f"across {len(DENOMINAL_ADJS)} bases"
+    )
+
+    # Derived terms pass: extract derivational links from noun entries
+    print("\nExtracting derived terms from noun entries...")
+    derived_count = 0
+    for i, title in enumerate(titles_for_rows, 1):
+        if i % 2000 == 0:
+            print(f"  Scanned {i}/{len(titles_for_rows)} entries...")
+        title_norm = normalize_unicode(title)
+        wt = get_wikitext_cached(title_norm)
+        if not wt:
+            continue
+        sec_m = ROMANIAN_SECTION_RE.search(wt)
+        if not sec_m:
+            continue
+        before = sum(len(v) for v in DENOMINAL_VERBS.values())
+        before += sum(len(v) for v in DENOMINAL_ADJS.values())
+        extract_derived_terms_from_entry(title_norm, sec_m.group(1))
+        after = sum(len(v) for v in DENOMINAL_VERBS.values())
+        after += sum(len(v) for v in DENOMINAL_ADJS.values())
+        derived_count += after - before
+    print(f"  Derived terms extraction added {derived_count} pairs")
+
+    # Final pass: parse only nouns / adjectives into rows.
     print("\nParsing entries...")
     for i, title in enumerate(titles_for_rows, 1):
         if title in seen:
@@ -1745,11 +2031,9 @@ def main() -> None:
     print("\nDe-duplicating by (lemma, pos)...")
 
     # 1. Source priority: prefer Romanian Wiktionary over English
-    source_priority = {
-        "ro.wiktionary.org": 0,
-        "en.wiktionary.org": 1,
-    }
-    df["source_rank"] = df["source"].map(source_priority).fillna(99)
+    df["source_rank"] = df["source"].apply(
+        lambda s: 0 if "ro.wiktionary" in str(s) else 1
+    )
 
     # 2. Prefer rows that actually have a gloss and a plural
     df["has_gloss"] = df["gloss"].notna() & (df["gloss"].str.strip() != "")

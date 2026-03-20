@@ -1,20 +1,18 @@
 type,N,mutated,non-mutated,rate,majority?,tolerated?,memo
 NDEB?,NA,NA,NA,NA,NA,NA,
 gimpe type,2080,0,2080,0,FALSE,FALSE,classic NDEB
-ochi-ochi type,13,0,13,0,FALSE,FALSE,maybe NDEB if you assume the <i> is part of the root; an exception if you don't
-paduche-paduchi type,68,0,68,0,FALSE,FALSE,"maybe NDEB in the singular if you assume the <e> is part of the root, but more dubious in the plural (counterfeeding ordering of stem vowel truncation and palatalization?)"
+ochi-ochi type,13,0,13,0,FALSE,FALSE,NDEB if <i> is root-final; exception otherwise
+paduche-paduchi type,68,0,68,0,FALSE,FALSE,NDEB in singular; plural ordering ambiguous
 ,NA,NA,NA,NA,NA,NA,
 Dorsals,NA,NA,NA,NA,NA,NA,
 <c> + <-i> plural,298,298,0,1,TRUE,TRUE,
 <c> + <-e> plural,265,265,0,1,TRUE,TRUE,
 "<c> + <-i, -e> plural",563,563,0,1,TRUE,TRUE,
-"<c> + <-i, -e> plural, WITH NDEB",1698,1308,390,0.7703180212014135,TRUE,FALSE,Full i/e domain (includes NDEB items for comparison)
-"<c> + <-i, -e> plural, no NDEB",563,563,0,1,TRUE,TRUE,TP domain (NDEB excluded - productive grammar only)
+"<c> + <-i, -e> plural, WITH NDEB",1698,1308,390,0.7703180212014135,TRUE,FALSE,Full i/e domain (includes NDEB)
 <g> + <-i> plural,243,243,0,1,TRUE,TRUE,
 <g> + <-e> plural,188,188,0,1,TRUE,TRUE,
 "<g> + <-i, -e> plural",431,431,0,1,TRUE,TRUE,
-"<g> + <-i, -e> plural, WITH NDEB",904,431,473,0.47676991150442477,FALSE,FALSE,Full i/e domain (includes NDEB items for comparison)
-"<g> + <-i, -e> plural, no NDEB",431,431,0,1,TRUE,TRUE,TP domain (NDEB excluded - productive grammar only)
+"<g> + <-i, -e> plural, WITH NDEB",904,431,473,0.47676991150442477,FALSE,FALSE,Full i/e domain (includes NDEB)
 ,NA,NA,NA,NA,NA,NA,
 Coronals,NA,NA,NA,NA,NA,NA,
 <s> + <-i> plural,135,135,0,1,TRUE,TRUE,
@@ -40,12 +38,12 @@ Clusters,NA,NA,NA,NA,NA,NA,
 "<st> + <-i, -e> plural",22,22,0,1,TRUE,TRUE,
 <st> + <-i> plural,22,22,0,1,TRUE,TRUE,
 ,NA,NA,NA,NA,NA,NA,
-"Derivational (N→V, front suffix)",NA,NA,NA,NA,NA,NA,
-"N→V derivation, base plural non-mut.",25,6,19,0.24,FALSE,FALSE,
-"N→V derivation, base plural mutated",32,25,7,0.78125,TRUE,TRUE,
-"N→V derivation, ALL",57,31,26,0.543859649122807,TRUE,FALSE,
+"Derivational (N->V, front suffix)",NA,NA,NA,NA,NA,NA,
+"N->V derivation, base plural non-mut.",25,6,19,0.24,FALSE,FALSE,
+"N->V derivation, base plural mutated",32,25,7,0.78125,TRUE,TRUE,
+"N->V derivation, ALL",57,31,26,0.543859649122807,TRUE,FALSE,
 ,NA,NA,NA,NA,NA,NA,
-"Derivational (N→Adj, front suffix)",NA,NA,NA,NA,NA,NA,
-"N→Adj derivation, base plural non-mut.",13,0,13,0,FALSE,FALSE,
-"N→Adj derivation, base plural mutated",16,4,12,0.25,FALSE,FALSE,
-"N→Adj derivation, ALL",29,4,25,0.13793103448275862,FALSE,FALSE,
+"Derivational (N->Adj, front suffix)",NA,NA,NA,NA,NA,NA,
+"N->Adj derivation, base plural non-mut.",13,0,13,0,FALSE,FALSE,
+"N->Adj derivation, base plural mutated",16,4,12,0.25,FALSE,FALSE,
+"N->Adj derivation, ALL",29,4,25,0.13793103448275862,FALSE,FALSE,

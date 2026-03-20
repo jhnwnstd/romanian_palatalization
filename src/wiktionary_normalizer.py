@@ -81,12 +81,35 @@ FOREIGN_LANG_MARKERS = {
     "deutsch",
     "german",
     "english",
+    "polski",
     "occitan",
     "occitană",
     "furlan",
     "kurdă",
     "kurdish",
+    "wikipedia",
+    "wiktionary",
     "pt",
+    "русский",
+    "العربية",
+    "中文",
+    "日本語",
+    "한국어",
+}
+
+# Stressed vowels to fold — module-level to avoid rebuilding per call
+_STRESSED_VOWELS = {
+    "á": "a",
+    "à": "a",
+    "é": "e",
+    "è": "e",
+    "í": "i",
+    "ì": "i",
+    "ó": "o",
+    "ò": "o",
+    "ú": "u",
+    "ù": "u",
+    "ấ": "â",
 }
 
 
@@ -150,20 +173,7 @@ def normalize_orthography(text: str) -> str:
     text = unicodedata.normalize("NFC", text)
     text = normalize_cedilla(text)
     # Fold stressed vowels from etymological/phonetic contexts
-    stressed_vowels = {
-        "á": "a",
-        "à": "a",
-        "é": "e",
-        "è": "e",
-        "í": "i",
-        "ì": "i",
-        "ó": "o",
-        "ò": "o",
-        "ú": "u",
-        "ù": "u",
-        "ấ": "â",
-    }
-    for src, tgt in stressed_vowels.items():
+    for src, tgt in _STRESSED_VOWELS.items():
         text = text.replace(src, tgt)
     return re.sub(r"\s+", " ", text)
 
@@ -250,7 +260,6 @@ def normalize_ipa(ipa: str, remove_stress: bool = True) -> str:
     ipa = ipa.replace(
         "ʲ", ""
     )  # Remove secondary palatalization marker for alignment consistency
-    ipa = ipa.replace("̯", "")  # Non-syllabic marker
 
     # Add tie bars to affricates (UNCONDITIONAL)
     ipa = ipa.replace("tʃ", "t͡ʃ")
@@ -304,8 +313,6 @@ def normalize_wiktionary_row(row: dict) -> dict:
     orthographic_fields = [
         "lemma",
         "plural",
-        "masc_pl",
-        "feminine_sg",
         "gloss",
         "etym_lang",
     ]
@@ -315,8 +322,6 @@ def normalize_wiktionary_row(row: dict) -> dict:
     ipa_mappings = [
         ("ipa_raw_lemma", "ipa_normalized_lemma"),
         ("ipa_raw_pl", "ipa_normalized_pl"),
-        ("ipa_raw_masc_pl", "ipa_normalized_masc_pl"),
-        ("ipa_raw_feminine_sg", "ipa_normalized_feminine_sg"),
     ]
     for raw_field, norm_field in ipa_mappings:
         if raw_field in normalized and normalized[raw_field]:
