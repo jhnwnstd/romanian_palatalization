@@ -38,7 +38,7 @@ CORPUS_IDS: Optional[List[str]] = None
 # Keep imports aligned with rest of project layout.
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 try:
-    from wiktionary_normalizer import normalize_orthography
+    from wiktionary_normalizer import normalize_cedilla, normalize_orthography
 except ImportError as exc:  # pragma: no cover
     print(
         "ERROR: Could not import normalize_orthography "
@@ -60,8 +60,12 @@ def discover_corpora(freq_dir: Path) -> List[str]:
 def normalize_freq_key(token: str) -> str:
     """
     Normalize a token from the Leipzig frequency table for lookup.
+
+    Applies cedilla-to-comma normalization to match the lexicon side,
+    which uses normalize_orthography (ş→ș, ţ→ț).
     """
     t = unicodedata.normalize("NFC", token)
+    t = normalize_cedilla(t)
     return t.strip().lower()
 
 
@@ -117,10 +121,8 @@ def build_freq_maps(
 
 def normalize_lemma(lemma: str) -> str:
     """Normalize lemma for frequency lookup using project normalization."""
-    pre = unicodedata.normalize("NFC", lemma)
-    norm = normalize_orthography(pre) or ""
-    norm = unicodedata.normalize("NFC", norm)
-    return norm.strip().lower()
+    norm = normalize_orthography(lemma) or ""
+    return norm.strip()
 
 
 def main():

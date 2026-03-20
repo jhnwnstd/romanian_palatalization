@@ -32,7 +32,6 @@ THROTTLE = (0.05, 0.1)  # jittered sleep per request (min, max)
 RETRIES = 4
 TIMEOUT = 10
 
-TARGET_FINALS = set("cgtdsz")
 KEEP_POS = {"s.m.", "s.f.", "s.n.", "adj.", "vb."}
 DASHES = {"-", "—", "–"}
 
@@ -68,16 +67,6 @@ def norm_lemma(s: str) -> str:
     s = norm_ws(s)
     return s
 
-
-def looks_like_target(lemma: str) -> bool:
-    """
-    True if lemma ends in one of TARGET_FINALS (c/g/t/d/s/z) and is
-    single-token.
-    """
-    lemma_lower = norm_lemma(lemma).lower()
-    if not lemma_lower or " " in lemma_lower:
-        return False
-    return lemma_lower[-1] in TARGET_FINALS
 
 
 def clean_plural_token(pl: str) -> str:

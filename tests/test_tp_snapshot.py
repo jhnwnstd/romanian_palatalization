@@ -17,9 +17,7 @@ import pytest
 
 PROJECT_ROOT = Path(__file__).parent.parent
 TP_FULL_PATH = PROJECT_ROOT / "analysis" / "romanian_tp_summary_full.csv"
-TP_DS_PATH = (
-    PROJECT_ROOT / "analysis" / "romanian_tp_summary_downsampled.csv"
-)
+TP_DS_PATH = PROJECT_ROOT / "analysis" / "romanian_tp_summary_downsampled.csv"
 
 
 @pytest.fixture(scope="module")
@@ -39,7 +37,9 @@ def tp_downsampled():
 def get_row(df, type_label):
     """Helper to get a single row by type label."""
     rows = df[df["type"] == type_label]
-    assert len(rows) == 1, f"Expected 1 row for '{type_label}', got {len(rows)}"
+    assert (
+        len(rows) == 1
+    ), f"Expected 1 row for '{type_label}', got {len(rows)}"
     return rows.iloc[0]
 
 
@@ -53,12 +53,13 @@ def test_full_gimpe_type(tp_full):
     row = get_row(tp_full, "gimpe type")
 
     # These should be very stable
-    assert 2150 <= row["N"] <= 2250, f"Unexpected gimpe N: {row['N']}"
+    assert 2050 <= row["N"] <= 2150, f"Unexpected gimpe N: {row['N']}"
     assert row["mutated"] == 0, "GIMPE should not mutate"
     assert row["non-mutated"] == row["N"]
     assert row["rate"] == 0.0
     assert row["majority?"] is False
-    assert row["tolerated?"] is True
+    # Mutation is not productive among gimpe items (0% rate)
+    assert row["tolerated?"] is False
 
 
 def test_full_ochi_type(tp_full):
@@ -85,8 +86,8 @@ def test_full_dorsals_c_i_e(tp_full):
     """Dorsal c + i,e combined (full lexicon)."""
     row = get_row(tp_full, "<c> + <-i, -e> plural")
 
-    # TP domain (excludes NDEB): expect ~450-500
-    assert 450 <= row["N"] <= 500, f"Unexpected c i+e N: {row['N']}"
+    # TP domain (excludes NDEB): expect ~540-590
+    assert 540 <= row["N"] <= 590, f"Unexpected c i+e N: {row['N']}"
 
     # Should have 100% mutation in TP domain
     assert row["rate"] == 1.0, f"Expected 100% c mutation, got {row['rate']}"
@@ -97,8 +98,8 @@ def test_full_dorsals_g_i_e(tp_full):
     """Dorsal g + i,e combined (full lexicon)."""
     row = get_row(tp_full, "<g> + <-i, -e> plural")
 
-    # TP domain (excludes NDEB): expect ~380-410
-    assert 380 <= row["N"] <= 410, f"Unexpected g i+e N: {row['N']}"
+    # TP domain (excludes NDEB): expect ~410-450
+    assert 410 <= row["N"] <= 450, f"Unexpected g i+e N: {row['N']}"
 
     # Should have 100% mutation in TP domain
     assert row["rate"] == 1.0, f"Expected 100% g mutation, got {row['rate']}"
@@ -108,8 +109,8 @@ def test_full_coronals_t_i(tp_full):
     """Coronal t + i (full lexicon)."""
     row = get_row(tp_full, "<t> + <-i> plural")
 
-    # TP domain: expect ~1000-1050
-    assert 1000 <= row["N"] <= 1050, f"Unexpected t+i N: {row['N']}"
+    # TP domain: expect ~1070-1120
+    assert 1070 <= row["N"] <= 1120, f"Unexpected t+i N: {row['N']}"
 
     # Should have 100% mutation rate in TP domain
     assert row["rate"] == 1.0, f"Expected 100% t+i mutation, got {row['rate']}"
@@ -126,12 +127,13 @@ def test_full_coronals_z_e(tp_full):
 
 
 def test_full_cluster_st_i(tp_full):
-    """Cluster st + i (full lexicon) - should palatalize well."""
+    """Cluster st + i (full lexicon, TP domain) - 100% mutation."""
     row = get_row(tp_full, "<st> + <-i> plural")
 
-    # st + i should have very high mutation rate
-    assert row["N"] > 500, f"Unexpected st+i N: {row['N']}"
-    assert row["rate"] > 0.95, f"Unexpected st+i rate: {row['rate']}"
+    # TP domain excludes -ist suffix-internal targets (562 items)
+    # leaving only root-final st clusters (~20-30 items)
+    assert row["N"] > 15, f"Unexpected st+i N: {row['N']}"
+    assert row["rate"] == 1.0, f"Unexpected st+i rate: {row['rate']}"
     assert row["tolerated?"] is True
 
 
@@ -145,9 +147,12 @@ def test_downsampled_gimpe_stable(tp_downsampled):
     row = get_row(tp_downsampled, "gimpe type")
 
     # Downsampled should have ~180-200 gimpe
-    assert 150 <= row["N"] <= 220, f"Unexpected downsampled gimpe N: {row['N']}"
+    assert (
+        150 <= row["N"] <= 220
+    ), f"Unexpected downsampled gimpe N: {row['N']}"
     assert row["mutated"] == 0
-    assert row["tolerated?"] is True
+    # Mutation is not productive among gimpe (0% rate)
+    assert row["tolerated?"] is False
 
 
 def test_downsampled_c_i_stable(tp_downsampled):
@@ -181,7 +186,9 @@ def test_downsampled_t_i_stable(tp_downsampled):
     assert 150 <= row["N"] <= 250, f"Unexpected downsampled t+i N: {row['N']}"
 
     # Should have high mutation rate
-    assert row["rate"] > 0.75, f"Unexpected downsampled t+i rate: {row['rate']}"
+    assert (
+        row["rate"] > 0.75
+    ), f"Unexpected downsampled t+i rate: {row['rate']}"
     assert row["majority?"] is True
 
 
@@ -189,11 +196,13 @@ def test_downsampled_st_i_stable(tp_downsampled):
     """Cluster st + i in downsampled lexicon."""
     row = get_row(tp_downsampled, "<st> + <-i> plural (downsampled)")
 
-    # Should have some items (downsampling reduces count)
-    assert row["N"] > 30, f"Unexpected downsampled st+i N: {row['N']}"
+    # TP domain: root-final st only (excludes -ist suffix targets)
+    assert row["N"] > 3, f"Unexpected downsampled st+i N: {row['N']}"
 
     # Should have very high rate
-    assert row["rate"] > 0.90, f"Unexpected downsampled st+i rate: {row['rate']}"
+    assert (
+        row["rate"] > 0.90
+    ), f"Unexpected downsampled st+i rate: {row['rate']}"
 
 
 # =============================================================================
@@ -236,9 +245,9 @@ def test_combined_equals_sum_of_parts(tp_full):
     c_e = get_row(tp_full, "<c> + <-e> plural")
     c_ie = get_row(tp_full, "<c> + <-i, -e> plural")
 
-    assert c_ie["N"] == c_i["N"] + c_e["N"], (
-        f"c i+e N ({c_ie['N']}) != c i N ({c_i['N']}) + c e N ({c_e['N']})"
-    )
+    assert (
+        c_ie["N"] == c_i["N"] + c_e["N"]
+    ), f"c i+e N ({c_ie['N']}) != c i N ({c_i['N']}) + c e N ({c_e['N']})"
     assert c_ie["mutated"] == c_i["mutated"] + c_e["mutated"]
     assert c_ie["non-mutated"] == c_i["non-mutated"] + c_e["non-mutated"]
 

@@ -96,9 +96,6 @@ cat_section <- function(title) {
   cat("\n", title, "\n", sep = "")
 }
 
-cat_subsection <- function(title) {
-  cat("\n", title, "\n", sep = "")
-}
 
 print_full <- function(x) {
   print(x, n = Inf, width = Inf)
@@ -126,17 +123,17 @@ tp_table <- function(df, type_col, mutated_col, non_mutated_col) {
     mutate(
       N = .data$mutated + .data$non_mutated,
       rate = if_else(.data$N > 0, .data$mutated / .data$N, NA_real_),
-      # we only treat a pattern as majority-mutating if there is a clear majority
+      # Is the majority direction mutation?
       majority_mutates = case_when(
         .data$N == 0L ~ NA,
         .data$mutated == .data$non_mutated ~ NA,
         TRUE ~ .data$mutated > .data$non_mutated
       ),
-      # "exceptions" are whichever side is in the minority, given the majority direction
-      exceptions = case_when(
-        is.na(.data$majority_mutates) ~ NA_real_,
-        .data$majority_mutates ~ as.numeric(.data$non_mutated),
-        !.data$majority_mutates ~ as.numeric(.data$mutated)
+      # Exceptions are ALWAYS non-mutated items.  The question is
+      # always "is mutation productive?", so e = non_mutated.
+      exceptions = if_else(.data$N > 0L,
+        as.numeric(.data$non_mutated),
+        NA_real_
       ),
       theta_N = tp_threshold(.data$N),
       tolerated = if_else(
@@ -250,7 +247,11 @@ run_bayesian_tp <- function(data, subset_label, seed_value = 123L) {
           stem_final == seg,
           opportunity == opp,
           !is.na(mutation)
-        )
+        ) |>
+        # brms treats logical TRUE/FALSE differently from integer 1/0
+        # when all values are identical; coerce to integer to avoid
+        # corrupted posteriors in degenerate (all-TRUE/all-FALSE) cells.
+        mutate(mutation = as.integer(mutation))
 
       if (nrow(seg_data) < MIN_SAMPLE_SIZE_BAYESIAN) next
 
@@ -290,7 +291,9 @@ run_bayesian_tp <- function(data, subset_label, seed_value = 123L) {
       sum_non <- sum(!seg_data$mutation, na.rm = TRUE)
       majority <- sum_mut > sum_non
 
-      p_exception <- if (majority) p_nonmutate else p_mutate
+      # Exceptions are ALWAYS non-mutators: the question is always
+      # "is mutation productive?" so p_exception = P(non-mutation).
+      p_exception <- p_nonmutate
       prob_intolerable <- mean(p_exception > tolerance_rate)
 
       results[[paste(seg, opp, subset_label, sep = "_")]] <- data.frame(
@@ -318,17 +321,6 @@ run_bayesian_tp <- function(data, subset_label, seed_value = 123L) {
 
 # Collapse detailed suffix tags into a small set of theoretically relevant groups,
 # so that regression models don't chase micro-suffix idiosyncrasies.
-suffix_group_factor <- function(lemma_suffix) {
-  group <- dplyr::case_when(
-    lemma_suffix == "-ic" ~ "ic",
-    lemma_suffix == "-ist" ~ "ist",
-    lemma_suffix %in% c("-ică", "-ice") ~ "ica_ice",
-    lemma_suffix == "none" ~ "none",
-    TRUE ~ "other"
-  )
-  factor(group, levels = c("none", "ic", "ist", "ica_ice", "other"))
-}
-
 # Collapse individual consonants into dorsal vs coronal classes,
 # so the segment-class models reflect the theoretical contrast of interest.
 segment_class_factor <- function(stem_final) {
@@ -574,26 +566,9 @@ lex <- lex |>
       str_starts(exception_reason, "nde:") ~ str_remove(exception_reason, "^nde:"),
       TRUE ~ "none"
     ),
-    # Derive target_is_suffix: check if stem_final matches the final consonant of the suffix
-    # This identifies whether the target consonant is suffix-internal vs. root-final
-    # Examples:
-    #   - "democratic" ends in -ic, stem_final=c → target IS the suffix (c in -ic)
-    #   - "batuc" has no tracked suffix, stem_final=c → target is root-final
-    #   - "economist" ends in -ist, stem_final=t → target IS the suffix (t in -ist)
-    target_is_suffix = case_when(
-      # -ic: suffix-final is 'c'
-      lemma_suffix == "-ic" & stem_final == "c" ~ TRUE,
-      # -ică: suffix-final is 'c'
-      lemma_suffix == "-ică" & stem_final == "c" ~ TRUE,
-      # -ice: suffix-final is 'c'
-      lemma_suffix == "-ice" & stem_final == "c" ~ TRUE,
-      # -ist: suffix-final is 't'
-      lemma_suffix == "-ist" & stem_final == "t" ~ TRUE,
-      # -esc: suffix-final is 's'
-      lemma_suffix == "-esc" & stem_final == "s" ~ TRUE,
-      # Default: not suffix-internal
-      TRUE ~ FALSE
-    ),
+    # Read target_is_suffix from Python pipeline output (avoids
+    # duplicating suffix-matching logic and divergence risk).
+    target_is_suffix = target_is_suffix == "True",
     # Make suffix tags explicit "none" rather than NA/blank, so grouping is well-behaved.
     lemma_suffix = if_else(is.na(lemma_suffix) | lemma_suffix == "", "none", lemma_suffix),
     # Coarse-grain plural endings, used to determine whether an item sits in the i/e domain even when
@@ -641,11 +616,13 @@ nouns <- filter(lex, pos == "N")
 nouns_tp <- nouns |>
   filter(tp_in_domain == TRUE) |>
   mutate(
-    # Keep a simple cluster variable for TP-style cluster analyses
-    cluster_simple = if_else(
-      cluster %in% CLUSTER_TYPES,
-      cluster,
-      NA_character_
+    # Keep a simple cluster variable for TP-style cluster analyses.
+    # Match by prefix (e.g., "scă" matches cluster type "sc").
+    cluster_simple = case_when(
+      startsWith(cluster, "st") ~ "st",
+      startsWith(cluster, "sc") ~ "sc",
+      startsWith(cluster, "ct") ~ "ct",
+      TRUE ~ NA_character_
     )
   )
 
@@ -660,10 +637,11 @@ nouns_opp <- nouns |>
   ) |>
   mutate(
     opportunity = opportunity_tp,
-    cluster_simple = if_else(
-      cluster %in% CLUSTER_TYPES,
-      cluster,
-      NA_character_
+    cluster_simple = case_when(
+      startsWith(cluster, "st") ~ "st",
+      startsWith(cluster, "sc") ~ "sc",
+      startsWith(cluster, "ct") ~ "ct",
+      TRUE ~ NA_character_
     ),
     exception_category = case_when(
       mutation ~ "undergoes",
@@ -830,7 +808,7 @@ if (!RUN_DERIVATION_ANALYSES) {
   # -----------------------------------------------------------------------
   # This probes whether N→V derivations respect the same palatalization pattern
   # as the plural, i.e. whether derivation "copies" inflection.
-  cat_subsection("(1) NOUN LEMMAS: INFLECTIONAL PLURALS VS DENOMINAL VERBS")
+  cat_section("(1) NOUN LEMMAS: INFLECTIONAL PLURALS VS DENOMINAL VERBS")
 
   if (has_verb_deriv_cols) {
     denom_pairs <- noun_base_inflect |>
@@ -871,7 +849,7 @@ if (!RUN_DERIVATION_ANALYSES) {
   # (2) Noun lemmas: inflectional plurals vs denominal adjectives
   # -----------------------------------------------------------------------
   # Same logic for N→Adj: do derived adjectives behave like the plural?
-  cat_subsection("(2) NOUN LEMMAS: INFLECTIONAL PLURALS VS DENOMINAL ADJECTIVES")
+  cat_section("(2) NOUN LEMMAS: INFLECTIONAL PLURALS VS DENOMINAL ADJECTIVES")
 
   if (has_adj_deriv_cols) {
     noun_adj_pairs <- noun_base_inflect |>
@@ -907,7 +885,7 @@ if (!RUN_DERIVATION_ANALYSES) {
   # (3) Adjective lemmas: inflectional plurals vs derivations
   # -----------------------------------------------------------------------
   # This mirrors the noun analysis, but for adjectives as bases.
-  cat_subsection("(3) ADJECTIVE LEMMAS: INFLECTIONAL PLURALS VS DERIVATIONS")
+  cat_section("(3) ADJECTIVE LEMMAS: INFLECTIONAL PLURALS VS DERIVATIONS")
 
   adj_base_inflect <- lex |>
     filter(
@@ -1413,19 +1391,22 @@ if (!is.null(nouns_opp_down_single) && nrow(nouns_opp_down_single) > 0L) {
 
 cat_section("TOLERANCE PRINCIPLE: CLUSTER PATTERNS (FULL DATA)")
 
-nouns_opp_clusters <- nouns_opp |>
+# Use nouns_tp (productive TP domain, NDEB excluded) for consistency
+# with segment-level TP tables.  Using nouns_opp would include NDEB
+# items that inflate the non-mutated count for st clusters.
+nouns_tp_clusters <- nouns_tp |>
   filter(!is.na(cluster_simple))
 
-cluster_tp_all <- compute_segment_tp_tables(nouns_opp_clusters, group_var = cluster_simple)
+cluster_tp_all <- compute_segment_tp_tables(nouns_tp_clusters, group_var = cluster_simple)
 print_full(cluster_tp_all)
 
 cat_section("TOLERANCE PRINCIPLE: CLUSTER PATTERNS (REFERENCE DOWNSAMPLED LEXICON)")
 
 if (!is.null(nouns_opp_down_single) && nrow(nouns_opp_down_single) > 0L) {
-  nouns_opp_down_clusters <- nouns_opp_down_single |>
-    filter(!is.na(cluster_simple))
+  nouns_tp_down_clusters <- nouns_opp_down_single |>
+    filter(tp_in_domain == TRUE, !is.na(cluster_simple))
 
-  cluster_tp_all_ds <- compute_segment_tp_tables(nouns_opp_down_clusters, label_suffix = " (downsampled)", group_var = cluster_simple)
+  cluster_tp_all_ds <- compute_segment_tp_tables(nouns_tp_down_clusters, label_suffix = " (downsampled)", group_var = cluster_simple)
   print_full(cluster_tp_all_ds)
 } else {
   cat("No reference downsampled lexicon available; skipping cluster TP (downsampled).\n")

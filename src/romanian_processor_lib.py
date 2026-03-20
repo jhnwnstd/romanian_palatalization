@@ -40,6 +40,10 @@ def set_ipa_normalizer(normalizer: Callable[[str], str]) -> None:
 
 TARGET_CONSONANTS = {"c", "g", "t", "d", "s", "z"}
 
+NDE_CLASSES = {"gimpe", "ochi", "paduchi"}
+
+PLURAL_OPPORTUNITIES = {"i", "e"}
+
 # Palatal surface forms for coronals (used in NDE alternation detection)
 PALATAL_SURFACE = {
     "t": "ț",  # t → ț before i/e
@@ -87,7 +91,6 @@ ORTH_TO_PALATAL_IPA = {
     "d→ze": "z",
     "d→zi": "z",
     "d→z": "z",  # bare consonant change
-    "de→di": "dʲ",
     "de→zi": "z",
     "dă→zi": "z",
     "g→ge": "d͡ʒ",
@@ -268,6 +271,11 @@ _PL_PLAUS_SCORES: List[float] = []
 _PL_CALIBRATED = False
 _PL_THRESHOLDS = {"reject": 0.35, "border": 0.45}
 _PL_MIN_CALIBRATION = 500
+# Cap calibrated reject threshold.  Romanian has legitimate plural
+# patterns that score low on string similarity (short stem + -uri,
+# stem-changing plurals like frate→frați, noapte→nopți).  Allowing
+# calibration to push the threshold above this cap would discard them.
+_PL_MAX_REJECT = 0.40
 
 
 def _calibrate_plural_thresholds() -> None:
@@ -279,7 +287,7 @@ def _calibrate_plural_thresholds() -> None:
     scores = sorted(_PL_PLAUS_SCORES)
     idx_reject = max(0, int(0.05 * (n - 1)))
     idx_border = max(0, int(0.20 * (n - 1)))
-    reject_thr = scores[idx_reject]
+    reject_thr = min(scores[idx_reject], _PL_MAX_REJECT)
     border_thr = scores[idx_border]
     if border_thr <= reject_thr:
         border_thr = min(1.0, reject_thr + 0.05)
@@ -343,14 +351,27 @@ def validate_plural_quality(row: Dict[str, str]) -> None:
     reject_thr = _PL_THRESHOLDS["reject"]
     border_thr = _PL_THRESHOLDS["border"]
 
+    # Stem-change safeguard: Romanian has plurals with major vowel
+    # alternation (noapte→nopți, cale→căi, fată→fete, tânăr→tineri)
+    # that score very low on string similarity but are valid.
+    # If the plural shares a consonant onset with the lemma and
+    # has a reasonable length ratio, accept it at a lower threshold.
+    stem_change_rescue = False
+    if len_ok and plausibility >= 0.15 and len(lemma) >= 3:
+        pfx = common_prefix_length(lemma, plural)
+        if pfx >= 1 and not lemma[:pfx].replace("-", "").isspace():
+            # Shares at least 1 leading character — likely a stem change
+            stem_change_rescue = True
+
     if (
         plausibility < reject_thr
         or not len_ok
         or (seq_sim < 0.1 and lcs_ratio < 0.1)
     ):
-        row["plural"] = ""
-        row["ipa_normalized_pl"] = ""
-        return
+        if not stem_change_rescue:
+            row["plural"] = ""
+            row["ipa_normalized_pl"] = ""
+            return
 
     if _PL_CALIBRATED:
         row["plural_validity"] = (
@@ -407,7 +428,9 @@ def derive_frontstem_dorsal(row: Dict[str, str]) -> None:
     """Mark lemmas with frontstem dorsals (ci/ce/gi/ge without h).
 
     These represent already-palatalized stems where the "target consonant"
-    is actually the palatal output, not a plain dorsal.
+    is actually the palatal output, not a plain dorsal.  Only matches
+    ci/ce/gi/ge near the stem-final position (last 4 chars of the stem
+    after stripping the inflectional vowel), not anywhere in the word.
 
     Examples: alice, indice, abazie (with 'zie' ending)
 
@@ -422,63 +445,17 @@ def derive_frontstem_dorsal(row: Dict[str, str]) -> None:
     if not lemma or stem_final not in {"c", "g"}:
         return
 
-    # Check if lemma has ci/ce or gi/ge (without 'h' before)
-    # Pattern: not preceded by 'h', followed by i or e
-    if re.search(r"(?<!h)[cg][ie]", lemma):
+    # Only check for ci/ce/gi/ge near the stem-final position.
+    # Check both the lemma tail (to catch ci/ce at word boundary, e.g.
+    # bici, ghiveci) and the stem tail after stripping the inflectional
+    # vowel (to catch medial sequences like -gic-, -cie-).
+    stem = strip_final_vowel(lemma)
+    lemma_tail = lemma[-4:] if len(lemma) >= 4 else lemma
+    stem_tail = stem[-4:] if len(stem) >= 4 else stem
+    if re.search(r"(?<!h)[cg][ie]", lemma_tail) or re.search(
+        r"(?<!h)[cg][ie]", stem_tail
+    ):
         row["frontstem_dorsal"] = "True"
-
-
-# Mutation patterns: stem_final -> list of (lemma_ending, plural_ending)
-MUTATION_PATTERNS = {
-    "c": [
-        ("c", "ci"),
-        ("c", "ce"),
-        ("că", "ci"),
-        ("că", "ce"),
-        ("ca", "ce"),
-    ],
-    "g": [
-        ("g", "gi"),
-        ("g", "ge"),
-        ("gă", "gi"),
-        ("gă", "ge"),
-        ("ga", "ge"),
-        ("go", "gi"),
-    ],
-    "t": [
-        ("t", "ți"),
-        ("t", "țe"),
-        ("ct", "cți"),
-        ("ct", "cțe"),
-        ("te", "ți"),
-        ("te", "țe"),
-        ("tă", "ți"),
-        ("tă", "țe"),
-    ],
-    "d": [
-        ("d", "zi"),
-        ("de", "zi"),
-        ("d", "ze"),
-        ("de", "ze"),
-        ("de", "di"),
-        ("dă", "zi"),
-        ("dă", "ze"),
-    ],
-    "s": [
-        ("s", "și"),
-        ("s", "șe"),
-        ("st", "ști"),
-        ("st", "ște"),
-        ("sc", "ști"),
-        ("sc", "ște"),
-        ("scă", "ști"),
-        ("scă", "ște"),
-    ],
-    "z": [
-        ("z", "ji"),
-        ("z", "je"),
-    ],
-}
 
 
 def needleman_wunsch(s1: str, s2: str) -> Tuple[str, str]:
@@ -582,8 +559,8 @@ def has_tautomorphemic_front_vowel(
         if next_plural_char is None and aligned_plural[j] != "-":
             next_plural_char = aligned_plural[j].lower()
 
-        # Stop as soon as we have at least one real char on either side
-        if next_lemma_char is not None or next_plural_char is not None:
+        # Stop once we have a real char on BOTH sides
+        if next_lemma_char is not None and next_plural_char is not None:
             break
         j += 1
 
@@ -690,65 +667,6 @@ def detect_orth_change_dynamic(lemma: str, plural: str) -> str:
     return f"{lemma_core}→{plural_core}"
 
 
-def get_change_window(
-    lemma: str, plural: str, stem_final: str, cluster: str
-) -> Tuple[str, str]:
-    """Compute minimal change window around stem_final using alignment."""
-    if not lemma or not plural or not stem_final:
-        return "", ""
-    aligned_lemma, aligned_plural = needleman_wunsch(lemma, plural)
-
-    lemma_to_aligned: Dict[int, int] = {}
-    lemma_idx = 0
-    for aligned_idx, ch in enumerate(aligned_lemma):
-        if ch != "-":
-            lemma_to_aligned[lemma_idx] = aligned_idx
-            lemma_idx += 1
-
-    if cluster:
-        if cluster in VELAR_FRONT_SEQUENCES:
-            cluster_start = len(lemma) - len(cluster)
-            cluster_end = len(lemma)
-        else:
-            stem = strip_final_vowel(lemma)
-            cluster_start = len(stem) - len(cluster)
-            cluster_end = len(stem)
-        target_indices = list(range(cluster_start, cluster_end))
-    else:
-        stem = strip_final_vowel(lemma)
-        target_idx = -1
-        for i in range(len(stem) - 1, -1, -1):
-            if stem[i] == stem_final:
-                target_idx = i
-                break
-        if target_idx == -1:
-            return "", ""
-        target_indices = [target_idx]
-
-    aligned_target_positions: Set[int] = set()
-    for idx in target_indices:
-        if idx in lemma_to_aligned:
-            aligned_target_positions.add(lemma_to_aligned[idx])
-    if not aligned_target_positions:
-        return "", ""
-
-    diff_positions: Set[int] = set()
-    for i, (char_l, char_p) in enumerate(zip(aligned_lemma, aligned_plural)):
-        if char_l != char_p:
-            diff_positions.add(i)
-
-    all_positions = aligned_target_positions | diff_positions
-    if not all_positions:
-        return "", ""
-    window_start = min(all_positions)
-    last_affected = max(all_positions)
-    window_end = last_affected + 1
-    if window_end < len(aligned_lemma):
-        window_end += 1
-    lemma_sub = aligned_lemma[window_start:window_end].replace("-", "")
-    plural_sub = aligned_plural[window_start:window_end].replace("-", "")
-    return lemma_sub, plural_sub
-
 
 def derive_mutation_and_orth_change(row: Dict[str, str]) -> None:
     """Derive mutation and orth_change via alignment (non-circular approach).
@@ -842,8 +760,13 @@ def derive_mutation_and_orth_change(row: Dict[str, str]) -> None:
 
         # Fallback: Try exact pattern matching for edge cases
         # (c→ci, g→gi, etc.)
+        # Guard: if the orth_change leading consonant doesn't match
+        # stem_final, this is a cluster artifact (e.g., scă→sce
+        # expanded to ca→ce, but stem_final is 's' not 'c').
         if not is_palatalization and orth_change in ORTH_TO_PALATAL_IPA:
-            is_palatalization = True
+            lead_from = orth_from.lstrip("aăâîeioușțșț")[:1]
+            if not lead_from or lead_from == stem_final:
+                is_palatalization = True
 
         # Fallback: Try suffix matching for patterns like "ate→ăți"
         if not is_palatalization:
@@ -854,8 +777,11 @@ def derive_mutation_and_orth_change(row: Dict[str, str]) -> None:
                     if orth_from.endswith(canon_from) and orth_to.endswith(
                         canon_to
                     ):
-                        is_palatalization = True
-                        break
+                        # Same guard: leading consonant must match
+                        cf_lead = canon_from.lstrip("aăâîeioușțșț")[:1]
+                        if not cf_lead or cf_lead == stem_final:
+                            is_palatalization = True
+                            break
 
         # Special check: c/g followed by i/e means palatalization
         # e.g., g→ger (liturg→liturger), c→cer, etc.
@@ -1064,14 +990,6 @@ def explode_derived_verbs_row(row: Dict[str, str]) -> List[Dict[str, str]]:
     )
 
 
-def explode_derived_adj_row(row: Dict[str, str]) -> List[Dict[str, str]]:
-    """Explode pipe-separated derived adjectives into separate rows."""
-    return explode_pipe_group(
-        row,
-        main_field="derived_adj",
-        companion_fields=["ipa_derived_adj"],
-    )
-
 
 def normalize_unicode_g2p(s: str) -> str:
     """Normalize Unicode for G2P (cedilla → comma-below diacritics)."""
@@ -1089,6 +1007,10 @@ IPA_RULES = [
     (r"ghe", "ɡe"),
     (r"ghi", "ɡi"),
     (r"x", "ks"),
+    # ce/ge before another vowel: e is a palatalization marker, not a vowel.
+    # Must come BEFORE the ea diphthong rule so the e is consumed first.
+    (r"[cC]e(?=[aăâîoui])", "tʃ"),
+    (r"[gG]e(?=[aăâîoui])", "dʒ"),
     (r"oa", "o̯a"),
     (r"ea", "e̯a"),
     (r"[cC](?=[eéií])", "tʃ"),
@@ -1132,10 +1054,6 @@ def tweak_nominal_ipa(lemma: str, ipa: str) -> str:
 
 
 ORDERED_LEMMA_SUFFIXES = ["ică", "iști", "ice", "ist", "esc", "ic", "el"]
-
-LEMMA_SUFFIXES = [
-    unicodedata.normalize("NFC", suffix) for suffix in ORDERED_LEMMA_SUFFIXES
-]
 
 
 def derive_palatal_consonant_pl(row: Dict[str, str]) -> None:
@@ -1459,10 +1377,15 @@ def derive_nde_class(row: Dict[str, str]) -> None:
     # Examples:
     #   - abazie→abazii (e→i): z is same, z+i is tautomorphemic
     #   - abagiu→abagii (u→i): g is same, g+i is tautomorphemic
+    # Guard: only apply if stem_final is actually adjacent to a front
+    # vowel in the lemma.  Words like butoi→butoaie (t followed by o,
+    # not a front vowel) should NOT be classified as gimpe.
     orth_change = row.get("orth_change", "")
     if orth_change_is_vowels_or_le(orth_change):
-        row["nde_class"] = "gimpe"
-        return
+        sf_fv_pattern = stem_final + "[ie]"
+        if re.search(sf_fv_pattern, lemma):
+            row["nde_class"] = "gimpe"
+            return
 
     # GIMPE 3a-suffix-pattern: Suffix-internal patterns like -istă→-iste
     # The target consonant is inside a derivational suffix, not root-final.
@@ -1505,28 +1428,6 @@ def fix_nde_mutations(row: Dict[str, str]) -> None:
         row["palatal_consonant_pl"] = ""
 
 
-def lemma_has_coronal_front_env(lemma: str, stem_final: str) -> bool:
-    """
-    Detect if lemma has C+{i,e} tautomorphemic sequence for coronals.
-
-    For stem_final in {t, d, s, z}, detect C+{i,e} sequences in the lemma
-    that correspond to the same consonant as stem_final.
-
-    This is the coronal analogue of frontstem_dorsal detection for dorsals.
-
-    Examples:
-        abazie (has 'zie') with stem_final='z' → True
-        absolutistă (has 'sti') with stem_final='s' → True
-        batuc (no 'ci/ce') with stem_final='c' → False
-    """
-    if not lemma or stem_final not in {"t", "d", "s", "z"}:
-        return False
-
-    # Look for stem_final + {i,e} in the lemma
-    # This catches tautomorphemic C+front-vowel
-    pattern = stem_final + "[ie]"
-    return bool(re.search(pattern, lemma))
-
 
 def lemma_has_palatal_coronal(lemma: str, stem_final: str) -> bool:
     """
@@ -1537,8 +1438,11 @@ def lemma_has_palatal_coronal(lemma: str, stem_final: str) -> bool:
 
     Examples:
         abația (has 'ț') with stem_final='t' → True (already palatal)
-        abazie (has 'z' but as plain /z/) with stem_final='d' → might match
         batuc (no palatal graphemes) with stem_final='c' → False
+
+    For stem_final='d', the palatal form is 'z', which is ambiguous with
+    underlying /z/. To avoid false positives we require 'z' + front vowel
+    (zi/ze) near the end, matching the palatalized context.
 
     Returns True if palatal grapheme appears near end of lemma.
     """
@@ -1549,9 +1453,14 @@ def lemma_has_palatal_coronal(lemma: str, stem_final: str) -> bool:
     if not pal:
         return False
 
-    # Look for palatal grapheme in the last ~4 characters
-    # (to avoid matching unrelated instances earlier in the word)
-    return pal in lemma[-4:]
+    tail = lemma[-4:]
+
+    # For d→z, bare 'z' is ambiguous with underlying /z/.
+    # Require z+front vowel (zi/ze) to indicate palatalized context.
+    if stem_final == "d":
+        return bool(re.search(r"z[ie]", tail))
+
+    return pal in tail
 
 
 def fix_underlying_palatals(row: Dict[str, str]) -> None:
@@ -1640,7 +1549,7 @@ def mark_tp_domain(row: Dict[str, str]) -> None:
 
     # Exclude all NDEB classes from the productive TP domain
     # These are structured families, not productive exceptions
-    if nde_class in {"gimpe", "ochi", "paduchi"}:
+    if nde_class in NDE_CLASSES:
         row["tp_in_domain"] = "False"
         return
 
@@ -1685,10 +1594,36 @@ def derive_exception_reason(row: Dict[str, str]) -> None:
     nde = row.get("nde_class", "")
     stem_final = row.get("stem_final", "")
 
+    cluster = (row.get("cluster", "") or "").strip().lower()
+
     # No stem final or no plural → non exception (data limitation)
     if not stem_final or not plural:
         row["exception_reason"] = "non exception"
         return
+
+    # Dorsal digraph clusters (che/ghe/chi/ghi) where the plural
+    # doesn't preserve the dorsal — irregular truncation, not
+    # standard palatalization (e.g., dilimache → dilii).
+    if cluster in {"che", "ghe", "chi", "ghi"} and plural:
+        plural_l = plural.lower()
+        if not any(
+            plural_l.endswith(s)
+            for s in ("chi", "ghi", "che", "ghe", "ci", "ce", "gi", "ge")
+        ):
+            row["exception_reason"] = "non exception"
+            return
+
+    # Suppletive suffix replacement: -ică → -ele, -ică → -icele, etc.
+    # The target consonant (c from -ică) is entirely replaced in the
+    # plural, so there is no C+front-vowel context to evaluate.
+    if lemma and plural:
+        lemma_l = lemma.lower()
+        plural_l = plural.lower()
+        if lemma_l.endswith("ică") and not plural_l.endswith(
+            ("ici", "ice", "ică")
+        ):
+            row["exception_reason"] = "non exception"
+            return
 
     # Undergoers: words that palatalized
     if mutation == "True":
@@ -1702,20 +1637,35 @@ def derive_exception_reason(row: Dict[str, str]) -> None:
         row["exception_reason"] = f"nde:{nde}"
         return
 
-    # Already-palatal stems: words with ș/ț/j near the right edge
-    # These have existing palatal consonants, so the stem_final identified
-    # by our algorithm is misleading. Examples:
-    #   - biciușcă→biciuști (ș+c cluster)
-    #   - crenvirșt→crenvirști (ș+t cluster)
-    # These are out of domain for plain C→palatal palatalization
-    # Only apply this filter AFTER checking NDE classes
+    # Already-palatal stems: check for palatal consonants near stem edge.
+    # Two cases:
+    # 1. Coronals (t,d,s,z): check for the SPECIFIC palatal output of
+    #    this stem_final (t→ț, d→z, s→ș, z→j). For d, require z+front
+    #    vowel to avoid conflating underlying /z/ with palatalized /d/.
+    # 2. Dorsals (c,g): check for ANY palatal sibilant (ș,ț,j) immediately
+    #    adjacent to stem_final, indicating an already-palatal cluster
+    #    (e.g., ușcă, where ș+c is not a clean sc cluster for analysis).
     if lemma:
         lemma_lower = lemma.lower()
-        # Check for palatal consonants in final 4 chars (near stem edge)
-        tail = lemma_lower[-4:] if len(lemma_lower) >= 4 else lemma_lower
-        if any(pal in tail for pal in ["ș", "ț", "j"]):
-            row["exception_reason"] = "non exception"
-            return
+        stem = strip_final_vowel(lemma_lower)
+        tail = stem[-4:] if len(stem) >= 4 else stem
+        if stem_final in PALATAL_SURFACE:
+            pal = PALATAL_SURFACE[stem_final]
+            if stem_final == "d":
+                if re.search(r"z[ie]", tail):
+                    row["exception_reason"] = "non exception"
+                    return
+            elif pal in tail:
+                row["exception_reason"] = "non exception"
+                return
+        # For ALL target consonants: check if a palatal consonant
+        # is immediately before stem_final, indicating an already-palatal
+        # cluster (e.g., ușcă, șt in Leberwurst loanwords, jd in dajd)
+        if len(stem) >= 2:
+            sf_pos = stem.rfind(stem_final)
+            if sf_pos > 0 and stem[sf_pos - 1] in {"ș", "ț", "j"}:
+                row["exception_reason"] = "non exception"
+                return
 
     # Non-exceptions: no opportunity to mutate (none or uri)
     if opportunity in {"none", "uri"}:

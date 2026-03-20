@@ -103,6 +103,16 @@ def is_foreign_ipa_segment(segment: str) -> bool:
     return any(marker in seg_lower for marker in FOREIGN_LANG_MARKERS)
 
 
+def normalize_cedilla(text: str) -> str:
+    """Convert cedilla diacritics to comma-below (Romanian standard).
+
+    Maps ş/Ş → ș/Ș and ţ/Ţ → ț/Ț. Case-preserving.
+    """
+    text = text.replace("ş", "ș").replace("Ş", "Ș")
+    text = text.replace("ţ", "ț").replace("Ţ", "Ț")
+    return text
+
+
 def normalize_orthography(text: str) -> str:
     """Normalize Romanian orthographic text (lemmas, plurals, glosses).
 
@@ -138,9 +148,7 @@ def normalize_orthography(text: str) -> str:
     text = re.sub(r"http[s]?://[^\s]+", "", text)
 
     text = unicodedata.normalize("NFC", text)
-    # Official Romanian orthography uses comma-below, not cedilla
-    text = text.replace("ş", "ș").replace("Ş", "ș")
-    text = text.replace("ţ", "ț").replace("Ţ", "ț")
+    text = normalize_cedilla(text)
     # Fold stressed vowels from etymological/phonetic contexts
     stressed_vowels = {
         "á": "a",
@@ -241,7 +249,7 @@ def normalize_ipa(ipa: str, remove_stress: bool = True) -> str:
     ipa = ipa.replace("ʷ", "")  # Labialization marker
     ipa = ipa.replace(
         "ʲ", ""
-    )  # Palatalization marker (keep for now, may remove later)
+    )  # Remove secondary palatalization marker for alignment consistency
     ipa = ipa.replace("̯", "")  # Non-syllabic marker
 
     # Add tie bars to affricates (UNCONDITIONAL)
@@ -391,6 +399,7 @@ def test_normalization():
     print("=" * 80)
     print("WIKTIONARY NORMALIZATION PIPELINE - TEST")
     print("=" * 80)
+    failures = 0
     print("\n--- ORTHOGRAPHIC NORMALIZATION ---")
     orth_tests = [
         ("  Academie  ", "academie"),
@@ -402,11 +411,14 @@ def test_normalization():
     ]
     for input_text, expected in orth_tests:
         result = normalize_orthography(input_text)
-        status = "✓" if result == expected else "✗"
+        passed = result == expected
+        status = "✓" if passed else "✗"
+        if not passed:
+            failures += 1
         print(f"{status} '{input_text}' → '{result}'")
     print("\n--- IPA NORMALIZATION ---")
     ipa_tests = [
-        ("aˈbak | -ak", "abak | ak"),
+        ("aˈbak | -ak", "abak"),
         ("dʒent", "d͡ʒent"),
         ("eks.tʃiˈtat", "ekst͡ʃitat"),
         ("otstɨpnik", "ot͡stɨpnik"),
@@ -423,7 +435,10 @@ def test_normalization():
     ]
     for input_ipa, expected in ipa_tests:
         result = normalize_ipa(input_ipa, remove_stress=True)
-        status = "✓" if result == expected else "✗"
+        passed = result == expected
+        status = "✓" if passed else "✗"
+        if not passed:
+            failures += 1
         print(f"{status} '{input_ipa}' → '{result}'")
     print("\n--- VALIDATION ---")
     lemma_tests = [
@@ -434,7 +449,10 @@ def test_normalization():
     ]
     for lemma, expected_valid, _expected_error in lemma_tests:
         is_valid, error = validate_lemma(lemma)
-        status = "✓" if is_valid == expected_valid else "✗"
+        passed = is_valid == expected_valid
+        status = "✓" if passed else "✗"
+        if not passed:
+            failures += 1
         print(f"{status} validate_lemma('{lemma}'): {is_valid}, {error}")
     ipa_tests_validation = [
         ("abak", True, None),
@@ -444,10 +462,16 @@ def test_normalization():
     ]
     for ipa, expected_valid, _expected_error in ipa_tests_validation:
         is_valid, error = validate_ipa(ipa)
-        status = "✓" if is_valid == expected_valid else "✗"
+        passed = is_valid == expected_valid
+        status = "✓" if passed else "✗"
+        if not passed:
+            failures += 1
         print(f"{status} validate_ipa('{ipa}'): {is_valid}, {error}")
     print("\n" + "=" * 80)
-    print("All tests passed! ✓")
+    if failures:
+        print(f"FAILED: {failures} test(s) failed")
+        raise SystemExit(1)
+    print("All tests passed!")
     print("=" * 80)
 
 

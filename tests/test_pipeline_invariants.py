@@ -13,19 +13,25 @@ Run with: pytest tests/test_pipeline_invariants.py -v
 """
 
 import re
+import sys
 from pathlib import Path
 
 import pandas as pd
 import pytest
 
-# Constants matching the R analysis script
-SEGMENTS_OF_INTEREST = {"c", "g", "t", "d", "s", "z"}
-PLURAL_OPPORTUNITIES = {"i", "e"}
-NDE_CLASSES = {"gimpe", "ochi", "paduchi"}
+# Import canonical constants from the library
+PROJECT_ROOT = Path(__file__).parent.parent
+sys.path.insert(0, str(PROJECT_ROOT / "src"))
+from romanian_processor_lib import (  # noqa: E402
+    NDE_CLASSES,
+    PLURAL_OPPORTUNITIES,
+    TARGET_CONSONANTS,
+)
+
+SEGMENTS_OF_INTEREST = TARGET_CONSONANTS
 NDE_OBSERVABLE = {"ochi", "paduchi"}  # Observable as DE in plural domain
 
 # Data paths
-PROJECT_ROOT = Path(__file__).parent.parent
 LEX_PATH = PROJECT_ROOT / "data" / "romanian_lexicon_with_freq.csv"
 
 
@@ -41,9 +47,14 @@ def lex():
     df = pd.read_csv(LEX_PATH)
 
     # Derive nde_class from exception_reason for tests
-    # exception_reason values: "nde:gimpe", "nde:ochi", "nde:paduchi", "undergoer", etc.
+    # exception_reason values: "nde:gimpe", "nde:ochi",
+    # "nde:paduchi", "undergoer", etc.
     df["nde_class"] = df["exception_reason"].apply(
-        lambda x: x.replace("nde:", "") if isinstance(x, str) and x.startswith("nde:") else ""
+        lambda x: (
+            x.replace("nde:", "")
+            if isinstance(x, str) and x.startswith("nde:")
+            else ""
+        )
     )
 
     # Create opportunity_tp from opportunity for compatibility with tests
@@ -96,7 +107,7 @@ def nouns_opp_no_ndeb(nouns_opp):
 
 def has_front_env(lemma: str) -> bool:
     """
-    Check if lemma contains C+{i,e} tautomorphemic sequence OR palatal graphemes.
+    Check if lemma has C+{i,e} tautomorphemic or palatal.
 
     GIMPE = tautomorphemic C+front-vowel, which includes:
     - Dorsals: [cg] before i/e (excluding hC sequences)
@@ -224,8 +235,8 @@ def test_all_gimpe_have_front_env(lex):
     # (remaining are vowel-only changes like acuarelistă→acuareliste)
     proportion = len(with_pattern) / len(gimpe)
     assert proportion >= 0.85, (
-        f"Only {proportion:.1%} of GIMPE items have C+{{i,e}} or palatals in lemma "
-        f"(expected >= 85%)"
+        f"Only {proportion:.1%} of GIMPE items have "
+        f"C+{{i,e}} or palatals (expected >= 85%)"
     )
 
 
@@ -251,9 +262,9 @@ def test_ochi_items_have_lemma_equals_plural(lex):
         pytest.skip("No ochi items in lexicon")
 
     # All ochi items should have lemma = plural
-    assert (ochi["lemma"] == ochi["plural"]).all(), (
-        "Found OCHI items where lemma != plural"
-    )
+    assert (
+        ochi["lemma"] == ochi["plural"]
+    ).all(), "Found OCHI items where lemma != plural"
 
 
 def test_paduchi_dorsal_items_have_h_blocking(lex):
@@ -276,9 +287,9 @@ def test_paduchi_dorsal_items_have_h_blocking(lex):
         & paduchi_dorsal["plural"].str.endswith(("chi", "ghi"))
     ]
 
-    assert len(che_chi) > 0, (
-        "Expected at least some che→chi or ghe→ghi PADUCHI items"
-    )
+    assert (
+        len(che_chi) > 0
+    ), "Expected at least some che→chi or ghe→ghi PADUCHI items"
 
 
 # =============================================================================
@@ -297,9 +308,9 @@ def expect_gimpe(lex, lemma: str):
     # If in i/e domain, mutation should be False
     in_ie = rows["opportunity_tp"].isin(PLURAL_OPPORTUNITIES)
     if in_ie.any():
-        assert not rows.loc[in_ie, "mutation"].any(), (
-            f"{lemma} is gimpe but mutation=True"
-        )
+        assert not rows.loc[
+            in_ie, "mutation"
+        ].any(), f"{lemma} is gimpe but mutation=True"
 
 
 def expect_paduchi(lex, lemma: str):
@@ -309,19 +320,17 @@ def expect_paduchi(lex, lemma: str):
     assert (
         rows["nde_class"] == "paduchi"
     ).any(), f"{lemma} is not labeled paduchi"
-    assert (
-        rows["exception_reason"] == "nde:paduchi"
-    ).any()
+    assert (rows["exception_reason"] == "nde:paduchi").any()
 
 
 def expect_undergoes(lex, lemma: str):
     """Helper: expect a specific lemma to palatalize."""
     rows = lex[lex["lemma"] == lemma]
     assert not rows.empty, f"Missing lemma {lemma!r} in lexicon"
-    assert rows["mutation"].any(), f"{lemma} does not palatalize (mutation=False)"
-    assert (
-        rows["exception_reason"] == "undergoer"
-    ).any()
+    assert rows[
+        "mutation"
+    ].any(), f"{lemma} does not palatalize (mutation=False)"
+    assert (rows["exception_reason"] == "undergoer").any()
 
 
 @pytest.mark.parametrize(
@@ -423,10 +432,18 @@ def test_dorsals_in_tp_domain_all_palatalize(nouns_tp):
     # All should palatalize
     non_palatalizing = dorsals[dorsals["mutation"] == False]  # noqa: E712
 
+    cols = [
+        "lemma",
+        "plural",
+        "stem_final",
+        "nde_class",
+        "exception_reason",
+    ]
     assert non_palatalizing.empty, (
-        f"Found {len(non_palatalizing)} non-palatalizing dorsals in TP domain!\n"
-        f"These should have been excluded as NDEB or frontstem dorsals:\n"
-        f"{non_palatalizing[['lemma', 'plural', 'stem_final', 'nde_class', 'exception_reason']].head(10)}"
+        f"Found {len(non_palatalizing)} non-palatalizing "
+        f"dorsals in TP domain!\n"
+        f"Should be excluded as NDEB or frontstem:\n"
+        f"{non_palatalizing[cols].head(10)}"
     )
 
 
@@ -461,8 +478,7 @@ def test_total_ndeb_count(lex):
 
     # Expected: ~2200-2300 NDEB items
     assert 2200 <= len(ndeb) <= 2400, (
-        f"Unexpected NDEB count: {len(ndeb)} "
-        f"(expected ~2200-2300)"
+        f"Unexpected NDEB count: {len(ndeb)} " f"(expected ~2200-2300)"
     )
 
 
@@ -473,22 +489,21 @@ def test_ndeb_breakdown(lex):
     breakdown = ndeb["nde_class"].value_counts().to_dict()
 
     # Expected approximate counts (allow some variation)
-    assert 2000 <= breakdown.get("gimpe", 0) <= 2400, (
-        f"Unexpected gimpe count: {breakdown.get('gimpe', 0)}"
-    )
-    assert 10 <= breakdown.get("ochi", 0) <= 20, (
-        f"Unexpected ochi count: {breakdown.get('ochi', 0)}"
-    )
-    assert 50 <= breakdown.get("paduchi", 0) <= 80, (
-        f"Unexpected paduchi count: {breakdown.get('paduchi', 0)}"
-    )
+    assert (
+        2000 <= breakdown.get("gimpe", 0) <= 2400
+    ), f"Unexpected gimpe count: {breakdown.get('gimpe', 0)}"
+    assert (
+        10 <= breakdown.get("ochi", 0) <= 20
+    ), f"Unexpected ochi count: {breakdown.get('ochi', 0)}"
+    assert (
+        50 <= breakdown.get("paduchi", 0) <= 80
+    ), f"Unexpected paduchi count: {breakdown.get('paduchi', 0)}"
 
 
 def test_tp_domain_size(nouns_tp):
     """TP domain size should be stable (~4800-5000 items)."""
     assert 4500 <= len(nouns_tp) <= 5200, (
-        f"Unexpected TP domain size: {len(nouns_tp)} "
-        f"(expected ~4800-5000)"
+        f"Unexpected TP domain size: {len(nouns_tp)} " f"(expected ~4800-5000)"
     )
 
 

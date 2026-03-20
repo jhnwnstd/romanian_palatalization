@@ -113,7 +113,7 @@ This same change window is also used to build `orth_change` (see below) and, whe
 
 (2) Inspect the orthographic alternation at the target site.
 
-Mutation is `True` if and only if the lemma–plural mapping at the `stem_final` slot (and any associated final cluster) matches one of the palatalizing patterns in `MUTATION_PATTERNS`, and the resulting plural-side pattern ends in a front vowel `<i>` or `<e>`.
+Mutation is `True` if and only if the lemma–plural mapping at the `stem_final` slot (and any associated final cluster) matches one of the palatalizing patterns in `ORTH_TO_PALATAL_IPA`, and the resulting plural-side pattern ends in a front vowel `<i>` or `<e>`.
 
 The patterns currently recognized are:
 
@@ -130,7 +130,6 @@ The patterns currently recognized are:
 * For `<d>`:
   * `d → zi`, `d → ze`,
   * `de → zi`, `de → ze`,
-  * `de → di` (rare allophonic palatalization),
   * `dă → zi`, `dă → ze`.
 * For `<s>`:
   * `s → și`, `s → șe`,
@@ -140,7 +139,7 @@ The patterns currently recognized are:
 * For `<z>`:
   * `z → ji`, `z → je` (obraz/arbuz-type patterns).
 
-Formally, for each `stem_final` we require that `lemma_sub` ends in the lemma-side pattern and `plural_sub` ends in the corresponding plural-side pattern from `MUTATION_PATTERNS`, and that the plural-side pattern's final segment is `<i>` or `<e>`. If no such pattern matches, `mutation = "False"`.
+Formally, for each `stem_final` we require that `lemma_sub` ends in the lemma-side pattern and `plural_sub` ends in the corresponding plural-side pattern from `ORTH_TO_PALATAL_IPA`, and that the plural-side pattern's final segment is `<i>` or `<e>`. If no such pattern matches, `mutation = "False"`.
 
 Note: For `<z>`, only `z → ji/je` is counted as mutation. Plain `z → zi/ze` (i.e. a <z> plus `<i>/<e>` with no change to <j>) is *not* treated as a palatalization and is left as `mutation = "False"`.
 
@@ -156,7 +155,7 @@ The algorithm:
    * take the tail of `lemma_sub` from the last occurrence of `stem_final` (or, if that fails, a short final slice), and the corresponding tail from `plural_sub`,
    * if these differ, set `orth_change = "lemma_tail→plural_tail"`.
 
-For genuine palatalizations, the code overwrites this canonical window with a *clean abstract pattern* from `MUTATION_PATTERNS` itself (e.g. `"c→ci"`, `"st→ști"`, `"z→ji"`), so that `orth_change` is stable and matches `ORTH_TO_PALATAL_IPA`. For non-palatal changes at the stem edge (e.g. vowel alternations without consonant change), `orth_change` may still record a small local change window, but `mutation` remains `"False"`.
+For genuine palatalizations, the code overwrites this canonical window with a *clean abstract pattern* from `ORTH_TO_PALATAL_IPA` itself (e.g. `"c→ci"`, `"st→ști"`, `"z→ji"`), so that `orth_change` is stable and matches `ORTH_TO_PALATAL_IPA`. For non-palatal changes at the stem edge (e.g. vowel alternations without consonant change), `orth_change` may still record a small local change window, but `mutation` remains `"False"`.
 
 ### Plural environment: `opportunity`
 

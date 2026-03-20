@@ -35,7 +35,7 @@ DEFAULT_CORPORA = [
     # "ron_news_2019_1M",
     # "ron_news_2020_1M",
     # "ron_news_2022_1M",
-    # "ron_news_2024_1M",
+    "ron_news_2024_1M",
     # Newscrawl
     # "ron_newscrawl_2011_1M",
     # "ron_newscrawl_2015_1M",
@@ -49,7 +49,7 @@ DEFAULT_CORPORA = [
     # "ron_wikipedia_2011_1M",
     # "ron_wikipedia_2014_1M",
     # "ron_wikipedia_2018_1M",
-    "ron_wikipedia_2021_1M",
+    # "ron_wikipedia_2021_1M",
 ]
 
 # Original download page (for reference):

@@ -167,6 +167,7 @@ OUTPUT_FIELDS = [
     "etym_lang",
     "exception_reason",
     "tp_in_domain",
+    "target_is_suffix",
     "lemma_suffix",
     "source",
     "notes",
