@@ -55,7 +55,7 @@ options(dplyr.summarise.inform = FALSE)
 # =========================================================================
 
 segments_of_interest <- c("c", "g", "t", "d", "s", "z") # consonants where palatalization is tracked
-front_verb_suffixes <- c("-i", "-ui") # front-vowel verbalizers (for N->V / Adj->V)
+front_verb_suffixes <- c("-i") # front-vowel verbalizer; -ui is back (u blocks palatalization)
 suffix_interest <- c("-ic", "-ist", "-esc", "-ică", "-ice") # denominal/adjectival suffixes we track
 
 # NDEB = non-derived exception base lemmas (gimpe / ochi / paduche patterns)
@@ -163,15 +163,35 @@ fit_brms_bernoulli <- function(formula,
   )
 }
 
-# Approximate palatalization from IPA for derived forms.
-detect_palatal_from_ipa <- function(stem_final, ipa_str) {
+# Detect palatalization in derived forms from ORTHOGRAPHY.
+# More reliable than IPA-based detection because:
+#   - No false positives from word-initial palatals (ciocoi)
+#   - No false positives from base-internal ʃ (cinste)
+#   - Works even when IPA is missing
+# Romanian orthography transparently encodes palatalization:
+#   c/g before i/e (without h) = palatalized
+#   ți = t palatalized, și = s palatalized, zi = d palatalized
+detect_palatal_from_orth <- function(lemma, verb, stem_final) {
+  verb <- tolower(verb)
+  lemma_l <- tolower(lemma)
+  tail5 <- str_sub(verb, -5L)
   case_when(
-    stem_final == "c" ~ str_detect(ipa_str, "t\u0361\u0283|t\u0283"),
-    stem_final == "g" ~ str_detect(ipa_str, "d\u0361\u0292|d\u0292"),
-    stem_final == "t" ~ str_detect(ipa_str, "t\u0361s|ts"),
-    stem_final == "d" ~ str_detect(ipa_str, "z|d\u02b2"),
-    stem_final == "s" ~ str_detect(ipa_str, "\u0283"),
-    stem_final == "z" ~ str_detect(ipa_str, "\u0292"),
+    is.na(verb) | verb == "" ~ NA,
+    # Dorsals: ci/ce = palatalized, chi/che/ca/co/cu = not
+    stem_final == "c" & str_detect(tail5, "(?<!h)c[ie]") ~ TRUE,
+    stem_final == "c" ~ FALSE,
+    stem_final == "g" & str_detect(tail5, "(?<!h)g[ie]") ~ TRUE,
+    stem_final == "g" ~ FALSE,
+    # Coronals
+    stem_final == "t" & str_detect(tail5, "\u021bi|\u021be") ~ TRUE,
+    stem_final == "t" ~ FALSE,
+    stem_final == "d" & str_ends(verb, "zi") &
+      !str_ends(lemma_l, "z") ~ TRUE,
+    stem_final == "d" ~ FALSE,
+    stem_final == "s" & str_detect(tail5, "\u0219i") ~ TRUE,
+    stem_final == "s" ~ FALSE,
+    stem_final == "z" & str_detect(tail5, "ji") ~ TRUE,
+    stem_final == "z" ~ FALSE,
     TRUE ~ NA
   )
 }
@@ -679,24 +699,34 @@ cat("CONFIRMED: no suffix-internal targets remain in TP domain\n")
 cat_section("INFLECTION VS DERIVATION: LEMMA-BASED PATTERNS")
 
 has_verb_deriv_cols <- all(c("derived_verbs", "ipa_derived_verbs", "deriv_suffixes") %in% names(lex))
-has_adj_deriv_cols <- all(c("derived_adj", "ipa_derived_adj") %in% names(lex))
+has_adj_deriv_cols <- "derived_adj" %in% names(lex)
 
 if (!has_verb_deriv_cols && !has_adj_deriv_cols) {
   cat("No derivational columns present; skipping all inflection/derivation checks.\n")
 } else {
-  # Build base dataset.  lemma_freq is standardized here so it flows through
-  # to denom_pairs / noun_adj_pairs and into analyze_inf_vs_deriv's
-  # frequency-controlled model without any further renaming.
+  # Build base dataset: ALL nouns with target consonants, not just
+  # i/e domain.  This lets us test the full Steriade claim: nouns
+  # selecting -uri (non-palatalizing) vs -i/-e (palatalizing) plurals
+  # should differ in their verbalizer allomorph selection.
   noun_base_inflect <- nouns |>
     filter(
-      opportunity %in% plural_opportunities,
       !is.na(stem_final),
       stem_final %in% segments_of_interest,
       !is.na(mutation)
     ) |>
     mutate(
       mutation_inflect = as.logical(mutation),
-      lemma_freq       = freq_ron_news_2024_1M # standardize name for downstream models
+      lemma_freq       = freq_ron_news_2024_1M,
+      # Steriade's allomorph class:
+      #   front  = palatalizing plural (-i/-e)
+      #   back   = non-palatalizing plural (-uri)
+      #   ambig  = no plural / same-as-singular (gimpe/ochi-type)
+      # The Steriade test compares front vs back only.
+      plural_class = case_when(
+        opportunity %in% plural_opportunities ~ "front",
+        opportunity == "uri" ~ "back",
+        TRUE ~ "ambig"
+      )
     )
 
   # -----------------------------------------------------------------------
@@ -708,32 +738,305 @@ if (!has_verb_deriv_cols && !has_adj_deriv_cols) {
     denom_pairs <- noun_base_inflect |>
       filter(
         !is.na(derived_verbs), derived_verbs != "",
-        !is.na(ipa_derived_verbs), ipa_derived_verbs != ""
       ) |>
       mutate(
         verb_suffix_front = deriv_suffixes %in% front_verb_suffixes,
-        mutation_deriv_verb = detect_palatal_from_ipa(stem_final, ipa_derived_verbs)
+        mutation_deriv_verb = detect_palatal_from_orth(lemma, derived_verbs, stem_final)
       ) |>
       filter(!is.na(mutation_deriv_verb)) |>
       arrange(lemma) |>
       distinct(lemma, .keep_all = TRUE)
 
-    cat("Denominal N-V lemmas in i/e domain with usable IPA:", nrow(denom_pairs), "\n")
-    cat(
-      "  (of which with front-vowel verbal suffix -i/-ui:",
-      sum(denom_pairs$verb_suffix_front, na.rm = TRUE), ")\n"
-    )
+    denom_pairs <- denom_pairs |>
+      mutate(seg_class = if_else(stem_final %in% c("c", "g"), "dorsal", "coronal"))
+
+    cat("Denominal N-V lemmas with target consonants:", nrow(denom_pairs), "\n")
+    cat("  front plural (i/e):", sum(denom_pairs$plural_class == "front"), "\n")
+    cat("  back plural (uri):", sum(denom_pairs$plural_class == "back"), "\n")
+    cat("  ambig (none):", sum(denom_pairs$plural_class == "ambig"), "\n")
+    cat("  dorsal:", sum(denom_pairs$seg_class == "dorsal"),
+        "  coronal:", sum(denom_pairs$seg_class == "coronal"), "\n")
+    cat("  with front-vowel suffix -i/-ui:",
+        sum(denom_pairs$verb_suffix_front, na.rm = TRUE), "\n")
 
     if (nrow(denom_pairs) > 0) {
-      analyze_inf_vs_deriv(denom_pairs, "mutation_inflect", "mutation_deriv_verb", "N -> V")
+      # Analysis 1: mutation_inflect as predictor (original)
+      # Restricted to i/e domain for comparability with TP tables
+      denom_ie <- filter(denom_pairs, plural_class == "front")
+      if (nrow(denom_ie) > 0) {
+        cat("\n--- i/e domain subset (mutation_inflect as predictor) ---\n")
+        analyze_inf_vs_deriv(denom_ie, "mutation_inflect", "mutation_deriv_verb", "N -> V (i/e domain)")
 
-      cat("\nDERIVATIONAL SUMMARY TABLE (N -> V, FULL LEXICON)\n")
-      nv_tp_full <- make_deriv_summary(
-        denom_pairs, "mutation_deriv_verb",
-        "N->V derivation, base plural mutated",
-        "N->V derivation, base plural non-mut."
-      )
-      print_full(nv_tp_full)
+        cat("\nDERIVATIONAL SUMMARY TABLE (N -> V, i/e DOMAIN)\n")
+        nv_tp_full <- make_deriv_summary(
+          denom_ie, "mutation_deriv_verb",
+          "N->V derivation, base plural mutated",
+          "N->V derivation, base plural non-mut."
+        )
+        print_full(nv_tp_full)
+      }
+
+      # Analysis 2: Steriade allomorph-class test
+      # Compare front (-i/-e) vs back (-uri) plural nouns.
+      # Ambiguous (no plural / same-as-singular) are reported
+      # separately but excluded from the Steriade test.
+      cat("\n--- Steriade allomorph-class test ---\n")
+      cat("Does plural allomorph class (front vs back) predict\n")
+      cat("verbalizer palatalization?\n\n")
+
+      cat("All three classes:\n")
+      denom_pairs |>
+        group_by(plural_class) |>
+        summarise(
+          N = n(),
+          N_deriv_pal = sum(mutation_deriv_verb),
+          rate = N_deriv_pal / N,
+          .groups = "drop"
+        ) |>
+        print_full()
+
+      # Steriade test: front vs back only (exclude ambiguous)
+      denom_steriade <- denom_pairs |>
+        filter(plural_class %in% c("front", "back"))
+
+      if (nrow(denom_steriade) > 0 &&
+          n_distinct(denom_steriade$plural_class) == 2L) {
+        cat("\nFront vs back (Steriade test):\n")
+        denom_steriade |>
+          group_by(plural_class) |>
+          summarise(
+            N = n(), N_pal = sum(mutation_deriv_verb),
+            rate = N_pal / N, .groups = "drop"
+          ) |>
+          print_full()
+
+        cat("\nFirth logistic: deriv_mut ~ plural_class\n")
+        model_s <- glm(
+          mutation_deriv_verb ~ plural_class,
+          data = denom_steriade,
+          family = binomial(),
+          method = brglm2::brglmFit
+        )
+        print_full(broom::tidy(model_s))
+        or <- exp(coef(model_s)["plural_classfront"])
+        ci <- exp(confint.default(model_s)["plural_classfront", ])
+        cat(sprintf(
+          "  OR(front vs back) = %.3f [95%% CI: %.3f, %.3f]\n",
+          or, ci[1], ci[2]
+        ))
+
+        cat("\nFirth logistic: deriv_mut ~ plural_class + log(freq)\n")
+        denom_s_freq <- denom_steriade |>
+          mutate(log_freq = log(lemma_freq + 1))
+        model_sf <- glm(
+          mutation_deriv_verb ~ plural_class + log_freq,
+          data = denom_s_freq,
+          family = binomial(),
+          method = brglm2::brglmFit
+        )
+        print_full(broom::tidy(model_sf))
+      }
+
+      # TP-style summary by plural class
+      cat("\nTP TABLE BY PLURAL CLASS (N -> V)\n")
+      denom_pairs |>
+        group_by(plural_class) |>
+        summarise(
+          mutated     = sum(mutation_deriv_verb),
+          non_mutated = sum(!mutation_deriv_verb),
+          .groups     = "drop"
+        ) |>
+        mutate(type = paste0("N->V, ", plural_class, " plural")) |>
+        tp_table(type, mutated, non_mutated) |>
+        select(type, N, mutated, non_mutated, rate,
+               majority = majority_mutates, tolerated) |>
+        print_full()
+
+      # --- Decomposition: suffix selection vs palatalization ---
+      cat("\n--- SUFFIX SELECTION (what Steriade actually predicts) ---\n")
+      cat("Does plural class predict WHICH suffix (-i vs -a) is chosen?\n\n")
+      denom_pairs |>
+        filter(plural_class %in% c("front", "back")) |>
+        group_by(plural_class, verb_suffix_front) |>
+        summarise(N = n(), .groups = "drop") |>
+        mutate(suffix = if_else(verb_suffix_front,
+                                "front (-i/-ui)", "back (-a)")) |>
+        select(plural_class, suffix, N) |>
+        print_full()
+
+      cat("\n--- SEGMENT-CLASS DECOMPOSITION ---\n")
+      cat("Palatalization rate by plural class AND segment class:\n\n")
+      denom_pairs |>
+        filter(plural_class %in% c("front", "back")) |>
+        group_by(seg_class, plural_class) |>
+        summarise(
+          N = n(),
+          N_pal = sum(mutation_deriv_verb),
+          rate = N_pal / N,
+          .groups = "drop"
+        ) |>
+        arrange(seg_class, plural_class) |>
+        print_full()
+
+      # Controlled regression: does plural_class predict
+      # palatalization AFTER controlling for segment class?
+      if (nrow(denom_steriade) > 5 &&
+          n_distinct(denom_steriade$seg_class) == 2L) {
+        cat("\nFirth logistic (controlled): deriv_mut ~",
+            "plural_class + seg_class\n")
+        denom_ctrl <- denom_steriade |>
+          mutate(seg_class = factor(seg_class,
+                                    levels = c("coronal", "dorsal")))
+        model_ctrl <- glm(
+          mutation_deriv_verb ~ plural_class + seg_class,
+          data = denom_ctrl,
+          family = binomial(),
+          method = brglm2::brglmFit
+        )
+        print_full(broom::tidy(model_ctrl))
+        or_pc <- exp(coef(model_ctrl)["plural_classfront"])
+        ci_pc <- exp(confint.default(
+          model_ctrl
+        )["plural_classfront", ])
+        cat(sprintf(
+          "  OR(front vs back | seg_class) = %.3f [95%% CI: %.3f, %.3f]\n",
+          or_pc, ci_pc[1], ci_pc[2]
+        ))
+        cat("  If OR ~ 1 and p > 0.05, the Steriade effect is a\n")
+        cat("  composition artifact of segment-class distribution.\n")
+      }
+
+      # Suffix selection test (Fisher's exact):
+      # Does plural class predict -i vs -a suffix choice?
+      cat("\n--- SUFFIX SELECTION: Fisher exact test ---\n")
+      suf_tab <- denom_steriade |>
+        mutate(
+          suf_front = verb_suffix_front
+        )
+      tab <- with(suf_tab, table(plural_class, suf_front))
+      if (all(dim(tab) == c(2L, 2L))) {
+        ft <- fisher.test(tab)
+        cat("  p =", format.pval(ft$p.value, digits = 3), "\n")
+        cat("  OR =", round(ft$estimate, 3), "\n")
+        cat("  If p > 0.05, suffix selection does NOT co-vary\n")
+        cat("  with plural class (contra Steriade).\n")
+      } else {
+        cat("  Contingency table not 2x2; printing instead:\n")
+        print(tab)
+      }
+
+      # -----------------------------------------------------------------
+      # IAP ROOT-SPECIFICATION ANALYSIS
+      # -----------------------------------------------------------------
+      # Under IAP, root specification (underspecified /K/ vs fully
+      # specified /k/) independently determines:
+      #   (a) whether the plural allomorph is front (-i/-e) or back (-uri)
+      #   (b) whether the verbalizer allomorph is front (-i) or back (-a/-ui)
+      #   (c) whether the consonant palatalizes given a front trigger
+      #
+      # We infer root specification from plural behavior:
+      #   - mutation=TRUE or nde:gimpe → underspecified /K,G/ or /T,S,D/
+      #   - -uri plural without palatalization → fully specified /k,g/
+      #   - Verbs that palatalize despite -uri plural (buluc→buluci)
+      #     → underspecified /K/ with listed -uri exception
+      cat("\n--- IAP ROOT-SPECIFICATION ANALYSIS (N -> V) ---\n")
+
+      iap <- denom_pairs |>
+        mutate(
+          root_spec = case_when(
+            # Underspecified: palatalizes in plural OR tautomorphemic
+            mutation_inflect ~ "underspecified",
+            str_starts(exception_reason, "nde:gimpe") ~ "underspecified",
+            # Verbalizer palatalizes despite -uri → underspecified
+            # with listed -uri plural
+            plural_class == "back" & mutation_deriv_verb ~ "underspecified",
+            # Fully specified: -uri plural, no palatalization anywhere
+            plural_class == "back" & !mutation_deriv_verb ~ "fully_specified",
+            # Paduchi/ochi = fully specified (NDEB)
+            str_starts(exception_reason, "nde:paduchi") ~ "fully_specified",
+            str_starts(exception_reason, "nde:ochi") ~ "fully_specified",
+            TRUE ~ "ambiguous"
+          ),
+          # Classify the verbalizer suffix more precisely
+          verb_suffix_type = case_when(
+            str_ends(derived_verbs, "\u0103ni") ~ "other",
+            str_ends(derived_verbs, "\u0103ri") ~ "other",
+            str_ends(derived_verbs, "arisi") ~ "other",
+            verb_suffix_front ~ "front (-i/-ui)",
+            TRUE ~ "back (-a)"
+          )
+        )
+
+      iap_classified <- filter(iap, root_spec != "ambiguous")
+
+      cat("\nRoot specification (dorsals):\n")
+      iap_classified |>
+        filter(seg_class == "dorsal") |>
+        group_by(root_spec, verb_suffix_type) |>
+        summarise(
+          N = n(),
+          N_pal = sum(mutation_deriv_verb),
+          .groups = "drop"
+        ) |>
+        arrange(root_spec, verb_suffix_type) |>
+        print_full()
+
+      # The key IAP table: phonology is exceptionless
+      cat("\nPhonological prediction (dorsals):\n")
+      cat("  underspecified + front trigger → palatalizes?\n")
+      cat("  fully specified + any trigger → no palatalization?\n\n")
+      iap_dorsal <- iap_classified |> filter(seg_class == "dorsal")
+      if (nrow(iap_dorsal) > 0) {
+        iap_dorsal |>
+          group_by(root_spec, mutation_deriv_verb) |>
+          summarise(N = n(), .groups = "drop") |>
+          arrange(root_spec, mutation_deriv_verb) |>
+          print_full()
+
+        # Separate phonology from morphology
+        underspec_front <- iap_dorsal |>
+          filter(root_spec == "underspecified",
+                 verb_suffix_type == "front (-i/-ui)")
+        cat(sprintf(
+          "\n  Underspecified + front trigger: %d/%d palatalize (%.1f%%)\n",
+          sum(underspec_front$mutation_deriv_verb),
+          nrow(underspec_front),
+          100 * mean(underspec_front$mutation_deriv_verb)
+        ))
+
+        fullspec <- iap_dorsal |>
+          filter(root_spec == "fully_specified")
+        cat(sprintf(
+          "  Fully specified (any trigger): %d/%d palatalize (%.1f%%)\n",
+          sum(fullspec$mutation_deriv_verb),
+          nrow(fullspec),
+          100 * mean(fullspec$mutation_deriv_verb)
+        ))
+
+        cat("\n  Suffix selection exceptions (underspecified + back/other):\n")
+        underspec_back <- iap_dorsal |>
+          filter(root_spec == "underspecified",
+                 verb_suffix_type != "front (-i/-ui)")
+        if (nrow(underspec_back) > 0) {
+          cat(sprintf("    %d/%d underspecified roots chose non-front suffix\n",
+                      nrow(underspec_back),
+                      sum(iap_dorsal$root_spec == "underspecified")))
+          underspec_back |>
+            select(lemma, plural, derived_verbs,
+                   verb_suffix_type) |>
+            print_full()
+        }
+      }
+
+      if (any(iap_classified$seg_class == "coronal")) {
+        cat("\nRoot specification (coronals):\n")
+        iap_classified |>
+          filter(seg_class == "coronal") |>
+          group_by(root_spec, mutation_deriv_verb) |>
+          summarise(N = n(), .groups = "drop") |>
+          arrange(root_spec, mutation_deriv_verb) |>
+          print_full()
+      }
     }
   } else {
     cat("No denominal verb columns found; skipping N -> V comparison.\n")
@@ -747,18 +1050,44 @@ if (!has_verb_deriv_cols && !has_adj_deriv_cols) {
   if (has_adj_deriv_cols) {
     noun_adj_pairs <- noun_base_inflect |>
       filter(
-        !is.na(derived_adj), derived_adj != "",
-        !is.na(ipa_derived_adj), ipa_derived_adj != ""
+        !is.na(derived_adj), derived_adj != ""
       ) |>
-      mutate(mutation_deriv_adj = detect_palatal_from_ipa(stem_final, ipa_derived_adj)) |>
+      mutate(mutation_deriv_adj = detect_palatal_from_orth(lemma, derived_adj, stem_final)) |>
       filter(!is.na(mutation_deriv_adj)) |>
       arrange(lemma) |>
       distinct(lemma, .keep_all = TRUE)
 
-    cat("Denominal N-Adj lemmas in i/e domain with usable IPA:", nrow(noun_adj_pairs), "\n")
+    cat("Denominal N-Adj lemmas with target consonants:", nrow(noun_adj_pairs), "\n")
+    cat("  front-vowel plural (i/e):", sum(noun_adj_pairs$plural_class == "front"), "\n")
+    cat("  non-front plural (uri/none):", sum(noun_adj_pairs$plural_class == "non_front"), "\n")
 
     if (nrow(noun_adj_pairs) > 0) {
-      analyze_inf_vs_deriv(noun_adj_pairs, "mutation_inflect", "mutation_deriv_adj", "N -> Adj")
+      # i/e domain subset
+      nadj_ie <- filter(noun_adj_pairs, plural_class == "front")
+      if (nrow(nadj_ie) > 0) {
+        cat("\n--- i/e domain subset ---\n")
+        analyze_inf_vs_deriv(nadj_ie, "mutation_inflect", "mutation_deriv_adj", "N -> Adj (i/e domain)")
+      }
+
+      # Steriade allomorph-class test (front vs back)
+      nadj_steriade <- noun_adj_pairs |>
+        filter(plural_class %in% c("front", "back"))
+      if (nrow(nadj_steriade) > 0) {
+        cat("\n--- Steriade allomorph-class test (front vs back) ---\n")
+        nadj_steriade |>
+          group_by(plural_class) |>
+          summarise(N = n(), N_pal = sum(mutation_deriv_adj),
+                    rate = N_pal / N, .groups = "drop") |>
+          print_full()
+      }
+      if (any(noun_adj_pairs$plural_class == "ambig")) {
+        cat("\nAmbiguous plural class (excluded from Steriade test):\n")
+        noun_adj_pairs |>
+          filter(plural_class == "ambig") |>
+          summarise(N = n(), N_pal = sum(mutation_deriv_adj),
+                    rate = N_pal / N) |>
+          print_full()
+      }
 
       cat("\nDERIVATIONAL SUMMARY TABLE (N -> Adj, FULL LEXICON)\n")
       na_tp_full <- make_deriv_summary(
@@ -790,11 +1119,10 @@ if (!has_verb_deriv_cols && !has_adj_deriv_cols) {
     adj_verb_pairs <- adj_base_inflect |>
       filter(
         !is.na(derived_verbs), derived_verbs != "",
-        !is.na(ipa_derived_verbs), ipa_derived_verbs != ""
       ) |>
       mutate(
         verb_suffix_front = deriv_suffixes %in% front_verb_suffixes,
-        mutation_deriv_verb = detect_palatal_from_ipa(stem_final, ipa_derived_verbs)
+        mutation_deriv_verb = detect_palatal_from_orth(lemma, derived_verbs, stem_final)
       ) |>
       filter(!is.na(mutation_deriv_verb)) |>
       arrange(lemma) |>
@@ -812,7 +1140,7 @@ if (!has_verb_deriv_cols && !has_adj_deriv_cols) {
         !is.na(derived_adj), derived_adj != "",
         !is.na(ipa_derived_adj), ipa_derived_adj != "", derived_adj != lemma
       ) |>
-      mutate(mutation_deriv_adj = detect_palatal_from_ipa(stem_final, ipa_derived_adj)) |>
+      mutate(mutation_deriv_adj = detect_palatal_from_orth(lemma, derived_adj, stem_final)) |>
       filter(!is.na(mutation_deriv_adj)) |>
       arrange(lemma) |>
       distinct(lemma, .keep_all = TRUE)
@@ -1071,11 +1399,10 @@ if (!is.null(nouns_opp_down_single) && nrow(nouns_opp_down_single) > 0L) {
       filter(
         lemma %in% lemmas_ds,
         !is.na(derived_verbs), derived_verbs != "",
-        !is.na(ipa_derived_verbs), ipa_derived_verbs != ""
       ) |>
       mutate(
         verb_suffix_front = deriv_suffixes %in% front_verb_suffixes,
-        mutation_deriv_verb = detect_palatal_from_ipa(stem_final, ipa_derived_verbs)
+        mutation_deriv_verb = detect_palatal_from_orth(lemma, derived_verbs, stem_final)
       ) |>
       filter(!is.na(mutation_deriv_verb)) |>
       arrange(lemma) |>
@@ -1102,7 +1429,7 @@ if (!is.null(nouns_opp_down_single) && nrow(nouns_opp_down_single) > 0L) {
         !is.na(derived_adj), derived_adj != "",
         !is.na(ipa_derived_adj), ipa_derived_adj != ""
       ) |>
-      mutate(mutation_deriv_adj = detect_palatal_from_ipa(stem_final, ipa_derived_adj)) |>
+      mutate(mutation_deriv_adj = detect_palatal_from_orth(lemma, derived_adj, stem_final)) |>
       filter(!is.na(mutation_deriv_adj)) |>
       arrange(lemma) |>
       distinct(lemma, .keep_all = TRUE)

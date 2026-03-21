@@ -186,7 +186,10 @@ def process_csv(input_path: str, output_path: str) -> None:
         reader = csv.DictReader(f_in)
 
         rows = []
-        seen_entries = set()  # Track (lemma, pos, plural) to deduplicate
+        # Track (lemma, pos, plural) -> index in rows list
+        # so we can replace an entry if a later duplicate has
+        # richer derivation data.
+        seen_entries: dict[tuple, int] = {}
         duplicates_skipped = 0
 
         for i, row in enumerate(reader, start=1):
@@ -198,16 +201,43 @@ def process_csv(input_path: str, output_path: str) -> None:
             exploded = explode_derived_verbs_row(processed)
 
             for exp_row in exploded:
-                # Deduplicate by (lemma, pos, plural)
                 key = (
                     exp_row.get("lemma", ""),
                     exp_row.get("pos", ""),
                     exp_row.get("plural", ""),
                 )
                 if key in seen_entries:
+                    # Keep the version with more derivation data
+                    existing_idx = seen_entries[key]
+                    existing = rows[existing_idx]
+                    new_has_dv = bool(exp_row.get("derived_verbs"))
+                    old_has_dv = bool(existing.get("derived_verbs"))
+                    new_has_da = bool(exp_row.get("derived_adj"))
+                    old_has_da = bool(existing.get("derived_adj"))
+                    if (new_has_dv and not old_has_dv) or (
+                        new_has_da and not old_has_da
+                    ):
+                        # Merge: copy derivation fields from new
+                        if new_has_dv and not old_has_dv:
+                            existing["derived_verbs"] = (
+                                exp_row["derived_verbs"]
+                            )
+                            existing["deriv_suffixes"] = (
+                                exp_row.get("deriv_suffixes", "")
+                            )
+                            existing["ipa_derived_verbs"] = (
+                                exp_row.get("ipa_derived_verbs", "")
+                            )
+                        if new_has_da and not old_has_da:
+                            existing["derived_adj"] = (
+                                exp_row["derived_adj"]
+                            )
+                            existing["ipa_derived_adj"] = (
+                                exp_row.get("ipa_derived_adj", "")
+                            )
                     duplicates_skipped += 1
                     continue
-                seen_entries.add(key)
+                seen_entries[key] = len(rows)
                 rows.append(exp_row)
 
         if duplicates_skipped > 0:

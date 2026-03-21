@@ -37,6 +37,10 @@ def tp_downsampled():
 def get_row(df, type_label):
     """Helper to get a single row by type label."""
     rows = df[df["type"] == type_label]
+    # Handle both Unicode → and ASCII -> arrows
+    if len(rows) == 0 and "→" in type_label:
+        alt = type_label.replace("→", "->")
+        rows = df[df["type"] == alt]
     assert (
         len(rows) == 1
     ), f"Expected 1 row for '{type_label}', got {len(rows)}"

@@ -472,14 +472,14 @@ DEADJECTIVAL_ADJS: DefaultDict[str, Set[str]] = defaultdict(
 
 @retry(
     reraise=True,
-    stop=stop_after_attempt(6),
-    wait=wait_exponential(multiplier=0.75, min=0.5, max=12),
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=0.5, min=0.5, max=5),
     retry=retry_if_exception_type(requests.RequestException),
 )
 def get(url: str, params: Mapping[str, Any]) -> dict[str, Any]:
     """Fetch JSON from Wiktionary API with rate limiting and retry."""
     params = {"maxlag": "5", **params}
-    r = _SESSION.get(url, params=params, timeout=30)
+    r = _SESSION.get(url, params=params, timeout=10)
     if r.status_code in (429, 503):
         try:
             retry_after = float(r.headers.get("Retry-After", "2"))
@@ -1722,12 +1722,11 @@ def parse_romanian_entry(title: str, skip_ipa: bool = False) -> Optional[dict]:
                     plural = normalize_ws(mtab.group(1))
         if plural:
             plural = clean_plural(plural)
-        # Confirm via tables/templates if plural looks incomplete
-        if (
-            not plural
-            or plural in ("-", "", "i", "e", "uri")
-            or len(plural) < 3
-        ):
+        # Only fall back to HTML table extraction if wikitext
+        # gave us nothing usable.  This avoids expensive HTTP
+        # calls for entries where the template already provided
+        # a valid plural.
+        if not plural or plural in ("-", ""):
             if not unc:
                 confirmed = confirm_plural_via_tables_or_templates(
                     title=title_normalized, block=block, tpl=tpl
@@ -1795,14 +1794,21 @@ def parse_romanian_entry(title: str, skip_ipa: bool = False) -> Optional[dict]:
     if notes:
         result["notes"] = " | ".join(notes)
 
-    # We only need IPA for entries we actually keep (nouns / adjectives).
+    # IPA: prefer wikitext templates (no HTTP needed).
+    # HTML-based IPA fetch only if HTML is already cached (from a
+    # plural confirmation fetch).  Uncached HTML IPA fetches are
+    # skipped — the downstream pipeline generates IPA via G2P.
     if not skip_ipa and pos in {"N", "ADJ"}:
         try:
-            # First try IPA from Romanian wikitext
             ipas_lemma = extract_ipa_from_wikitext(ro)
-            # Fallback to HTML-based extraction if none found
-            if not ipas_lemma:
-                ipas_lemma = get_ipa_for_form(title_normalized)
+            if not ipas_lemma and title_normalized in _HTML_CACHE_EN:
+                ipas_lemma = extract_ipa_list_from_html(
+                    _HTML_CACHE_EN[title_normalized]
+                )
+            if not ipas_lemma and title_normalized in _HTML_CACHE_RO:
+                ipas_lemma = extract_ipa_list_from_html(
+                    _HTML_CACHE_RO[title_normalized]
+                )
             if ipas_lemma:
                 result["ipa_raw_lemma"] = " | ".join(ipas_lemma)
         except (requests.RequestException, ValueError):
