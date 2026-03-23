@@ -1589,6 +1589,38 @@ def mark_tp_domain(row: Dict[str, str]) -> None:
         row["tp_in_domain"] = "False"
         return
 
+    # Exclude foreign/suppletive plurals that don't reflect
+    # Romanian phonology:
+    #   - Suppletive stems (plural shares <40% of lemma)
+    #   - Foreign plurals where stem_final+i shows no change
+    #     (e.g., putto→putti, paradosis→paradosisi)
+    lemma = (row.get("lemma", "") or "").lower()
+    plural = (row.get("plural", "") or "").lower()
+    mutation = row.get("mutation", "False")
+    orth_change = row.get("orth_change", "")
+
+    if lemma and plural and mutation == "False":
+        # Suppletive: plural shares very little with lemma
+        shared = 0
+        for a, b in zip(lemma, plural):
+            if a == b:
+                shared += 1
+            else:
+                break
+        min_shared = max(2, len(lemma) * 2 // 5)
+        if shared < min_shared:
+            row["tp_in_domain"] = "False"
+            return
+
+        # Foreign plural: stem_final repeated unchanged (t→ti, s→si, d→di)
+        # with no palatalization marker — likely a foreign morphology
+        if orth_change in (
+            f"{stem_final}→{stem_final}i",
+            f"{stem_final}o→{stem_final}i",
+        ):
+            row["tp_in_domain"] = "False"
+            return
+
     # If we made it here, this item is in the productive TP domain
     row["tp_in_domain"] = "True"
 
