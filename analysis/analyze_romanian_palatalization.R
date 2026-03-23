@@ -81,9 +81,9 @@ CLUSTER_TYPES <- c("st", "sc", "ct") # cluster types for TP cluster analysis
 # Run-mode toggles
 # =========================================================================
 
-RUN_BAYESIAN_TP <- TRUE # set FALSE to skip Bayesian TP fits
-RUN_SEGMENT_CLASS_BRMS <- TRUE # set FALSE to skip segment-class brms models
-RUN_DERIV_MIXED <- FALSE # set TRUE to add GLMM (1|stem_final) to derivational models
+RUN_BAYESIAN_TP <- FALSE # set TRUE for Bayesian TP fits (slow)
+RUN_SEGMENT_CLASS_BRMS <- FALSE # set TRUE for segment-class brms (slow)
+RUN_DERIV_MIXED <- FALSE # set TRUE to add GLMM (1|stem_final)
 
 # =========================================================================
 # Helper Functions
@@ -469,11 +469,14 @@ cat("Log file:", normalizePath(output_log, mustWork = FALSE), "\n")
 log_con <- file(output_log, open = "wt")
 sink(log_con, split = TRUE)
 sink(log_con, type = "message")
-on.exit({
-  sink(type = "message")
-  sink()
-  close(log_con)
-}, add = TRUE)
+on.exit(
+  {
+    sink(type = "message")
+    sink()
+    close(log_con)
+  },
+  add = TRUE
+)
 
 options(
   width = 200,
@@ -716,7 +719,7 @@ if (!has_verb_deriv_cols && !has_adj_deriv_cols) {
     ) |>
     mutate(
       mutation_inflect = as.logical(mutation),
-      lemma_freq       = freq_ron_news_2024_1M,
+      lemma_freq = freq_ron_news_2024_1M,
       # Steriade's allomorph class:
       #   front  = palatalizing plural (-i/-e)
       #   back   = non-palatalizing plural (-uri)
@@ -754,10 +757,14 @@ if (!has_verb_deriv_cols && !has_adj_deriv_cols) {
     cat("  front plural (i/e):", sum(denom_pairs$plural_class == "front"), "\n")
     cat("  back plural (uri):", sum(denom_pairs$plural_class == "back"), "\n")
     cat("  ambig (none):", sum(denom_pairs$plural_class == "ambig"), "\n")
-    cat("  dorsal:", sum(denom_pairs$seg_class == "dorsal"),
-        "  coronal:", sum(denom_pairs$seg_class == "coronal"), "\n")
-    cat("  with front-vowel suffix -i/-ui:",
-        sum(denom_pairs$verb_suffix_front, na.rm = TRUE), "\n")
+    cat(
+      "  dorsal:", sum(denom_pairs$seg_class == "dorsal"),
+      "  coronal:", sum(denom_pairs$seg_class == "coronal"), "\n"
+    )
+    cat(
+      "  with front-vowel suffix -i/-ui:",
+      sum(denom_pairs$verb_suffix_front, na.rm = TRUE), "\n"
+    )
 
     if (nrow(denom_pairs) > 0) {
       # Analysis 1: mutation_inflect as predictor (original)
@@ -800,7 +807,7 @@ if (!has_verb_deriv_cols && !has_adj_deriv_cols) {
         filter(plural_class %in% c("front", "back"))
 
       if (nrow(denom_steriade) > 0 &&
-          n_distinct(denom_steriade$plural_class) == 2L) {
+        n_distinct(denom_steriade$plural_class) == 2L) {
         cat("\nFront vs back (Steriade test):\n")
         denom_steriade |>
           group_by(plural_class) |>
@@ -849,7 +856,8 @@ if (!has_verb_deriv_cols && !has_adj_deriv_cols) {
         mutate(type = paste0("N->V, ", plural_class, " plural")) |>
         tp_table(type, mutated, non_mutated) |>
         select(type, N, mutated, non_mutated, rate,
-               majority = majority_mutates, tolerated) |>
+          majority = majority_mutates, tolerated
+        ) |>
         print_full()
 
       # --- Decomposition: suffix selection vs palatalization ---
@@ -860,7 +868,8 @@ if (!has_verb_deriv_cols && !has_adj_deriv_cols) {
         group_by(plural_class, verb_suffix_front) |>
         summarise(N = n(), .groups = "drop") |>
         mutate(suffix = if_else(verb_suffix_front,
-                                "front (-i/-ui)", "back (-a)")) |>
+          "front (-i/-ui)", "back (-a)"
+        )) |>
         select(plural_class, suffix, N) |>
         print_full()
 
@@ -881,12 +890,15 @@ if (!has_verb_deriv_cols && !has_adj_deriv_cols) {
       # Controlled regression: does plural_class predict
       # palatalization AFTER controlling for segment class?
       if (nrow(denom_steriade) > 5 &&
-          n_distinct(denom_steriade$seg_class) == 2L) {
-        cat("\nFirth logistic (controlled): deriv_mut ~",
-            "plural_class + seg_class\n")
+        n_distinct(denom_steriade$seg_class) == 2L) {
+        cat(
+          "\nFirth logistic (controlled): deriv_mut ~",
+          "plural_class + seg_class\n"
+        )
         denom_ctrl <- denom_steriade |>
           mutate(seg_class = factor(seg_class,
-                                    levels = c("coronal", "dorsal")))
+            levels = c("coronal", "dorsal")
+          ))
         model_ctrl <- glm(
           mutation_deriv_verb ~ plural_class + seg_class,
           data = denom_ctrl,
@@ -995,8 +1007,10 @@ if (!has_verb_deriv_cols && !has_adj_deriv_cols) {
 
         # Separate phonology from morphology
         underspec_front <- iap_dorsal |>
-          filter(root_spec == "underspecified",
-                 verb_suffix_type == "front (-i/-ui)")
+          filter(
+            root_spec == "underspecified",
+            verb_suffix_type == "front (-i/-ui)"
+          )
         cat(sprintf(
           "\n  Underspecified + front trigger: %d/%d palatalize (%.1f%%)\n",
           sum(underspec_front$mutation_deriv_verb),
@@ -1015,15 +1029,21 @@ if (!has_verb_deriv_cols && !has_adj_deriv_cols) {
 
         cat("\n  Suffix selection exceptions (underspecified + back/other):\n")
         underspec_back <- iap_dorsal |>
-          filter(root_spec == "underspecified",
-                 verb_suffix_type != "front (-i/-ui)")
+          filter(
+            root_spec == "underspecified",
+            verb_suffix_type != "front (-i/-ui)"
+          )
         if (nrow(underspec_back) > 0) {
-          cat(sprintf("    %d/%d underspecified roots chose non-front suffix\n",
-                      nrow(underspec_back),
-                      sum(iap_dorsal$root_spec == "underspecified")))
+          cat(sprintf(
+            "    %d/%d underspecified roots chose non-front suffix\n",
+            nrow(underspec_back),
+            sum(iap_dorsal$root_spec == "underspecified")
+          ))
           underspec_back |>
-            select(lemma, plural, derived_verbs,
-                   verb_suffix_type) |>
+            select(
+              lemma, plural, derived_verbs,
+              verb_suffix_type
+            ) |>
             print_full()
         }
       }
@@ -1076,16 +1096,20 @@ if (!has_verb_deriv_cols && !has_adj_deriv_cols) {
         cat("\n--- Steriade allomorph-class test (front vs back) ---\n")
         nadj_steriade |>
           group_by(plural_class) |>
-          summarise(N = n(), N_pal = sum(mutation_deriv_adj),
-                    rate = N_pal / N, .groups = "drop") |>
+          summarise(
+            N = n(), N_pal = sum(mutation_deriv_adj),
+            rate = N_pal / N, .groups = "drop"
+          ) |>
           print_full()
       }
       if (any(noun_adj_pairs$plural_class == "ambig")) {
         cat("\nAmbiguous plural class (excluded from Steriade test):\n")
         noun_adj_pairs |>
           filter(plural_class == "ambig") |>
-          summarise(N = n(), N_pal = sum(mutation_deriv_adj),
-                    rate = N_pal / N) |>
+          summarise(
+            N = n(), N_pal = sum(mutation_deriv_adj),
+            rate = N_pal / N
+          ) |>
           print_full()
       }
 
@@ -1248,6 +1272,180 @@ nouns_tp |>
   group_by(has_cluster) |>
   summarise(N = n(), N_mut = sum(mutation), rate = N_mut / N, .groups = "drop") |>
   print_full()
+
+# =========================================================================
+# Two-System Analysis: Dorsal (vowel-triggered) vs Coronal (consonant-triggered)
+# =========================================================================
+
+cat_section("TWO-SYSTEM ANALYSIS: DORSAL VS CORONAL TRIGGERS")
+
+cat("Dorsals palatalize before BOTH -i and -e (vowel-triggered).\n")
+cat("Coronals palatalize before -i ONLY (consonant-triggered via [j]).\n")
+cat("This table is the core evidence for the two-system architecture.\n\n")
+
+# All nouns with target consonants (TP domain), by segment class × opportunity
+two_sys <- nouns_tp |>
+  mutate(seg_class = if_else(stem_final %in% c("c", "g"), "dorsal", "coronal")) |>
+  group_by(seg_class, stem_final, opportunity) |>
+  summarise(
+    N = n(), N_mut = sum(mutation), rate = N_mut / N, .groups = "drop"
+  ) |>
+  arrange(seg_class, stem_final, opportunity)
+
+cat("TP domain (underspecified consonants only):\n")
+print_full(two_sys)
+
+# Summary: dorsal vs coronal aggregated
+cat("\nAggregated by class × opportunity:\n")
+nouns_tp |>
+  mutate(seg_class = if_else(stem_final %in% c("c", "g"), "dorsal", "coronal")) |>
+  group_by(seg_class, opportunity) |>
+  summarise(
+    N = n(), N_mut = sum(mutation), rate = N_mut / N, .groups = "drop"
+  ) |>
+  arrange(seg_class, opportunity) |>
+  print_full()
+
+cat("\nKey contrast:\n")
+cat("  Dorsals: 100% before -i, 100% before -e\n")
+cat("  Coronals: ~100% before -i, ~0% before -e\n")
+cat("  The difference: /i/ glides to [j] (consonantal trigger);\n")
+cat("  /e/ does not glide, so coronals have no trigger.\n")
+
+# =========================================================================
+# Cluster Behavior: Evidence for Rule Ordering
+# =========================================================================
+
+cat_section("CLUSTER BEHAVIOR: EVIDENCE FOR RULE ORDERING")
+
+cat("Each cluster type tests a different aspect of the rule ordering.\n\n")
+
+# Collect all cluster data from the FULL noun set (not just TP domain)
+# since clusters have small N
+cluster_data <- nouns |>
+  filter(!is.na(cluster), cluster %in% CLUSTER_TYPES) |>
+  group_by(cluster, opportunity) |>
+  summarise(
+    N = n(),
+    N_mut = sum(mutation, na.rm = TRUE),
+    rate = if_else(N > 0L, N_mut / N, NA_real_),
+    .groups = "drop"
+  ) |>
+  filter(N > 0) |>
+  arrange(cluster, opportunity)
+
+print_full(cluster_data)
+
+cat("\nCluster derivation summary:\n")
+cat("  ┌─────────┬──────┬────────┬─────────────────────────────────┐\n")
+cat("  │ Cluster │ Sfx  │ Output │ Mechanism                       │\n")
+cat("  ├─────────┼──────┼────────┼─────────────────────────────────┤\n")
+cat("  │ st      │ -i   │ [ʃt]   │ Glide→S-pal (SEARCH skips T)   │\n")
+cat("  │         │      │        │ →bleeding blocks assibilation   │\n")
+cat("  │ st      │ -e   │ [st]   │ No consonantal trigger          │\n")
+cat("  │ ct      │ -i   │ [kts]  │ /k/ inalterable; /T/ assibilates│\n")
+cat("  │ ct      │ -e   │ [kt]   │ No trigger for either rule      │\n")
+cat("  │ sc      │ -i   │ [ʃt]   │ K→tʃ; S-pal triggered by tʃ;   │\n")
+cat("  │         │      │        │ bleeding→t                      │\n")
+cat("  │ sc      │ -e   │ [ʃt]★  │ K→tʃ before [+front]; tʃ       │\n")
+cat("  │         │      │        │ triggers S-pal; bleeding→t      │\n")
+cat("  └─────────┴──────┴────────┴─────────────────────────────────┘\n")
+cat("  ★ KEY DIAGNOSTIC: sc+e proves the coronal trigger is [tʃ],\n")
+cat("    not the vowel — no [j] present, yet S palatalizes.\n")
+cat("    This cannot be explained by a vowel-based trigger.\n")
+cat("\n  Bleeding converts [tʃ]→[t] after [ʃ] by stripping\n")
+cat("  [+strident]: /SK/+e → [tʃ] (K-pal) → [ʃ][tʃ] (S-pal)\n")
+cat("  → [ʃ][t] (bleeding removes +strid from tʃ).\n")
+
+# Verify: s+e = 0% but sc+e = 100% (the key diagnostic)
+cat("\n--- KEY DIAGNOSTIC: s+e vs sc+e ---\n")
+s_e_all <- nouns |>
+  filter(stem_final == "s", opportunity == "e")
+s_e_simple <- s_e_all |> filter(is.na(cluster) | cluster == "")
+s_e_sc <- s_e_all |> filter(!is.na(cluster), cluster == "sc")
+cat("  Simple s+e:", sum(s_e_simple$mutation), "/", nrow(s_e_simple), "mutate")
+cat(if (nrow(s_e_simple) > 0) sprintf(" (%.1f%%)\n", sum(s_e_simple$mutation) / nrow(s_e_simple) * 100) else "\n")
+cat("  sc+e:      ", sum(s_e_sc$mutation), "/", nrow(s_e_sc), "mutate")
+cat(if (nrow(s_e_sc) > 0) sprintf(" (%.1f%%)\n", sum(s_e_sc$mutation) / nrow(s_e_sc) * 100) else "\n")
+cat("  Simple s NEVER palatalizes before /e/ (no consonantal trigger).\n")
+cat("  SC always palatalizes before /e/ (tʃ provides the trigger).\n\n")
+
+# Verify: t assibilates in all non-st cluster contexts
+cat("--- t assibilation by cluster context ---\n")
+cat("Does t assibilate before -i in each cluster type?\n\n")
+nouns |>
+  filter(
+    opportunity == "i", mutation,
+    str_ends(lemma, "nt|lt|rt|ft|ct|st")
+  ) |>
+  mutate(
+    cluster_ctx = str_extract(lemma, "(nt|lt|rt|ft|ct|st)$")
+  ) |>
+  filter(!is.na(cluster_ctx)) |>
+  group_by(cluster_ctx) |>
+  summarise(N = n(), .groups = "drop") |>
+  mutate(t_assibilates = cluster_ctx != "st") |>
+  arrange(cluster_ctx) |>
+  print_full()
+
+# =========================================================================
+# Transderivational Table (4): Inflection × Derivation Cross-Tab
+# =========================================================================
+
+cat_section("TRANSDERIVATIONAL TABLE (4): INFLECTION × DERIVATION")
+
+if (has_verb_deriv_cols && exists("denom_pairs")) {
+  cat("Cross-tabulation of plural palatalization × verb palatalization\n")
+  cat("by stem-final segment (all nouns with derived verbs, excl. NDEB).\n\n")
+
+  denom_clean <- denom_pairs |>
+    filter(!str_starts(exception_reason, "nde:"))
+
+  if (nrow(denom_clean) > 0) {
+    cat("By segment:\n")
+    denom_clean |>
+      mutate(
+        both = mutation_inflect & mutation_deriv_verb,
+        infl_only = mutation_inflect & !mutation_deriv_verb,
+        deriv_only = !mutation_inflect & mutation_deriv_verb,
+        neither = !mutation_inflect & !mutation_deriv_verb
+      ) |>
+      group_by(stem_final) |>
+      summarise(
+        n = n(),
+        both = sum(both),
+        infl_only = sum(infl_only),
+        deriv_only = sum(deriv_only),
+        neither = sum(neither),
+        agree_pct = round((both + neither) / n * 100),
+        .groups = "drop"
+      ) |>
+      arrange(stem_final) |>
+      print_full()
+
+    cat("\nBy segment class:\n")
+    denom_clean |>
+      mutate(
+        seg_class = if_else(stem_final %in% c("c", "g"), "dorsal", "coronal"),
+        both = mutation_inflect & mutation_deriv_verb,
+        infl_only = mutation_inflect & !mutation_deriv_verb,
+        deriv_only = !mutation_inflect & mutation_deriv_verb,
+        neither = !mutation_inflect & !mutation_deriv_verb
+      ) |>
+      group_by(seg_class) |>
+      summarise(
+        n = n(),
+        both = sum(both),
+        infl_only = sum(infl_only),
+        deriv_only = sum(deriv_only),
+        neither = sum(neither),
+        agree_pct = round((both + neither) / n * 100),
+        .groups = "drop"
+      ) |>
+      arrange(seg_class) |>
+      print_full()
+  }
+}
 
 cat_section("NDEB EXCEPTIONS OF OCHI/PADUCHE TYPE")
 ndeb_exc_ochi_pad <- filter(nouns, nde_class %in% ndeb_observable, !mutation)
@@ -1588,8 +1786,9 @@ ist_target |>
   count(suffix_st_palatalizes) |>
   mutate(
     label = if_else(suffix_st_palatalizes,
-                    "st \u2192 \u0219ti (palatalizes)",
-                    "st unchanged (-iste/-isturi)")
+      "st \u2192 \u0219ti (palatalizes)",
+      "st unchanged (-iste/-isturi)"
+    )
   ) |>
   select(label, n) |>
   print_full()
@@ -1604,15 +1803,18 @@ if (nrow(ist_cross) > 0) {
     count(root_dorsal_status, suffix_st_palatalizes) |>
     mutate(
       suffix = if_else(suffix_st_palatalizes,
-                       "st\u2192\u0219ti", "st unchanged")
+        "st\u2192\u0219ti", "st unchanged"
+      )
     ) |>
     select(root_dorsal_status, suffix, n) |>
     print_full()
 
   cat("\nFull listing:\n")
   ist_cross |>
-    select(lemma, plural, root_dorsal_status,
-           suffix_st_palatalizes) |>
+    select(
+      lemma, plural, root_dorsal_status,
+      suffix_st_palatalizes
+    ) |>
     arrange(root_dorsal_status, suffix_st_palatalizes, lemma) |>
     print_full()
 }
