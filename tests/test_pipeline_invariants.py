@@ -504,8 +504,7 @@ def test_ndeb_breakdown(lex):
 def test_tp_domain_size(nouns_tp):
     """TP domain size should be stable."""
     assert 4500 <= len(nouns_tp) <= 8500, (
-        f"Unexpected TP domain size: {len(nouns_tp)} "
-        f"(expected ~4500-8500)"
+        f"Unexpected TP domain size: {len(nouns_tp)} " f"(expected ~4500-8500)"
     )
 
 

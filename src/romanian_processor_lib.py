@@ -78,6 +78,9 @@ VELAR_FRONT_SEQUENCES = {
 
 ROMANIAN_CONSONANTS: Set[str] = set("bcdfghjklmnpqrstvwxyzșşţțțţ")
 
+# Characters to strip when extracting leading consonant from orth_change
+_VOWELS_AND_PALATALS = "aăâîeioușț"
+
 ORTH_TO_PALATAL_IPA = {
     # Core patterns for classification via suffix matching
     # Example: "ate→ăți" recognized via "te→ți" suffix match
@@ -763,7 +766,7 @@ def derive_mutation_and_orth_change(row: Dict[str, str]) -> None:
         # stem_final, this is a cluster artifact (e.g., scă→sce
         # expanded to ca→ce, but stem_final is 's' not 'c').
         if not is_palatalization and orth_change in ORTH_TO_PALATAL_IPA:
-            lead_from = orth_from.lstrip("aăâîeioușțșț")[:1]
+            lead_from = orth_from.lstrip(_VOWELS_AND_PALATALS)[:1]
             if not lead_from or lead_from == stem_final:
                 is_palatalization = True
 
@@ -777,7 +780,7 @@ def derive_mutation_and_orth_change(row: Dict[str, str]) -> None:
                         canon_to
                     ):
                         # Same guard: leading consonant must match
-                        cf_lead = canon_from.lstrip("aăâîeioușțșț")[:1]
+                        cf_lead = canon_from.lstrip(_VOWELS_AND_PALATALS)[:1]
                         if not cf_lead or cf_lead == stem_final:
                             is_palatalization = True
                             break

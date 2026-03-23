@@ -117,7 +117,9 @@ def test_full_coronals_t_i(tp_full):
     assert 1000 <= row["N"] <= 1600, f"Unexpected t+i N: {row['N']}"
 
     # Should have near-100% mutation rate in TP domain
-    assert row["rate"] >= 0.99, f"Expected ~100% t+i mutation, got {row['rate']}"
+    assert (
+        row["rate"] >= 0.99
+    ), f"Expected ~100% t+i mutation, got {row['rate']}"
     assert row["majority?"] is True
 
 
