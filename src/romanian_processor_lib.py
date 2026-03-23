@@ -785,11 +785,21 @@ def derive_mutation_and_orth_change(row: Dict[str, str]) -> None:
         # Special check: c/g followed by i/e means palatalization
         # e.g., g→ger (liturg→liturger), c→cer, etc.
         # In Romanian, c/g + front vowel = palatalized
+        # Also handles: ca→ci (foca→foci), ga→ci (stânga→stânci)
         if not is_palatalization and stem_final in ("c", "g"):
             if orth_from == stem_final:
-                # Check if orth_to contains stem_final + i or e
                 if stem_final + "i" in orth_to or stem_final + "e" in orth_to:
                     is_palatalization = True
+            # ca→ci, că→ci, ga→gi, ga→ci etc: stem_final + vowel
+            # in orth_from, and ci/ce/gi/ge in orth_to
+            if not is_palatalization:
+                if orth_from.startswith(stem_final) and len(orth_from) >= 2:
+                    if "ci" in orth_to or "ce" in orth_to:
+                        is_palatalization = True
+                    if stem_final == "g" and (
+                        "gi" in orth_to or "ge" in orth_to
+                    ):
+                        is_palatalization = True
 
     # STEP 3: Check for frontstem NDE before marking as mutation
     # e.g., borci → borcii (lemma already has ci, just adding -i)

@@ -344,7 +344,8 @@ analyze_inf_vs_deriv <- function(df, base_col, deriv_col, label) {
   model_base <- glm(deriv_mut ~ base_mut,
     data   = df,
     family = binomial(),
-    method = brglm2::brglmFit
+    method = brglm2::brglmFit,
+    control = brglm2::brglm_control(maxit = 500)
   )
   tidy_base <- broom::tidy(model_base)
   print_full(tidy_base)
@@ -371,7 +372,8 @@ analyze_inf_vs_deriv <- function(df, base_col, deriv_col, label) {
     model_freq <- glm(deriv_mut ~ base_mut + log_freq,
       data   = df_freq,
       family = binomial(),
-      method = brglm2::brglmFit
+      method = brglm2::brglmFit,
+    control = brglm2::brglm_control(maxit = 500)
     )
     print_full(broom::tidy(model_freq))
     or_freq <- exp(coef(model_freq)["base_mutTRUE"])
@@ -822,7 +824,8 @@ if (!has_verb_deriv_cols && !has_adj_deriv_cols) {
           mutation_deriv_verb ~ plural_class,
           data = denom_steriade,
           family = binomial(),
-          method = brglm2::brglmFit
+          method = brglm2::brglmFit,
+    control = brglm2::brglm_control(maxit = 500)
         )
         print_full(broom::tidy(model_s))
         or <- exp(coef(model_s)["plural_classfront"])
@@ -839,7 +842,8 @@ if (!has_verb_deriv_cols && !has_adj_deriv_cols) {
           mutation_deriv_verb ~ plural_class + log_freq,
           data = denom_s_freq,
           family = binomial(),
-          method = brglm2::brglmFit
+          method = brglm2::brglmFit,
+    control = brglm2::brglm_control(maxit = 500)
         )
         print_full(broom::tidy(model_sf))
       }
@@ -903,7 +907,8 @@ if (!has_verb_deriv_cols && !has_adj_deriv_cols) {
           mutation_deriv_verb ~ plural_class + seg_class,
           data = denom_ctrl,
           family = binomial(),
-          method = brglm2::brglmFit
+          method = brglm2::brglmFit,
+    control = brglm2::brglm_control(maxit = 500)
         )
         print_full(broom::tidy(model_ctrl))
         or_pc <- exp(coef(model_ctrl)["plural_classfront"])
@@ -1321,10 +1326,17 @@ cat_section("CLUSTER BEHAVIOR: EVIDENCE FOR RULE ORDERING")
 cat("Each cluster type tests a different aspect of the rule ordering.\n\n")
 
 # Collect all cluster data from the FULL noun set (not just TP domain)
-# since clusters have small N
+# since clusters have small N.  Use startsWith to catch scă, stă, etc.
 cluster_data <- nouns |>
-  filter(!is.na(cluster), cluster %in% CLUSTER_TYPES) |>
-  group_by(cluster, opportunity) |>
+  filter(!is.na(cluster), cluster != "") |>
+  mutate(cluster_type = case_when(
+    startsWith(cluster, "st") ~ "st",
+    startsWith(cluster, "sc") ~ "sc",
+    startsWith(cluster, "ct") ~ "ct",
+    TRUE ~ NA_character_
+  )) |>
+  filter(!is.na(cluster_type)) |>
+  group_by(cluster_type, opportunity) |>
   summarise(
     N = n(),
     N_mut = sum(mutation, na.rm = TRUE),
@@ -1332,7 +1344,7 @@ cluster_data <- nouns |>
     .groups = "drop"
   ) |>
   filter(N > 0) |>
-  arrange(cluster, opportunity)
+  arrange(cluster_type, opportunity)
 
 print_full(cluster_data)
 
@@ -1361,8 +1373,10 @@ cat("  → [ʃ][t] (bleeding removes +strid from tʃ).\n")
 cat("\n--- KEY DIAGNOSTIC: s+e vs sc+e ---\n")
 s_e_all <- nouns |>
   filter(stem_final == "s", opportunity == "e")
-s_e_simple <- s_e_all |> filter(is.na(cluster) | cluster == "")
-s_e_sc <- s_e_all |> filter(!is.na(cluster), cluster == "sc")
+s_e_simple <- s_e_all |>
+  filter(is.na(cluster) | cluster == "" | !startsWith(cluster, "sc"))
+s_e_sc <- s_e_all |>
+  filter(!is.na(cluster), startsWith(cluster, "sc"))
 cat("  Simple s+e:", sum(s_e_simple$mutation), "/", nrow(s_e_simple), "mutate")
 cat(if (nrow(s_e_simple) > 0) sprintf(" (%.1f%%)\n", sum(s_e_simple$mutation) / nrow(s_e_simple) * 100) else "\n")
 cat("  sc+e:      ", sum(s_e_sc$mutation), "/", nrow(s_e_sc), "mutate")
@@ -1505,7 +1519,8 @@ if (nrow(freq_exc_data) >= 20L) {
     is_exception ~ log_freq + stem_final * opportunity,
     data   = freq_exc_data,
     family = binomial(),
-    method = brglm2::brglmFit
+    method = brglm2::brglmFit,
+    control = brglm2::brglm_control(maxit = 500)
   )
   print_full(broom::tidy(model_freq_exc))
 
