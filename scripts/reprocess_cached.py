@@ -12,14 +12,14 @@ Usage:
 import sys
 from pathlib import Path
 
+import pandas as pd
+
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 
-import romanian_harvester as rh
-from romanian_harvester import (
+import romanian_harvester as rh  # noqa: E402
+from romanian_harvester import (  # noqa: E402
     CANARY_LEMMAS,
-    DEADJECTIVAL_ADJS,
-    DEADJECTIVAL_VERBS,
     DENOMINAL_ADJS,
     DENOMINAL_VERBS,
     OUTPUT_CSV,
@@ -27,8 +27,6 @@ from romanian_harvester import (
     POS_MAP,
     ROMANIAN_SECTION_RE,
     STERIADE_EXAMPLES,
-    _WT_CACHE_EN,
-    _WT_CACHE_RO,
     extract_derived_terms_from_entry,
     has_verb_pos,
     is_candidate_title,
@@ -43,8 +41,6 @@ from romanian_harvester import (
 # Disable network calls — cache only
 rh.ENABLE_IPA_FETCH = False
 
-import pandas as pd
-
 
 def main():
     print("=" * 70)
@@ -55,12 +51,8 @@ def main():
     load_ipa_cache()
 
     # Collect all titles from both caches (use module-level refs)
-    all_titles_set = (
-        set(rh._WT_CACHE_EN.keys()) | set(rh._WT_CACHE_RO.keys())
-    )
-    all_titles = [
-        t for t in all_titles_set if is_candidate_title(t)
-    ]
+    all_titles_set = set(rh._WT_CACHE_EN.keys()) | set(rh._WT_CACHE_RO.keys())
+    all_titles = [t for t in all_titles_set if is_candidate_title(t)]
     # Add canary/Steriade examples that might be in cache
     for t in CANARY_LEMMAS + STERIADE_EXAMPLES:
         if t not in all_titles_set and (
@@ -163,24 +155,21 @@ def main():
     df["source_rank"] = df["source"].apply(
         lambda s: 0 if "ro.wiktionary" in str(s) else 1
     )
-    df["has_gloss"] = df["gloss"].notna() & (
-        df["gloss"].str.strip() != ""
-    )
-    df["has_plural"] = df["plural"].notna() & (
-        df["plural"].str.strip() != ""
-    )
+    df["has_gloss"] = df["gloss"].notna() & (df["gloss"].str.strip() != "")
+    df["has_plural"] = df["plural"].notna() & (df["plural"].str.strip() != "")
     df = df.sort_values(
         by=[
-            "lemma", "pos", "source_rank",
-            "has_gloss", "has_plural",
+            "lemma",
+            "pos",
+            "source_rank",
+            "has_gloss",
+            "has_plural",
         ],
         ascending=[True, True, True, False, False],
     )
     before = len(df)
     df = df.drop_duplicates(subset=["lemma", "pos"], keep="first")
-    df = df.drop(
-        columns=["source_rank", "has_gloss", "has_plural"]
-    )
+    df = df.drop(columns=["source_rank", "has_gloss", "has_plural"])
     print(f"Deduped: {before} → {len(df)}")
 
     # Write to the standard output path

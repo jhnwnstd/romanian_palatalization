@@ -42,6 +42,22 @@ PAREN_TAIL = re.compile(
     r"\s*\([^)]*\)\s*$"
 )  # strip parenthetical notes at end
 
+# DEX spaced-stress pattern: "CONF O RT" -> "CONFORT"
+_STRESS_SPACE_RE = re.compile(r"\b([A-ZĂÂÎȘȚ]+) ([A-ZĂÂÎȘȚ]) ([A-ZĂÂÎȘȚ]+)\b")
+
+# Plural extraction from DEX definition text:
+#   "Pl. conforturi", "pl. oportunități", etc.
+_DEX_PL_RE = re.compile(
+    r"\bpl\.\s+([a-zăâîșț][a-zăâîșț\-]+)",
+    re.I,
+)
+
+# Short POS forms used in older DEX entries: "f.", "m.", "n."
+_SHORT_POS_RE = re.compile(
+    r"(?<![a-zA-Z])\b([fmn])\.\s",
+)
+_SHORT_POS_MAP = {"f": "s.f.", "m": "s.m.", "n": "s.n."}
+
 
 # ------------------------------------------------------------
 # Helpers / normalization
@@ -168,25 +184,35 @@ def scan_pos_in_text(soup: "BeautifulSoup") -> Optional[str]:
 # ------------------------------------------------------------
 # Flexible header matcher (DEX)
 # ------------------------------------------------------------
+# DEX header: "LEMMA, PLURAL, s.m." — lemma is ALL-CAPS (after
+# collapsing stress spaces).  The plural is a single lowercase
+# Romanian word, not a sentence fragment.
 HEADER_FLEX_RE = re.compile(
     r"""
     ^\s*
-    (?P<lemma>[A-ZĂÂÎȘȚ][A-ZĂÂÎȘȚa-zăâîșț\- ]*?)
+    (?P<lemma>[A-ZĂÂÎȘȚ][A-ZĂÂÎȘȚ\- ]{0,30})
     \s*,\s*
     (?:
         -[A-ZĂÂÎȘȚa-zăâîșț]*
         \s*,\s*
     )?
-    (?P<plural>[^,]*?)
+    (?P<plural>[a-zăâîșț][a-zăâîșț\- ]{0,30}|[-—–])
     \s*,\s*
-    (?P<posblob>.+?)
+    (?P<posblob>(?:s\.\s*[mfn]\.|adj\.|vb\.)\s*.*)
     \s*$
     """,
     re.X,
 )
 HEADER_POS_RE = re.compile(
-    r"^\s*([A-ZĂÂÎȘȚ][A-ZĂÂÎȘȚa-zăâîșț\- ]*?)\s*,\s*(adj\.|vb\.)\s*$"
+    r"^\s*([A-ZĂÂÎȘȚ][A-ZĂÂÎȘȚ\- ]{0,30})\s*,\s*(adj\.|vb\.)\s*$"
 )
+
+
+def collapse_stress_spaces(text: str) -> str:
+    """Collapse DEX spaced-stress marks: 'CONF O RT' -> 'CONFORT'."""
+    return _STRESS_SPACE_RE.sub(
+        lambda m: m.group(1) + m.group(2) + m.group(3), text
+    )
 
 
 def pick_noun_pos_from_blob(posblob: str) -> Optional[str]:
@@ -197,6 +223,10 @@ def pick_noun_pos_from_blob(posblob: str) -> Optional[str]:
     for tag in ("s. m.", "s.m.", "s. f.", "s.f.", "s. n.", "s.n."):
         if tag in blob:
             return tag.replace(" ", "")
+    # Short forms: standalone "f.", "m.", "n." at start of POS blob
+    m = _SHORT_POS_RE.search(blob)
+    if m:
+        return _SHORT_POS_MAP.get(m.group(1))
     return None
 
 
@@ -267,31 +297,25 @@ def save_disk_cache() -> None:
 load_disk_cache()
 
 
+def _cached_response(url: str, html: str) -> requests.Response:
+    """Build a fake Response from cached HTML."""
+    resp = requests.Response()
+    resp.status_code = 200
+    resp._content = html.encode("utf-8")  # noqa: SLF001
+    resp.url = url
+    resp.encoding = "utf-8"
+    return resp
+
+
 def polite_get(url: str) -> requests.Response:
     """GET with retries, rate limiting, and persistent caching."""
     global cache_dirty  # pylint: disable=global-statement
     if url in HTML_CACHE:
-        resp = requests.Response()
-        resp.status_code = 200
-        resp._content = HTML_CACHE[
-            url
-        ].encode(  # pylint: disable=protected-access
-            "utf-8"
-        )
-        resp.url = url
-        resp.encoding = "utf-8"
-        return resp
+        return _cached_response(url, HTML_CACHE[url])
     if url in DISK_CACHE:
         html = DISK_CACHE[url]
         HTML_CACHE[url] = html
-        resp = requests.Response()
-        resp.status_code = 200
-        resp._content = html.encode(
-            "utf-8"
-        )  # pylint: disable=protected-access
-        resp.url = url
-        resp.encoding = "utf-8"
-        return resp
+        return _cached_response(url, html)
     last_exc: Optional[requests.RequestException] = None
     for attempt in range(1, RETRIES + 1):
         try:
@@ -324,11 +348,26 @@ def dex_url_for(lemma: str) -> str:
     return f"{BASE}/definitie/{quote(lemma_norm)}/definitii"
 
 
+# DEX inline header: "LEMMA s. n. definition..." or "LEMMA f. def..."
+_DEX_INLINE_RE = re.compile(
+    r"""
+    ^\s*
+    (?P<lemma>[A-ZĂÂÎȘȚ][A-ZĂÂÎȘȚa-zăâîșț\-]*?)
+    \s+
+    (?P<posblob>(?:s\.\s*[mfn]\.|[fmn]\.)\s*)
+    (?P<rest>.*)
+    $
+    """,
+    re.X,
+)
+
+
 def _try_parse_flex_header(
     line: str, seen_headers: Set[Tuple[str, str, str]]
 ) -> Optional[DexEntry]:
     """Try to parse a flex header (lemma + plural + POS)."""
-    match = HEADER_FLEX_RE.match(line)
+    collapsed = collapse_stress_spaces(line)
+    match = HEADER_FLEX_RE.match(collapsed)
     if not match:
         return None
     lemma = norm_lemma(match.group("lemma"))
@@ -353,9 +392,58 @@ def _try_parse_flex_header(
     )
 
 
+def _try_parse_inline_header(
+    line: str, seen_headers: Set[Tuple[str, str, str]]
+) -> Optional[DexEntry]:
+    """Parse DEX inline format: 'CONFORT s. n. Definition...'
+
+    Also extracts plural from 'Pl. ...' in the definition text.
+    """
+    collapsed = collapse_stress_spaces(line)
+    match = _DEX_INLINE_RE.match(collapsed)
+    if not match:
+        return None
+    lemma = norm_lemma(match.group("lemma"))
+    posblob = match.group("posblob").strip()
+    rest = match.group("rest") or ""
+
+    noun_pos = pick_noun_pos_from_blob(posblob)
+    if not noun_pos or noun_pos not in KEEP_POS:
+        return None
+
+    # Try to extract plural from definition text
+    plural = "-"
+    pl_match = _DEX_PL_STRICT_RE.search(";" + rest)
+    if pl_match:
+        plural = clean_plural_token(pl_match.group(1))
+    if plural == "-":
+        pl_match = _DEX_PL_SPACED_RE.search(";" + rest)
+        if pl_match:
+            collapsed = _collapse_spaced_plural(pl_match.group(1))
+            plural = clean_plural_token(collapsed)
+
+    key = (lemma, plural, noun_pos)
+    if key in seen_headers:
+        return None
+    seen_headers.add(key)
+
+    confidence = "header" if plural != "-" else "inline_pos"
+    return DexEntry(
+        lemma=lemma,
+        pos_raw=noun_pos,
+        plural=plural,
+        gender=gender_from_pos(noun_pos),
+        url="",
+        dex_confidence=confidence,
+        plural_class=classify_plural(plural),
+        notes="parsed_inline",
+    )
+
+
 def _try_parse_pos_only_header(line: str) -> Optional[DexEntry]:
     """Try to parse a POS-only header (lemma + POS)."""
-    match = HEADER_POS_RE.match(line)
+    collapsed = collapse_stress_spaces(line)
+    match = HEADER_POS_RE.match(collapsed)
     if not match:
         return None
     lemma, pos = match.groups()
@@ -373,6 +461,72 @@ def _try_parse_pos_only_header(line: str) -> Optional[DexEntry]:
         plural_class="unknown",
         notes="parsed_pos_only",
     )
+
+
+# Strict plural extraction: match "pl. WORD" only when WORD
+# looks like a Romanian noun (all lowercase Romanian letters,
+# at least 3 chars, no spaces after collapsing stress marks).
+_DEX_PL_STRICT_RE = re.compile(
+    r";\s*pl\.\s+" r"([a-zăâîșț][a-zăâîșț]{2,})" r"(?:\s|;|,|\.|$)",
+)
+
+# Spaced-stress variant: "pl. oportunit ă ți"
+# Single-char tokens between word parts are stressed vowels.
+_DEX_PL_SPACED_RE = re.compile(
+    r";\s*pl\.\s+"
+    r"([a-zăâîșț]+"
+    r"(?:\s[a-zăâîșț]\s[a-zăâîșț]+)*)"
+    r"(?:\s|;|,|\.|$)",
+)
+
+
+def _collapse_spaced_plural(raw: str) -> str:
+    """Collapse 'oportunit ă ți' -> 'oportunități'."""
+    parts = raw.split()
+    out: List[str] = []
+    for p in parts:
+        if len(p) == 1 and p.isalpha():
+            out.append(p)
+        else:
+            out.append(p)
+    return "".join(out)
+
+
+def _extract_plural_from_page(
+    soup: "BeautifulSoup",
+    lemma: str,
+) -> str:
+    """Try to extract a plural from the full page text.
+
+    Looks for ``; pl. WORD`` patterns in DEX definition headers,
+    handling DEX's spaced-stress format.
+    Returns the plural token or ``"-"`` if not found.
+    """
+    blob = norm_ws(soup.get_text(" ", strip=True))
+    lemma_lower = (lemma or "").lower()
+
+    # Try strict pattern first (no spaced stress)
+    for m in _DEX_PL_STRICT_RE.finditer(blob):
+        candidate = clean_plural_token(m.group(1))
+        if (
+            candidate != "-"
+            and candidate.lower() != lemma_lower
+            and len(candidate) >= 3
+        ):
+            return candidate
+
+    # Try spaced-stress pattern
+    for m in _DEX_PL_SPACED_RE.finditer(blob):
+        collapsed = _collapse_spaced_plural(m.group(1).strip())
+        candidate = clean_plural_token(collapsed)
+        if (
+            candidate != "-"
+            and candidate.lower() != lemma_lower
+            and len(candidate) >= 3
+        ):
+            return candidate
+
+    return "-"
 
 
 def parse_header_lines(
@@ -394,23 +548,47 @@ def parse_header_lines(
         if entry:
             entries.append(entry)
             continue
+        # Try DEX inline format ("CONFORT s. n. definition...")
+        entry = _try_parse_inline_header(line, seen_headers)
+        if entry:
+            entries.append(entry)
+            continue
         entry = _try_parse_pos_only_header(line)
         if entry:
             entries.append(entry)
+
     noun_have = [e for e in entries if e.pos_raw in {"s.m.", "s.f.", "s.n."}]
     if noun_have:
+        # If we found noun headers but none have a real plural,
+        # try to extract one from the page text.
+        has_real_plural = any(
+            e.plural and e.plural not in DASHES for e in noun_have
+        )
+        if not has_real_plural:
+            # Use the first noun header's lemma for context
+            page_lemma = noun_have[0].lemma or ""
+            page_plural = _extract_plural_from_page(soup, page_lemma)
+            if page_plural != "-":
+                noun_have[0].plural = page_plural
+                noun_have[0].plural_class = classify_plural(page_plural)
+                noun_have[0].dex_confidence = "header"
+                noun_have[0].notes = "plural_from_page_text"
         return entries
+
     pos_canon = scan_abbr_pos_anywhere(soup) or scan_pos_in_text(soup)
     if pos_canon in {"s.m.", "s.f.", "s.n."}:
+        # Try to get plural from page text
+        page_plural = _extract_plural_from_page(soup, "")
+        confidence = "header" if page_plural != "-" else "pos_only"
         entries.append(
             DexEntry(
                 lemma="",
                 pos_raw=pos_canon,
-                plural="-",
+                plural=page_plural,
                 gender=gender_from_pos(pos_canon),
                 url="",
-                dex_confidence="pos_only",
-                plural_class="unknown",
+                dex_confidence=confidence,
+                plural_class=classify_plural(page_plural),
                 notes="abbr_fallback",
             )
         )
@@ -444,6 +622,7 @@ def best_dex_noun_header(
 
     Prefers:
     1. Exact case-insensitive match with real plural
+       that looks like a plausible inflection of the lemma
     2. Exact case-insensitive match (even if no plural)
     3. Any noun header with real plural
     4. First noun header
@@ -457,6 +636,31 @@ def best_dex_noun_header(
     if not noun_headers:
         return None
 
+    def _plural_looks_plausible(h: DexEntry) -> bool:
+        """Reject plurals that are clearly from a different word.
+
+        E.g., 'nord' getting plural 'nord-americance' from a
+        compound entry, or 'engleză' getting '-Ă adj'.
+        """
+        pl = (h.plural or "").lower().strip()
+        if not pl or pl in DASHES:
+            return False
+        # Reject if plural contains markers of wrong entry
+        if " " in pl or "adj" in pl:
+            return False
+        # Reject if plural doesn't share any prefix with lemma
+        # (a plausible inflection should overlap significantly)
+        lem = lemma_norm_lower
+        shared = 0
+        for a, b in zip(lem, pl):
+            if a == b:
+                shared += 1
+            else:
+                break
+        # Require at least 2 shared chars or 40% of lemma length
+        min_shared = max(2, len(lem) * 2 // 5)
+        return shared >= min_shared
+
     # Filter by exact match
     exact = [
         h
@@ -464,7 +668,11 @@ def best_dex_noun_header(
         if norm_lemma(h.lemma).lower() == lemma_norm_lower
     ]
     if exact:
-        # Prefer exact matches with real plurals
+        # Prefer exact matches with plausible plurals
+        exact_plausible = [h for h in exact if _plural_looks_plausible(h)]
+        if exact_plausible:
+            return exact_plausible[0]
+        # Exact match with any real plural
         exact_with_plural = [
             h for h in exact if h.plural and h.plural not in DASHES
         ]
@@ -472,14 +680,14 @@ def best_dex_noun_header(
             return exact_with_plural[0]
         return exact[0]
 
-    # No exact match - prefer any header with real plural
-    with_plural = [
-        h for h in noun_headers if h.plural and h.plural not in DASHES
-    ]
-    if with_plural:
-        return with_plural[0]
+    # No exact match — prefer plausible plurals only
+    plausible = [h for h in noun_headers if _plural_looks_plausible(h)]
+    if plausible:
+        return plausible[0]
 
-    return noun_headers[0]
+    # No plausible match.  Return None rather than a header from
+    # an unrelated word (e.g., ȘUVAR on the page for "munte").
+    return None
 
 
 def dex_has_entry(lemma: str, restrict_to_keep_pos: bool = False) -> bool:

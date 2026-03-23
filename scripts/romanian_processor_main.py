@@ -185,7 +185,7 @@ def process_csv(input_path: str, output_path: str) -> None:
     with open(input_path, "r", encoding="utf-8") as f_in:
         reader = csv.DictReader(f_in)
 
-        rows = []
+        rows: list[dict[str, str]] = []
         # Track (lemma, pos, plural) -> index in rows list
         # so we can replace an entry if a later duplicate has
         # richer derivation data.
@@ -219,21 +219,19 @@ def process_csv(input_path: str, output_path: str) -> None:
                     ):
                         # Merge: copy derivation fields from new
                         if new_has_dv and not old_has_dv:
-                            existing["derived_verbs"] = (
-                                exp_row["derived_verbs"]
+                            existing["derived_verbs"] = exp_row[
+                                "derived_verbs"
+                            ]
+                            existing["deriv_suffixes"] = exp_row.get(
+                                "deriv_suffixes", ""
                             )
-                            existing["deriv_suffixes"] = (
-                                exp_row.get("deriv_suffixes", "")
-                            )
-                            existing["ipa_derived_verbs"] = (
-                                exp_row.get("ipa_derived_verbs", "")
+                            existing["ipa_derived_verbs"] = exp_row.get(
+                                "ipa_derived_verbs", ""
                             )
                         if new_has_da and not old_has_da:
-                            existing["derived_adj"] = (
-                                exp_row["derived_adj"]
-                            )
-                            existing["ipa_derived_adj"] = (
-                                exp_row.get("ipa_derived_adj", "")
+                            existing["derived_adj"] = exp_row["derived_adj"]
+                            existing["ipa_derived_adj"] = exp_row.get(
+                                "ipa_derived_adj", ""
                             )
                     duplicates_skipped += 1
                     continue
@@ -242,6 +240,70 @@ def process_csv(input_path: str, output_path: str) -> None:
 
         if duplicates_skipped > 0:
             print(f"  Skipped {duplicates_skipped} duplicate entries")
+
+    # ── Post-processing: remove plural-as-lemma duplicates ──
+    # Wiktionary sometimes lists plural forms as standalone lemmas
+    # (e.g., "componente" listed separately from "componentă").
+    # These get assigned their own plurals, creating phantom
+    # mutations. Remove any lemma that equals the plural of a
+    # DIFFERENT entry with the same pos.  Ochi-type items where
+    # lemma == plural (e.g., "genunchi") must be kept.
+    plural_to_lemma: dict[tuple[str, str], set[str]] = {}
+    for r in rows:
+        pl = (r.get("plural", "") or "").strip().lower()
+        lem = (r.get("lemma", "") or "").strip().lower()
+        pos = (r.get("pos", "") or "").strip()
+        if pl:
+            plural_to_lemma.setdefault((pl, pos), set()).add(lem)
+
+    # Build set of lemmas that have their own entries
+    own_entries: set[tuple[str, str]] = set()
+    for r in rows:
+        lem = (r.get("lemma", "") or "").strip().lower()
+        pl = (r.get("plural", "") or "").strip().lower()
+        pos = (r.get("pos", "") or "").strip()
+        own_entries.add((lem, pos))
+
+    def _is_plural_of_other(r: dict) -> bool:
+        lem = (r.get("lemma", "") or "").strip().lower()
+        pos = (r.get("pos", "") or "").strip()
+        key = (lem, pos)
+        if key not in plural_to_lemma:
+            return False
+        # The lemma appears as a plural of some other entry.
+        sources = plural_to_lemma[key]
+        if sources == {lem}:
+            # Only plural of itself (ochi-type) — keep.
+            return False
+        # It IS the plural of a different lemma.  But does
+        # that different lemma ALSO have its own entry?  If
+        # the base exists independently, this entry is
+        # redundant.  Only remove if the base form is in the
+        # dataset AND this lemma's own plural is empty or
+        # looks like a double-plural (different from itself).
+        own_pl = (r.get("plural", "") or "").strip().lower()
+        # Keep if this lemma has a normal plural that differs
+        # from both itself and the base's plural — it may be
+        # a legitimate homophone.
+        if own_pl and own_pl != lem:
+            # Its plural is something else; check if ANY of
+            # the base lemmas are truly different words.
+            for src in sources:
+                if src != lem and (src, pos) in own_entries:
+                    return True
+        elif not own_pl:
+            # No plural at all — likely a Wiktionary plural
+            # form page with no content.
+            for src in sources:
+                if src != lem:
+                    return True
+        return False
+
+    pre_filter = len(rows)
+    rows = [r for r in rows if not _is_plural_of_other(r)]
+    plural_as_lemma = pre_filter - len(rows)
+    if plural_as_lemma > 0:
+        print(f"  Removed {plural_as_lemma} plural-as-lemma" " duplicates")
 
     print(f"\nWriting {len(rows)} rows to {output_path}...")
 

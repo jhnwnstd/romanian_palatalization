@@ -798,6 +798,22 @@ def derive_mutation_and_orth_change(row: Dict[str, str]) -> None:
             # This is frontstem NDE, not a true alternation
             is_palatalization = False
 
+    # STEP 4: Check for preceding-i trigger in coronal+e contexts.
+    # Words like cârmită→cârmițe show t→ț between a stem-internal
+    # i and the plural -e.  The trigger is the preceding i, not the
+    # following e, so this should not count as a coronal-before-e
+    # mutation.  Flag it by setting mutation to False.
+    if is_palatalization and stem_final in ("t", "d", "s", "z"):
+        # Only relevant when the plural suffix is -e (not -i)
+        if plural.endswith("e") and not plural.endswith("ie"):
+            # Find position of stem_final consonant in the lemma
+            # by stripping the final vowel(s)
+            stem = lemma.rstrip("aăâeioîu")
+            if stem and stem[-1] == stem_final:
+                # Check if the character before stem_final is i
+                if len(stem) >= 2 and stem[-2] == "i":
+                    is_palatalization = False
+
     row["mutation"] = "True" if is_palatalization else "False"
 
 
