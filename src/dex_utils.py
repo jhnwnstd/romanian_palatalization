@@ -692,22 +692,42 @@ def best_dex_noun_header(
 
 def dex_has_entry(lemma: str, restrict_to_keep_pos: bool = False) -> bool:
     """
-    Lightweight existence check: does DEX have *any* header for this lemma?
+    Lightweight existence check: does DEX have *any* definition for this
+    lemma?
 
-    If restrict_to_keep_pos is True, require that at least one header has
-    pos_raw in KEEP_POS (s.m., s.f., s.n., adj., vb.).
+    Uses two signals:
+      1. parse_header_lines() producing any entries (works for nouns,
+         adjectives via the structured header parsers)
+      2. the raw HTML containing definition markers ("sursa:"), which
+         is present for verbs and other POS that the header parsers
+         do not currently recognize
+
+    If restrict_to_keep_pos is True, requires that at least one parsed
+    header has pos_raw in KEEP_POS (s.m., s.f., s.n., adj., vb.). In
+    that mode the HTML-level fallback is skipped because we cannot
+    distinguish POS without the parse.
     """
     lemma_norm = norm_lemma(lemma)
     if not lemma_norm:
         return False
     try:
-        headers, _ = fetch_dex_page(lemma_norm)
+        headers, html = fetch_dex_page(lemma_norm)
     except Exception:
         # On network / parsing error, treat as "unknown" – caller can decide
         return False
 
-    if not headers:
+    if headers:
+        if not restrict_to_keep_pos:
+            return True
+        return any(h.pos_raw in KEEP_POS for h in headers)
+
+    if restrict_to_keep_pos:
         return False
-    if not restrict_to_keep_pos:
-        return True
-    return any(h.pos_raw in KEEP_POS for h in headers)
+
+    # No parsed headers: fall back to an HTML-level check. DEX pages
+    # for real entries always contain "sursa:" markers (source
+    # attributions for definitions). Nonexistent lemma pages have
+    # zero such markers. This catches verb entries (e.g., "acidifica",
+    # "amurgi") that the header parsers currently skip because the
+    # flex/inline parsers only emit noun-POS results.
+    return "sursa:" in html
