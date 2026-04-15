@@ -1223,7 +1223,19 @@ def derive_derived_verbs_fields(row: Dict[str, str]) -> None:
     ipa_list: List[str] = []
     for verb in verb_list:
         norm = normalize_unicode_g2p(verb).lower()
-        if norm.endswith("ui"):
+        # Check longer/more specific suffixes BEFORE the bare ones
+        # so iza/ifica/ări/ăni/arisi don't collapse to -a/-i.
+        if norm.endswith("ifica"):
+            suf = "-ifica"
+        elif norm.endswith("iza"):
+            suf = "-iza"
+        elif norm.endswith("arisi"):
+            suf = "-arisi"
+        elif norm.endswith("ări"):
+            suf = "-ări"
+        elif norm.endswith("ăni"):
+            suf = "-ăni"
+        elif norm.endswith("ui"):
             suf = "-ui"
         elif norm.endswith("i"):
             suf = "-i"

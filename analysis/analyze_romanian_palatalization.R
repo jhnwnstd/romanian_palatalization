@@ -55,7 +55,7 @@ options(dplyr.summarise.inform = FALSE)
 # =========================================================================
 
 segments_of_interest <- c("c", "g", "t", "d", "s", "z") # consonants where palatalization is tracked
-front_verb_suffixes <- c("-i") # front-vowel verbalizer; -ui is back (u blocks palatalization)
+front_verb_suffixes <- c("-i", "-iza", "-ifica") # front-vowel verbalizers; all start with /i/. -ui is back (u blocks palatalization).
 suffix_interest <- c("-ic", "-ist", "-esc", "-ică", "-ice") # denominal/adjectival suffixes we track
 
 # NDEB = non-derived exception base lemmas (gimpe / ochi / paduche patterns)
@@ -342,7 +342,7 @@ analyze_inf_vs_deriv <- function(df, base_col, deriv_col, label) {
   # brglmFit guarantees finite estimates even under complete or quasi-complete separation.
   cat("\nFirth logistic (brglm2): deriv_mut ~ base_mut (", label, ")\n", sep = "")
   model_base <- glm(deriv_mut ~ base_mut,
-    data   = df,
+    data = df,
     family = binomial(),
     method = brglm2::brglmFit,
     control = brglm2::brglm_control(maxit = 500)
@@ -370,10 +370,10 @@ analyze_inf_vs_deriv <- function(df, base_col, deriv_col, label) {
     )
     df_freq <- df |> mutate(log_freq = log(lemma_freq + 1))
     model_freq <- glm(deriv_mut ~ base_mut + log_freq,
-      data   = df_freq,
+      data = df_freq,
       family = binomial(),
       method = brglm2::brglmFit,
-    control = brglm2::brglm_control(maxit = 500)
+      control = brglm2::brglm_control(maxit = 500)
     )
     print_full(broom::tidy(model_freq))
     or_freq <- exp(coef(model_freq)["base_mutTRUE"])
@@ -743,6 +743,11 @@ if (!has_verb_deriv_cols && !has_adj_deriv_cols) {
     denom_pairs <- noun_base_inflect |>
       filter(
         !is.na(derived_verbs), derived_verbs != "",
+        # NDE items have lemma-internal palatals; their derived
+        # verbs inherit those palatals rather than producing them
+        # by rule, so they cannot be used as evidence about
+        # derivational palatalization productivity.
+        !str_starts(coalesce(exception_reason, ""), "nde:")
       ) |>
       mutate(
         verb_suffix_front = deriv_suffixes %in% front_verb_suffixes,
@@ -825,7 +830,7 @@ if (!has_verb_deriv_cols && !has_adj_deriv_cols) {
           data = denom_steriade,
           family = binomial(),
           method = brglm2::brglmFit,
-    control = brglm2::brglm_control(maxit = 500)
+          control = brglm2::brglm_control(maxit = 500)
         )
         print_full(broom::tidy(model_s))
         or <- exp(coef(model_s)["plural_classfront"])
@@ -843,7 +848,7 @@ if (!has_verb_deriv_cols && !has_adj_deriv_cols) {
           data = denom_s_freq,
           family = binomial(),
           method = brglm2::brglmFit,
-    control = brglm2::brglm_control(maxit = 500)
+          control = brglm2::brglm_control(maxit = 500)
         )
         print_full(broom::tidy(model_sf))
       }
@@ -908,7 +913,7 @@ if (!has_verb_deriv_cols && !has_adj_deriv_cols) {
           data = denom_ctrl,
           family = binomial(),
           method = brglm2::brglmFit,
-    control = brglm2::brglm_control(maxit = 500)
+          control = brglm2::brglm_control(maxit = 500)
         )
         print_full(broom::tidy(model_ctrl))
         or_pc <- exp(coef(model_ctrl)["plural_classfront"])
@@ -974,11 +979,17 @@ if (!has_verb_deriv_cols && !has_adj_deriv_cols) {
             str_starts(exception_reason, "nde:ochi") ~ "fully_specified",
             TRUE ~ "ambiguous"
           ),
-          # Classify the verbalizer suffix more precisely
+          # Classify the verbalizer suffix more precisely.
+          # -iza/-ifica start with /i/ and trigger palatalization
+          # of dorsals, so they pattern with front (-i/-ui).
+          # -ăni/-ări/-arisi do not provide a front-vowel trigger
+          # adjacent to the stem-final consonant.
           verb_suffix_type = case_when(
             str_ends(derived_verbs, "\u0103ni") ~ "other",
             str_ends(derived_verbs, "\u0103ri") ~ "other",
             str_ends(derived_verbs, "arisi") ~ "other",
+            str_ends(derived_verbs, "iza") ~ "front (-iza/-ifica)",
+            str_ends(derived_verbs, "ifica") ~ "front (-iza/-ifica)",
             verb_suffix_front ~ "front (-i/-ui)",
             TRUE ~ "back (-a)"
           )
@@ -1010,11 +1021,17 @@ if (!has_verb_deriv_cols && !has_adj_deriv_cols) {
           arrange(root_spec, mutation_deriv_verb) |>
           print_full()
 
-        # Separate phonology from morphology
+        # Separate phonology from morphology.
+        # "Front trigger" includes -i/-ui AND -iza/-ifica
+        # because all of these put a front vowel adjacent to
+        # the stem-final consonant.
         underspec_front <- iap_dorsal |>
           filter(
             root_spec == "underspecified",
-            verb_suffix_type == "front (-i/-ui)"
+            verb_suffix_type %in% c(
+              "front (-i/-ui)",
+              "front (-iza/-ifica)"
+            )
           )
         cat(sprintf(
           "\n  Underspecified + front trigger: %d/%d palatalize (%.1f%%)\n",
@@ -1075,7 +1092,8 @@ if (!has_verb_deriv_cols && !has_adj_deriv_cols) {
   if (has_adj_deriv_cols) {
     noun_adj_pairs <- noun_base_inflect |>
       filter(
-        !is.na(derived_adj), derived_adj != ""
+        !is.na(derived_adj), derived_adj != "",
+        !str_starts(coalesce(exception_reason, ""), "nde:")
       ) |>
       mutate(mutation_deriv_adj = detect_palatal_from_orth(lemma, derived_adj, stem_final)) |>
       filter(!is.na(mutation_deriv_adj)) |>
@@ -1517,7 +1535,7 @@ if (nrow(freq_exc_data) >= 20L) {
   cat("\nFirth logistic: exception ~ log_freq + stem_final * opportunity\n")
   model_freq_exc <- glm(
     is_exception ~ log_freq + stem_final * opportunity,
-    data   = freq_exc_data,
+    data = freq_exc_data,
     family = binomial(),
     method = brglm2::brglmFit,
     control = brglm2::brglm_control(maxit = 500)
@@ -1569,7 +1587,10 @@ cat("Unique lemmas in i/e domain (all):", n_distinct(nouns_opp$lemma), "\n\n")
 # =========================================================================
 
 cat_section("TOLERANCE PRINCIPLE: SEGMENT-LEVEL PATTERNS (PRODUCTIVE TP DOMAIN)")
-seg_tp_all <- compute_segment_tp_tables(nouns_tp)
+# Exclude cluster items from simple-segment rows so they don't double-count
+# (e.g. a `prost` (st cluster, stem_final='s') would otherwise appear in BOTH
+#  the simple `s` row and the `st` cluster row).
+seg_tp_all <- compute_segment_tp_tables(nouns_tp |> filter(is.na(cluster) | cluster == ""))
 print_full(seg_tp_all)
 if (any(seg_tp_all$small_n, na.rm = TRUE)) {
   cat("\nSmall-N cells (N <", SMALL_CELL_THRESHOLD, ") — TP binary unreliable; see Bayesian TP:\n")
@@ -1612,6 +1633,7 @@ if (!is.null(nouns_opp_down_single) && nrow(nouns_opp_down_single) > 0L) {
       filter(
         lemma %in% lemmas_ds,
         !is.na(derived_verbs), derived_verbs != "",
+        !str_starts(coalesce(exception_reason, ""), "nde:")
       ) |>
       mutate(
         verb_suffix_front = deriv_suffixes %in% front_verb_suffixes,
@@ -1640,7 +1662,8 @@ if (!is.null(nouns_opp_down_single) && nrow(nouns_opp_down_single) > 0L) {
       filter(
         lemma %in% lemmas_ds,
         !is.na(derived_adj), derived_adj != "",
-        !is.na(ipa_derived_adj), ipa_derived_adj != ""
+        !is.na(ipa_derived_adj), ipa_derived_adj != "",
+        !str_starts(coalesce(exception_reason, ""), "nde:")
       ) |>
       mutate(mutation_deriv_adj = detect_palatal_from_orth(lemma, derived_adj, stem_final)) |>
       filter(!is.na(mutation_deriv_adj)) |>
@@ -1663,7 +1686,11 @@ if (!is.null(nouns_opp_down_single) && nrow(nouns_opp_down_single) > 0L) {
 
   cat_section("TOLERANCE PRINCIPLE: SEGMENT-LEVEL PATTERNS (DOWNSAMPLED, TP DOMAIN)")
   nouns_tp_down_single <- nouns_opp_down_single |> filter(tp_in_domain == TRUE)
-  seg_tp_all_ds <- compute_segment_tp_tables(nouns_tp_down_single, label_suffix = " (downsampled)")
+  # Exclude cluster items so the simple-segment rows don't double-count.
+  seg_tp_all_ds <- compute_segment_tp_tables(
+    nouns_tp_down_single |> filter(is.na(cluster) | cluster == ""),
+    label_suffix = " (downsampled)"
+  )
   print_full(seg_tp_all_ds)
   if (any(seg_tp_all_ds$small_n, na.rm = TRUE)) {
     cat("\nSmall-N downsampled cells — Bayesian TP is more reliable for these:\n")
@@ -1979,9 +2006,17 @@ if (!RUN_SEGMENT_CLASS_BRMS) {
 # EXPORT: TP Summary Tables
 # =========================================================================
 # Compute with-NDEB comparison rows here, close to where they're used.
-seg_tp_all_with_ndeb <- compute_segment_tp_tables(nouns_opp, label_suffix = " (with NDEB)")
+# Exclude cluster items here too so the simple-segment rows are comparable
+# across the with/without-NDEB versions.
+seg_tp_all_with_ndeb <- compute_segment_tp_tables(
+  nouns_opp |> filter(is.na(cluster) | cluster == ""),
+  label_suffix = " (with NDEB)"
+)
 seg_tp_all_ds_with_ndeb <- if (!is.null(nouns_opp_down_single) && nrow(nouns_opp_down_single) > 0L) {
-  compute_segment_tp_tables(nouns_opp_down_single, label_suffix = " (downsampled, with NDEB)")
+  compute_segment_tp_tables(
+    nouns_opp_down_single |> filter(is.na(cluster) | cluster == ""),
+    label_suffix = " (downsampled, with NDEB)"
+  )
 } else {
   NULL
 }
