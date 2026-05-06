@@ -98,6 +98,34 @@ main() {
     mkdir -p "$DATA_DIR"
 
     # ========================================
+    # STAGE 0: Verify Python dependencies
+    # ========================================
+    log_stage "STAGE 0: Verify Python Dependencies"
+
+    log_info "Using python: $(command -v python3)"
+    if ! python3 "$SCRIPT_DIR/verify_dependencies.py" >/dev/null 2>&1; then
+        log_warning "Required Python packages are missing"
+        python3 "$SCRIPT_DIR/verify_dependencies.py" || true
+        echo ""
+        log_info "Installing project (pip install -e .) into the active environment..."
+        if python3 -m pip install -e "$SCRIPT_DIR"; then
+            if python3 "$SCRIPT_DIR/verify_dependencies.py" >/dev/null 2>&1; then
+                log_success "Dependencies installed"
+            else
+                log_error "Dependencies still missing after install. Activate the right venv and retry:"
+                log_error "  python3 -m pip install -e ."
+                exit 1
+            fi
+        else
+            log_error "pip install failed. Activate the right venv and retry:"
+            log_error "  python3 -m pip install -e ."
+            exit 1
+        fi
+    else
+        log_success "All required Python dependencies are installed"
+    fi
+
+    # ========================================
     # STAGE 1: Harvest raw data (optional)
     # ========================================
     log_stage "STAGE 1: Harvest Raw Data from Wiktionary"
