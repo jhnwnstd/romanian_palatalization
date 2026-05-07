@@ -8,6 +8,7 @@ Extracted from dex_lookup.py to be reusable by QC scripts.
 import json
 import random
 import re
+import threading
 import time
 import unicodedata
 from dataclasses import dataclass
@@ -259,6 +260,10 @@ HTML_CACHE: Dict[str, str] = {}  # In-memory cache for this run
 DISK_CACHE_PATH = Path(__file__).resolve().parent.parent / "dex_cache.json"
 DISK_CACHE: Dict[str, str] = {}
 cache_dirty = False  # Track if we need to save
+# Guards concurrent reads/writes of HTML_CACHE and DISK_CACHE. Worker threads
+# write under this lock; save_disk_cache snapshots under it before serializing
+# to disk (avoids "dictionary changed size during iteration" mid-json.dump).
+_CACHE_LOCK = threading.Lock()
 
 
 def load_disk_cache() -> None:
@@ -280,16 +285,28 @@ def load_disk_cache() -> None:
 
 
 def save_disk_cache() -> None:
-    """Save persistent cache to disk."""
+    """Save persistent cache to disk. Thread-safe: snapshots under lock and
+    writes via a temp file + atomic rename so partial writes can never
+    corrupt the on-disk cache."""
     global cache_dirty  # pylint: disable=global-statement
     if not cache_dirty:
         return
+    # Snapshot under lock so workers can keep writing during the slow disk I/O
+    with _CACHE_LOCK:
+        snapshot = dict(DISK_CACHE)
+    tmp_path = DISK_CACHE_PATH.with_suffix(DISK_CACHE_PATH.suffix + ".tmp")
     try:
-        with open(DISK_CACHE_PATH, "w", encoding="utf-8") as f:
-            json.dump(DISK_CACHE, f, ensure_ascii=False, indent=2)
+        with open(tmp_path, "w", encoding="utf-8") as f:
+            json.dump(snapshot, f, ensure_ascii=False, indent=2)
+        tmp_path.replace(DISK_CACHE_PATH)  # atomic rename
         cache_dirty = False
-        print(f"[dex_utils] Saved {len(DISK_CACHE)} DEX pages to disk cache")
+        print(f"[dex_utils] Saved {len(snapshot)} DEX pages to disk cache")
     except OSError as exc:
+        # Clean up the partial temp file if it exists
+        try:
+            tmp_path.unlink(missing_ok=True)
+        except OSError:
+            pass
         print(f"[dex_utils] Warning: Could not save cache: {exc}")
 
 
@@ -308,14 +325,18 @@ def _cached_response(url: str, html: str) -> requests.Response:
 
 
 def polite_get(url: str) -> requests.Response:
-    """GET with retries, rate limiting, and persistent caching."""
+    """GET with retries, rate limiting, and persistent caching.
+    Thread-safe: cache reads/writes are guarded by _CACHE_LOCK."""
     global cache_dirty  # pylint: disable=global-statement
-    if url in HTML_CACHE:
-        return _cached_response(url, HTML_CACHE[url])
-    if url in DISK_CACHE:
-        html = DISK_CACHE[url]
-        HTML_CACHE[url] = html
-        return _cached_response(url, html)
+    # Cache reads — single-key lookups are atomic in CPython, but lock briefly
+    # to keep behavior consistent with writes.
+    with _CACHE_LOCK:
+        if url in HTML_CACHE:
+            return _cached_response(url, HTML_CACHE[url])
+        if url in DISK_CACHE:
+            html = DISK_CACHE[url]
+            HTML_CACHE[url] = html
+            return _cached_response(url, html)
     last_exc: Optional[requests.RequestException] = None
     for attempt in range(1, RETRIES + 1):
         try:
@@ -324,9 +345,11 @@ def polite_get(url: str) -> requests.Response:
                 time.sleep(min(10, attempt * 1.5))
                 continue
             response.raise_for_status()
-            HTML_CACHE[url] = response.text
-            DISK_CACHE[url] = response.text
-            cache_dirty = True
+            text = response.text
+            with _CACHE_LOCK:
+                HTML_CACHE[url] = text
+                DISK_CACHE[url] = text
+                cache_dirty = True
             time.sleep(random.uniform(*THROTTLE))
             return response
         except requests.RequestException as exc:
