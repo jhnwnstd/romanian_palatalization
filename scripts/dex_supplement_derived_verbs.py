@@ -30,7 +30,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 from dex_utils import (  # noqa: E402
     DISK_CACHE,
     HTML_CACHE,
-    fetch_dex_page,
     norm_lemma,
     polite_get,
     save_disk_cache,
@@ -253,7 +252,7 @@ def main() -> None:
                 f"  Restricted to top-{TOP_N_BY_FREQUENCY} by frequency "
                 f"(min freq in set: {target_records[-1][2]:.0f})"
             )
-    targets_by_lemma = {l: sf for l, sf, _ in target_records}
+    targets_by_lemma = {lemma: sf for lemma, sf, _ in target_records}
     print(f"  Lemmas eligible for supplementation: {len(targets_by_lemma):,}")
 
     # Read raw_dex (upstream of stage 4) — we'll write supplemented derived_verbs
@@ -336,14 +335,14 @@ def main() -> None:
     save_disk_cache()
     elapsed = time.time() - t0
 
-    print(f"\n=== Done ===")
+    print("\n=== Done ===")
     print(f"  Eligible nouns processed: {len(targets):,}")
     print(f"  Nouns supplemented with at least one verb: {confirmed:,}")
     print(f"  Total candidate queries: {queries:,}")
     print(f"  Elapsed: {elapsed/60:.1f} min", flush=True)
 
     # Show a sample of supplemented entries
-    print(f"\n=== Sample supplemented (first 30) ===")
+    print("\n=== Sample supplemented (first 30) ===")
     for lemma, verbs in confirmed_lemmas[:30]:
         print(f"  {lemma:18}  derived_verbs = {verbs}")
 
@@ -356,12 +355,12 @@ def main() -> None:
         writer.writeheader()
         writer.writerows(rows)
     print(f"  Wrote {len(rows):,} rows")
-    print(f"\nNext steps to integrate into the pipeline:")
+    print("\nNext steps to integrate into the pipeline:")
     print(
         f"  cp {OUTPUT_CSV} {RAW_DEX_CSV}   # backup the original first if you like"
     )
     print(
-        f"  ./run_pipeline.sh                # re-runs stages 4-6 with the new derived_verbs"
+        "  ./run_pipeline.sh                # re-runs stages 4-6 with the new derived_verbs"
     )
 
 
