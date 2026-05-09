@@ -68,3 +68,13 @@ docs/*
 *.tmp
 *.bak
 *.log
+
+# Local analysis dumps (cell membership, etymology audits)
+analysis/strict_cell_dump.txt
+analysis/steriade_contradicting_cases.txt
+analysis/etym_audit.txt
+analysis/etym_row_audit.txt
+analysis/final_cell_dump.txt
+analysis/final_cell_dump_top1000.txt
+analysis/final_cells_full_with_source.txt
+analysis/final_cells_top1000_with_source.txt
