@@ -36,14 +36,13 @@ from dex_utils import (  # noqa: E402
     save_disk_cache,
 )
 
-
 REPO = Path(__file__).parent.parent
 # Input: with_freq has stem_final / opportunity computed; we use it to *identify*
 # target lemmas. The actual write-back is to raw_dex (upstream of stage 4) so the
 # pipeline can recompute everything from the new derived_verbs.
 WITH_FREQ_CSV = REPO / "data" / "romanian_lexicon_with_freq.csv"
-RAW_DEX_CSV   = REPO / "data" / "romanian_lexicon_raw_dex.csv"
-OUTPUT_CSV    = REPO / "data" / "romanian_lexicon_raw_dex_supplemented.csv"
+RAW_DEX_CSV = REPO / "data" / "romanian_lexicon_raw_dex.csv"
+OUTPUT_CSV = REPO / "data" / "romanian_lexicon_raw_dex_supplemented.csv"
 
 TARGET_STEMS = {"c", "g", "t", "d", "s", "z"}
 
@@ -89,8 +88,8 @@ def generate_candidates(lemma: str, stem_final: str) -> List[Tuple[str, str]]:
 
     # The three productive Romanian verbalizers
     SUFFIXES: List[Tuple[str, str]] = [
-        ("i",  "-i"),
-        ("a",  "-a"),
+        ("i", "-i"),
+        ("a", "-a"),
         ("ui", "-ui"),
     ]
 
@@ -105,16 +104,24 @@ def generate_candidates(lemma: str, stem_final: str) -> List[Tuple[str, str]]:
             for pre in PREFIXES:
                 cand = pre + s + sfx
                 # in/im alternation: îm before labials, în elsewhere
-                if cand.startswith("în") and len(cand) > 2 and cand[2] in "bpm":
+                if (
+                    cand.startswith("în")
+                    and len(cand) > 2
+                    and cand[2] in "bpm"
+                ):
                     cand = "îm" + cand[2:]
                 cands.add((cand, label))
 
     return [(c, l) for c, l in cands if len(c) >= 3]
 
 
-_TITLE_RE = re.compile(r"<title>\s*([^|<-]+?)\s*-\s*defini[țt]ie", re.IGNORECASE)
+_TITLE_RE = re.compile(
+    r"<title>\s*([^|<-]+?)\s*-\s*defini[țt]ie", re.IGNORECASE
+)
 _VB_LEXEM_RE = re.compile(r"<span[^>]*>\s*(?:vb\.|verb)", re.IGNORECASE)
-_NORM_TR = str.maketrans({"â": "î"})  # DEX uses both â and î; normalize for compare
+_NORM_TR = str.maketrans(
+    {"â": "î"}
+)  # DEX uses both â and î; normalize for compare
 
 
 def _title_lemma(html: str) -> Optional[str]:
@@ -129,6 +136,7 @@ def _fast_get_html(candidate: str) -> Optional[str]:
     Falls back to polite_get only if not in cache. Uses URL-encoded keys
     matching what polite_get would store (urllib.parse.quote)."""
     from urllib.parse import quote
+
     cand = norm_lemma(candidate)
     if not cand:
         return None
@@ -184,11 +192,14 @@ def is_attested_verb(candidate: str) -> bool:
 # Main loop
 # ---------------------------------------------------------------------------
 
+
 def main() -> None:
     if not WITH_FREQ_CSV.exists():
-        print(f"ERROR: not found: {WITH_FREQ_CSV}", file=sys.stderr); sys.exit(1)
+        print(f"ERROR: not found: {WITH_FREQ_CSV}", file=sys.stderr)
+        sys.exit(1)
     if not RAW_DEX_CSV.exists():
-        print(f"ERROR: not found: {RAW_DEX_CSV}", file=sys.stderr); sys.exit(1)
+        print(f"ERROR: not found: {RAW_DEX_CSV}", file=sys.stderr)
+        sys.exit(1)
 
     # Read with_freq for stem_final and freq lookup, but use raw_dex to determine
     # eligibility (empty derived_verbs) since raw_dex is the upstream source of
@@ -201,14 +212,19 @@ def main() -> None:
             lemma = (r.get("lemma") or "").strip().lower()
             pos = (r.get("pos") or "").strip().upper()
             stem_final = (r.get("stem_final") or "").strip()
-            if pos != "N" or not lemma: continue
+            if pos != "N" or not lemma:
+                continue
             stem_by_lemma[lemma] = stem_final
             try:
-                freq_by_lemma[lemma] = float(r.get("freq_ron_news_2024_1M") or 0)
+                freq_by_lemma[lemma] = float(
+                    r.get("freq_ron_news_2024_1M") or 0
+                )
             except ValueError:
                 freq_by_lemma[lemma] = 0.0
 
-    print(f"Reading {RAW_DEX_CSV} to find lemmas with currently-empty derived_verbs ...")
+    print(
+        f"Reading {RAW_DEX_CSV} to find lemmas with currently-empty derived_verbs ..."
+    )
     target_records = []
     seen = set()
     with RAW_DEX_CSV.open(newline="", encoding="utf-8") as f:
@@ -216,11 +232,15 @@ def main() -> None:
             lemma = (r.get("lemma") or "").strip().lower()
             pos = (r.get("pos") or "").strip().upper()
             existing = (r.get("derived_verbs") or "").strip()
-            if pos != "N" or not lemma: continue
-            if lemma in seen: continue
-            if existing: continue
+            if pos != "N" or not lemma:
+                continue
+            if lemma in seen:
+                continue
+            if existing:
+                continue
             sf = stem_by_lemma.get(lemma, "")
-            if sf not in TARGET_STEMS: continue
+            if sf not in TARGET_STEMS:
+                continue
             seen.add(lemma)
             target_records.append((lemma, sf, freq_by_lemma.get(lemma, 0.0)))
 
@@ -229,8 +249,10 @@ def main() -> None:
     if TOP_N_BY_FREQUENCY is not None:
         target_records = target_records[:TOP_N_BY_FREQUENCY]
         if target_records:
-            print(f"  Restricted to top-{TOP_N_BY_FREQUENCY} by frequency "
-                  f"(min freq in set: {target_records[-1][2]:.0f})")
+            print(
+                f"  Restricted to top-{TOP_N_BY_FREQUENCY} by frequency "
+                f"(min freq in set: {target_records[-1][2]:.0f})"
+            )
     targets_by_lemma = {l: sf for l, sf, _ in target_records}
     print(f"  Lemmas eligible for supplementation: {len(targets_by_lemma):,}")
 
@@ -252,7 +274,9 @@ def main() -> None:
             targets.append(r)
     print(f"  Matched in raw_dex: {len(targets):,}")
     print(f"\nNouns eligible for supplementation: {len(targets):,}")
-    print(f"  (target stems = {sorted(TARGET_STEMS)}, currently empty derived_verbs)")
+    print(
+        f"  (target stems = {sorted(TARGET_STEMS)}, currently empty derived_verbs)"
+    )
 
     queries = 0
     confirmed = 0
@@ -291,10 +315,12 @@ def main() -> None:
                 elapsed = time.time() - t0
                 rate = idx / elapsed if elapsed > 0 else 0
                 est_total = (len(targets) / max(rate, 1e-6)) / 60
-                print(f"  [{idx:5}/{len(targets)}]  confirmed={confirmed:4d}  "
-                      f"queries={queries:7d}  rate={rate:.2f} lemmas/s  "
-                      f"elapsed={elapsed/60:.1f}min  eta_total={est_total:.0f}min",
-                      flush=True)
+                print(
+                    f"  [{idx:5}/{len(targets)}]  confirmed={confirmed:4d}  "
+                    f"queries={queries:7d}  rate={rate:.2f} lemmas/s  "
+                    f"elapsed={elapsed/60:.1f}min  eta_total={est_total:.0f}min",
+                    flush=True,
+                )
             if idx % save_every == 0:
                 save_disk_cache()
 
@@ -331,8 +357,12 @@ def main() -> None:
         writer.writerows(rows)
     print(f"  Wrote {len(rows):,} rows")
     print(f"\nNext steps to integrate into the pipeline:")
-    print(f"  cp {OUTPUT_CSV} {RAW_DEX_CSV}   # backup the original first if you like")
-    print(f"  ./run_pipeline.sh                # re-runs stages 4-6 with the new derived_verbs")
+    print(
+        f"  cp {OUTPUT_CSV} {RAW_DEX_CSV}   # backup the original first if you like"
+    )
+    print(
+        f"  ./run_pipeline.sh                # re-runs stages 4-6 with the new derived_verbs"
+    )
 
 
 if __name__ == "__main__":
