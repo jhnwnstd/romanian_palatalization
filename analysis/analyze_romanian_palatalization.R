@@ -722,14 +722,21 @@ if (!has_verb_deriv_cols && !has_adj_deriv_cols) {
     mutate(
       mutation_inflect = as.logical(mutation),
       lemma_freq = freq_ron_news_2024_1M,
-      # Steriade's allomorph class:
-      #   front  = palatalizing plural (-i/-e)
-      #   back   = non-palatalizing plural (-uri)
-      #   ambig  = no plural / same-as-singular (gimpe/ochi-type)
-      # The Steriade test compares front vs back only.
+      # Surface-allomorph class. Used as a stratification variable for
+      # the i/e domain regression below. Distinct from mutation_inflect:
+      # for coronals, opportunity=="e" but mutation==FALSE in most cases.
       plural_class = case_when(
         opportunity %in% plural_opportunities ~ "front",
         opportunity == "uri" ~ "back",
+        TRUE ~ "ambig"
+      ),
+      # Steriade's actual K/TS vs K/K split: does the noun's plural
+      # palatalize? Use this — NOT plural_class — for the inflection-
+      # dependence Fisher test. plural_class miscodes coronal -e
+      # plurals as "front/alternating" via the allomorph proxy.
+      mutates_class = case_when(
+        as.logical(mutation) ~ "alt",
+        !as.logical(mutation) & opportunity %in% c("i", "e", "uri") ~ "nonalt",
         TRUE ~ "ambig"
       )
     )
@@ -929,19 +936,43 @@ if (!has_verb_deriv_cols && !has_adj_deriv_cols) {
       }
 
       # Suffix selection test (Fisher's exact):
-      # Does plural class predict -i vs -a suffix choice?
+      # Does whether the plural alternates predict -i vs -a verbalizer?
+      # NOTE: row is coded by `mutates_class` (actual alternation), not
+      # `plural_class` (allomorph proxy). For coronals, -e plurals do not
+      # alternate, so they belong with non-alternating bases despite the
+      # surface allomorph being "front". Replicates Steriade (10.20)
+      # affix-avoidance test correctly.
       cat("\n--- SUFFIX SELECTION: Fisher exact test ---\n")
-      suf_tab <- denom_steriade |>
+      cat("  Row = plural ACTUALLY alternates (mutation), levels: alt > nonalt\n")
+      cat("  Col = verbalizer is -i (TRUE) vs -a/-ui (FALSE)\n")
+      cat("  OR is reported in Steriade direction:\n")
+      cat("    OR > 1 means alt-pl bases prefer the -i verbalizer.\n")
+      cat("  NOTE: This R analysis does NOT apply etymology validation;\n")
+      cat("        for the abstract's canonical numbers see\n")
+      cat("        scripts/build_contingency_table.py (n=388 etym-validated).\n")
+      suf_tab <- denom_pairs |>
+        filter(mutates_class %in% c("alt", "nonalt")) |>
         mutate(
-          suf_front = verb_suffix_front
+          suf_front = verb_suffix_front,
+          # Order factor so OR comes out in Steriade direction
+          mutates_class = factor(mutates_class, levels = c("nonalt", "alt"))
         )
-      tab <- with(suf_tab, table(plural_class, suf_front))
+      tab <- with(suf_tab, table(mutates_class, suf_front))
       if (all(dim(tab) == c(2L, 2L))) {
         ft <- fisher.test(tab)
-        cat("  p =", format.pval(ft$p.value, digits = 3), "\n")
-        cat("  OR =", round(ft$estimate, 3), "\n")
-        cat("  If p > 0.05, suffix selection does NOT co-vary\n")
-        cat("  with plural class (contra Steriade).\n")
+        cat("  POOLED  n =", sum(tab), "  OR =", round(ft$estimate, 3),
+            "  p =", format.pval(ft$p.value, digits = 3), "\n")
+        cat("  Per-class breakdown:\n")
+        for (sc in c("dorsal", "coronal")) {
+          sub_tab <- with(filter(suf_tab, seg_class == sc),
+                          table(mutates_class, suf_front))
+          if (all(dim(sub_tab) == c(2L, 2L))) {
+            ft_s <- fisher.test(sub_tab)
+            cat(sprintf("    %-7s n=%d  OR=%.3f  p=%s\n",
+                        sc, sum(sub_tab), ft_s$estimate,
+                        format.pval(ft_s$p.value, digits = 3)))
+          }
+        }
       } else {
         cat("  Contingency table not 2x2; printing instead:\n")
         print(tab)

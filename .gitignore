@@ -78,3 +78,5 @@ analysis/final_cell_dump.txt
 analysis/final_cell_dump_top1000.txt
 analysis/final_cells_full_with_source.txt
 analysis/final_cells_top1000_with_source.txt
+analysis/verb_alternation_audit.txt
+analysis/verb_alternation_summary.md
