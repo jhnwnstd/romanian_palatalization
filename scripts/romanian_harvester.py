@@ -428,7 +428,9 @@ class _SqliteCache:
         ).fetchone()
         if row is None:
             raise KeyError(key)
-        return row[0]
+        # sqlite returns Any-typed rows; the value column is TEXT so
+        # narrowing to str is correct here.
+        return str(row[0])
 
     def __setitem__(self, key: str, value: str) -> None:
         self._conn.execute(
@@ -488,7 +490,9 @@ def get(url: str, params: Mapping[str, Any]) -> dict[str, Any]:
         time.sleep(min(10.0, retry_after + 1.0))
         raise requests.RequestException(f"Rate-limited: {r.status_code}")
     r.raise_for_status()
-    data = r.json()
+    # r.json() is typed as Any; narrow at the trust boundary so the
+    # caller doesn't have to deal with Any propagation.
+    data: dict[str, Any] = r.json()
     if "error" in data and data["error"].get("code") == "maxlag":
         time.sleep(1.0 + random.random())
         raise requests.RequestException("Server under replication lag")
@@ -536,8 +540,6 @@ def clean_ipa_raw(ipa_str: str) -> str:
         encoded" title="IPA">IPA<
         c%C3%B2%27t%C9%99%CC%80" title="cò&#39;tə̀">cò'tə̀<
     """
-    if not isinstance(ipa_str, str):
-        return ""
     s = ipa_str.strip()
     if not s or s.lower() == "nan":
         return ""
@@ -1242,7 +1244,9 @@ def fetch_html_section(api: str, title: str) -> str:
         data = get(api, params)
         _sleep_jitter(THROTTLE_DELAY)
         if "parse" in data and "text" in data["parse"]:
-            html = data["parse"]["text"].get("*", "")
+            # MediaWiki API responses are Any-typed; narrow to str
+            # at the cache-write boundary.
+            html = str(data["parse"]["text"].get("*", ""))
             if api == WIKI_API_EN:
                 _HTML_CACHE_EN[title] = html
             else:
@@ -1327,7 +1331,7 @@ def extract_plural_from_table(html: str) -> Optional[str]:
 def confirm_plural_via_tables_or_templates(
     title: str,
     block: Optional[str] = None,
-    tpl: Optional[dict] = None,
+    tpl: Optional[dict[str, Any]] = None,
 ) -> str:
     """
     Return confirmed plural from template params, POS block, or HTML table.
@@ -1425,7 +1429,7 @@ def _migrate_json_to_sqlite(
         print(f"  WARNING: migration failed for {label}: {e}")
 
 
-def load_disk_cache():
+def load_disk_cache() -> None:
     """Load wikitext caches from JSON, HTML caches from SQLite."""
     global _WT_CACHE_EN, _WT_CACHE_RO, _HTML_CACHE_EN, _HTML_CACHE_RO
 
@@ -1463,7 +1467,7 @@ def load_disk_cache():
     )
 
 
-def save_disk_cache():
+def save_disk_cache() -> None:
     """Save wikitext caches to JSON. HTML is in SQLite (auto-saved)."""
     # Wikitext EN
     try:
@@ -1488,7 +1492,7 @@ def save_disk_cache():
     )
 
 
-def load_ipa_cache():
+def load_ipa_cache() -> None:
     """Load IPA cache from disk and clean entries."""
     global _IPA_CACHE
 
@@ -1518,7 +1522,7 @@ def load_ipa_cache():
         _IPA_CACHE = {}
 
 
-def save_ipa_cache():
+def save_ipa_cache() -> None:
     """Save IPA cache to disk."""
     try:
         with open(IPA_CACHE_PATH, "w", encoding="utf-8") as f:
@@ -1584,7 +1588,9 @@ def _fetch_wikitext_from_api(api_url: str, title: str) -> Optional[str]:
         if "query" in data and "pages" in data["query"]:
             for page in data["query"]["pages"].values():
                 if "revisions" in page:
-                    return page["revisions"][0]["slots"]["main"]["*"]
+                    # MediaWiki revisions slot is Any-typed; narrow to
+                    # str at the trust boundary.
+                    return str(page["revisions"][0]["slots"]["main"]["*"])
     except (requests.RequestException, KeyError, ValueError):
         pass
     return None
@@ -1649,7 +1655,9 @@ def fetch_category_members(
 # ============================================================================
 
 
-def parse_romanian_entry(title: str, skip_ipa: bool = False) -> Optional[dict]:
+def parse_romanian_entry(
+    title: str, skip_ipa: bool = False
+) -> Optional[dict[str, Any]]:
     """Parse a Romanian Wiktionary entry and extract raw fields.
 
     Returns dict with extracted fields or None if entry invalid.

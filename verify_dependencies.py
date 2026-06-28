@@ -41,11 +41,11 @@ def check_package(label: str, import_name: str) -> bool:
 
 
 def check_python_version() -> bool:
-    """Require Python >= 3.9."""
+    """Require Python >= 3.11 (StrEnum, modern typing features)."""
     v = sys.version_info
     print(f"Python: {v.major}.{v.minor}.{v.micro}")
-    if v < (3, 9):
-        print("Python 3.9 or newer is required.")
+    if v < (3, 11):
+        print("Python 3.11 or newer is required.")
         return False
     return True
 

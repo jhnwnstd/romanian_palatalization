@@ -1020,8 +1020,6 @@ def explode_derived_verbs_row(row: Dict[str, str]) -> List[Dict[str, str]]:
 
 def normalize_unicode_g2p(s: str) -> str:
     """Normalize Unicode for G2P (cedilla → comma-below diacritics)."""
-    if not isinstance(s, str):
-        return ""
     s = unicodedata.normalize("NFC", s)
     s = s.replace("ş", "ș").replace("Ş", "Ș")
     s = s.replace("ţ", "ț").replace("Ţ", "Ț")
@@ -1072,8 +1070,6 @@ DIMINUTIVE_J_SUFFIXES = ("aică", "oaică", "uică", "eică", "iică")
 
 def tweak_nominal_ipa(lemma: str, ipa: str) -> str:
     """Adjust IPA for diminutive suffixes (i+kə → j+kə)."""
-    if not isinstance(lemma, str) or not isinstance(ipa, str):
-        return ipa
     lemma_norm = normalize_unicode_g2p(lemma).lower()
     if lemma_norm.endswith(DIMINUTIVE_J_SUFFIXES):
         ipa = re.sub(r"i(kə)$", r"j\1", ipa)

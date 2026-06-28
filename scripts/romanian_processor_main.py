@@ -1,25 +1,30 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+"""Romanian palatalization processor — pipeline stage 4.
+
+Reads ``romanian_lexicon_raw_dex.csv`` (the DEX-QC'd raw lexicon) and
+writes ``romanian_lexicon_complete.csv`` with all derived columns:
+``stem_final``, ``mutation``, ``opportunity``, ``derived_verbs``,
+``deriv_suffixes``, IPA, etc.
+
+The actual derivation logic lives in ``src/romanian_processor_lib.py``;
+this script orchestrates the row-level pass, dedup, and writing.
+
+Invariants
+----------
+- Each ``(lemma, pos, plural)`` triple appears at most once in the
+  output. Duplicates from Wiktionary merge by preferring the row with
+  more derivation data.
+- A row whose ``lemma`` equals the plural of a different row with the
+  same pos is dropped (it's a stray plural form mis-listed as a lemma)
+  — except for the ochi/genunchi case where lemma == plural for the
+  same entry.
 """
-Romanian Palatalization Data Processor - Main Script
 
-Complete pipeline for deriving palatalization-related fields from
-Romanian Wiktionary data.
-
-Usage:
-    python romanian_processor_main.py
-
-Input:
-    romanian_lexicon_raw_dex.csv
-
-Output:
-    romanian_lexicon_complete.csv
-"""
+from __future__ import annotations
 
 import csv
 import sys
 from pathlib import Path
-from typing import Dict, Optional
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
@@ -68,7 +73,7 @@ from wiktionary_normalizer import (  # noqa: E402
 set_ipa_normalizer(lambda ipa: normalize_ipa(ipa, remove_stress=True))
 
 
-def process_row(row: Dict[str, str]) -> Optional[Dict[str, str]]:
+def process_row(row: dict[str, str]) -> dict[str, str] | None:
     """
     Process a single CSV row through the complete pipeline.
 
@@ -189,7 +194,7 @@ def process_csv(input_path: str, output_path: str) -> None:
         # Track (lemma, pos, plural) -> index in rows list
         # so we can replace an entry if a later duplicate has
         # richer derivation data.
-        seen_entries: dict[tuple, int] = {}
+        seen_entries: dict[tuple[str, str, str], int] = {}
         duplicates_skipped = 0
 
         for i, row in enumerate(reader, start=1):
@@ -264,7 +269,7 @@ def process_csv(input_path: str, output_path: str) -> None:
         pos = (r.get("pos", "") or "").strip()
         own_entries.add((lem, pos))
 
-    def _is_plural_of_other(r: dict) -> bool:
+    def _is_plural_of_other(r: dict[str, str]) -> bool:
         lem = (r.get("lemma", "") or "").strip().lower()
         pos = (r.get("pos", "") or "").strip()
         key = (lem, pos)
@@ -333,7 +338,7 @@ def process_csv(input_path: str, output_path: str) -> None:
     print(f"  True: {mutations_true}")
     print(f"  False: {mutations_false}")
 
-    opp_counts: Dict[str, int] = {}
+    opp_counts: dict[str, int] = {}
     for r in rows:
         opp = r.get("opportunity", "none")
         opp_counts[opp] = opp_counts.get(opp, 0) + 1

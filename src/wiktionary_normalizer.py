@@ -154,8 +154,6 @@ def normalize_orthography(text: str) -> str:
         >>> normalize_orthography("ş")  # cedilla
         'ș'
     """
-    if not isinstance(text, str):
-        return ""
     text = text.strip().lower()
 
     # Remove Wiktionary markup patterns
@@ -192,9 +190,6 @@ def normalize_ipa(ipa: str, remove_stress: bool = True) -> str:
     Returns:
         Normalized IPA with tie bars, no stress, full variants only
     """
-    if not isinstance(ipa, str):
-        return ""
-
     try:
         ipa = urllib.parse.unquote(ipa)
     except (ImportError, TypeError):
@@ -288,7 +283,7 @@ def normalize_ipa(ipa: str, remove_stress: bool = True) -> str:
     return ipa
 
 
-def normalize_wiktionary_row(row: dict) -> dict:
+def normalize_wiktionary_row(row: dict[str, str]) -> dict[str, str]:
     """Normalize all text fields in a Wiktionary-extracted CSV row.
 
     Applies orthographic normalization to lemma/plural/gloss fields and
@@ -399,7 +394,7 @@ def validate_ipa(ipa: str) -> tuple[bool, Optional[str]]:
     return (True, None)
 
 
-def test_normalization():
+def test_normalization() -> None:
     """Test the normalization pipeline with examples."""
     print("=" * 80)
     print("WIKTIONARY NORMALIZATION PIPELINE - TEST")

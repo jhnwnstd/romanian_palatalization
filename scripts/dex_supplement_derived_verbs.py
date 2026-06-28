@@ -1,19 +1,31 @@
 #!/usr/bin/env python3
+"""Supplement ``derived_verbs`` in the DEX-QC'd lexicon.
+
+For each row whose ``derived_verbs`` is empty AND ``stem_final`` is one
+of the target consonants, generate plausible Romanian denominal-verb
+infinitives by morphological rule and ask DEX whether each candidate
+actually exists. Confirmed verbs get appended to the row's
+``derived_verbs`` column for the downstream processor to consume.
+
+Inputs / outputs
+----------------
+- read  ``data/romanian_lexicon_with_freq.csv`` (frequency + stem info)
+- read  ``data/romanian_lexicon_raw_dex.csv`` (the row we'll mutate)
+- write ``data/romanian_lexicon_raw_dex_supplemented.csv``
+
+After this script completes, the pipeline runs stages 4–6 on the
+supplemented CSV.
+
+Concurrency
+-----------
+Workers are bounded by ``N_WORKERS`` and share the DEX disk cache.
+Cache mutation is guarded by ``_CACHE_LOCK`` in ``dex_utils``;
+``save_disk_cache`` writes atomically via tmp-file + rename. The
+periodic ``save_every`` checkpoint keeps the cache crash-safe across
+long runs.
 """
-Supplement `derived_verbs` for nouns in the DEX-QC'd lexicon by querying DEX
-for plausible denominal-verb candidates that Wiktionary's "Derived terms"
-section missed.
 
-Strategy: for each row whose `derived_verbs` is empty AND `stem_final` is in
-the target consonant set, generate candidate verb infinitives by morphological
-rule, then ask DEX which ones actually exist. Confirmed verbs get appended to
-the row's `derived_verbs` and `deriv_suffixes` columns.
-
-Input:  data/romanian_lexicon_raw_dex.csv  (DEX-QC'd raw lexicon)
-Output: data/romanian_lexicon_raw_dex_supplemented.csv
-
-After running this, re-run stages 4-6 of the pipeline.
-"""
+from __future__ import annotations
 
 import csv
 import re
@@ -22,7 +34,7 @@ import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import List, Optional, Set, Tuple
+from typing import Final
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
@@ -35,18 +47,21 @@ from dex_utils import (  # noqa: E402
     save_disk_cache,
 )
 
-REPO = Path(__file__).parent.parent
-# Input: with_freq has stem_final / opportunity computed; we use it to *identify*
-# target lemmas. The actual write-back is to raw_dex (upstream of stage 4) so the
-# pipeline can recompute everything from the new derived_verbs.
-WITH_FREQ_CSV = REPO / "data" / "romanian_lexicon_with_freq.csv"
-RAW_DEX_CSV = REPO / "data" / "romanian_lexicon_raw_dex.csv"
-OUTPUT_CSV = REPO / "data" / "romanian_lexicon_raw_dex_supplemented.csv"
+REPO: Final[Path] = Path(__file__).parent.parent
+# Input: with_freq has stem_final / opportunity computed; we use it to
+# *identify* target lemmas. The actual write-back is to raw_dex
+# (upstream of stage 4) so the pipeline can recompute everything from
+# the new derived_verbs.
+WITH_FREQ_CSV: Final[Path] = REPO / "data" / "romanian_lexicon_with_freq.csv"
+RAW_DEX_CSV: Final[Path] = REPO / "data" / "romanian_lexicon_raw_dex.csv"
+OUTPUT_CSV: Final[Path] = (
+    REPO / "data" / "romanian_lexicon_raw_dex_supplemented.csv"
+)
 
-TARGET_STEMS = {"c", "g", "t", "d", "s", "z"}
+TARGET_STEMS: Final[frozenset[str]] = frozenset({"c", "g", "t", "d", "s", "z"})
 
 # Limit to the N highest-frequency eligible lemmas. None = process all.
-TOP_N_BY_FREQUENCY: Optional[int] = None
+TOP_N_BY_FREQUENCY: Final[int | None] = None
 
 # Concurrent workers for DEX queries.
 N_WORKERS: int = 8
@@ -65,7 +80,7 @@ def strip_gender_suffix(lemma: str) -> str:
     return lemma
 
 
-def mutate_a_to_aa(stem: str) -> Optional[str]:
+def mutate_a_to_aa(stem: str) -> str | None:
     """Generate the 'a -> ă everywhere in stem' variant. Returns None if no
     'a' is present. Romanian unstressed-syllable mutation is lexical, so we
     just produce the variant and let DEX confirm or reject."""
@@ -74,7 +89,7 @@ def mutate_a_to_aa(stem: str) -> Optional[str]:
     return stem.replace("a", "ă")
 
 
-def generate_candidates(lemma: str, stem_final: str) -> List[Tuple[str, str]]:
+def generate_candidates(lemma: str, stem_final: str) -> list[tuple[str, str]]:
     """Return a list of (candidate_verb, suffix_label) tuples to test against DEX.
 
     Conservative set: 2 stems x 3 suffixes x 2 prefixes = up to 12 candidates.
@@ -86,16 +101,16 @@ def generate_candidates(lemma: str, stem_final: str) -> List[Tuple[str, str]]:
         stems.add(mut)
 
     # The three productive Romanian verbalizers
-    SUFFIXES: List[Tuple[str, str]] = [
+    SUFFIXES: list[tuple[str, str]] = [
         ("i", "-i"),
         ("a", "-a"),
         ("ui", "-ui"),
     ]
 
     # Either no prefix or in- (with morphophonemic îm-/în- alternation)
-    PREFIXES: List[str] = ["", "în"]
+    PREFIXES: list[str] = ["", "în"]
 
-    cands: Set[Tuple[str, str]] = set()
+    cands: set[tuple[str, str]] = set()
     for s in stems:
         if not s:
             continue
@@ -123,14 +138,14 @@ _NORM_TR = str.maketrans(
 )  # DEX uses both â and î; normalize for compare
 
 
-def _title_lemma(html: str) -> Optional[str]:
+def _title_lemma(html: str) -> str | None:
     m = _TITLE_RE.search(html or "")
     if not m:
         return None
     return m.group(1).strip().lower()
 
 
-def _fast_get_html(candidate: str) -> Optional[str]:
+def _fast_get_html(candidate: str) -> str | None:
     """Return cached HTML for `candidate` without BeautifulSoup parsing.
     Falls back to polite_get only if not in cache. Uses URL-encoded keys
     matching what polite_get would store (urllib.parse.quote)."""
@@ -286,13 +301,13 @@ def main() -> None:
     t0 = time.time()
     save_every = 500
 
-    def process_row(row):
+    def process_row(row: dict[str, str]) -> None:
         nonlocal queries, confirmed
         lemma = row["lemma"].strip().lower()
         stem_final = row["__stem_final"]
         cands = generate_candidates(lemma, stem_final)
-        kept_verbs: List[str] = []
-        kept_suffixes: List[str] = []
+        kept_verbs: list[str] = []
+        kept_suffixes: list[str] = []
         local_q = 0
         for cand, label in cands:
             local_q += 1

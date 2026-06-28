@@ -7,7 +7,7 @@ name = "romanian-palatalization"
 version = "1.0.0"
 description = "Corpus-based analysis of palatalization patterns in Romanian morphophonology"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 license = {text = "MIT"}
 authors = [
     {name = "John Winstead", email = "j.hn.w.nst.d@gmail.com"}
@@ -26,10 +26,9 @@ classifiers = [
     "Topic :: Text Processing :: Linguistic",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
     "pandas>=1.5.0",
@@ -85,6 +84,10 @@ python_version = "3.11"
 strict = true
 warn_unreachable = true
 no_implicit_optional = true
+# Scripts in scripts/ import shared helpers from src/ via a runtime
+# sys.path.insert. Tell mypy about the layout so static checks can
+# follow those imports instead of treating them as Any.
+mypy_path = ["src"]
 # pandas, ijson, bs4 plugins ship incomplete or missing stubs; we still
 # want strict checking of our own code rather than turning strict off.
 ignore_missing_imports = true

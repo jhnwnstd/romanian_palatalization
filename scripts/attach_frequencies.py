@@ -1,39 +1,43 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+"""Attach Leipzig frequency counts to the Romanian lexicon CSV.
 
+Reads each Leipzig corpus `*_freq.csv` in :data:`FREQ_DIR`, normalizes
+the word keys to match our lexicon convention (NFC + cedilla → comma-
+below), and writes a copy of the lexicon CSV with one extra
+``freq_{corpus_id}`` column per corpus.
+
+Contracts
+---------
+- Leipzig freq CSVs have columns ``word`` and ``freq`` (integer).
+- Lemmas in the lexicon are already project-normalized apart from NFC;
+  we run :func:`normalize_orthography` on the lookup key.
+- Missing entries are written as ``"0"`` (string), not blank, so the
+  downstream R/Python loaders can parse the column as integer
+  uniformly.
 """
-Attach Leipzig frequency counts to the Romanian lexicon CSV.
 
-Usage:
-
-  1. Set LEXICON_PATH, OUTPUT_PATH, FREQ_DIR as needed.
-  2. Optionally set CORPUS_IDS to a specific list of corpus IDs,
-     or leave it as None to use all *_freq.csv files in FREQ_DIR.
-  3. Run:
-
-       python scripts/attach_frequencies.py
-
-Assumptions:
-- Leipzig freq CSVs have columns: word, freq (or legacy: orth, freq).
-- Lemmas in the lexicon are already project-normalized apart from NFC.
-"""
+from __future__ import annotations
 
 import csv
 import sys
 import unicodedata
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Final
 
-HERE = Path(__file__).resolve()
-PROJECT_ROOT = HERE.parents[1]
+HERE: Final[Path] = Path(__file__).resolve()
+PROJECT_ROOT: Final[Path] = HERE.parents[1]
 
-LEXICON_PATH: Path = PROJECT_ROOT / "data" / "romanian_lexicon_complete.csv"
-OUTPUT_PATH: Path = PROJECT_ROOT / "data" / "romanian_lexicon_with_freq.csv"
-FREQ_DIR: Path = PROJECT_ROOT / "data" / "leipzig" / "freq"
+LEXICON_PATH: Final[Path] = (
+    PROJECT_ROOT / "data" / "romanian_lexicon_complete.csv"
+)
+OUTPUT_PATH: Final[Path] = (
+    PROJECT_ROOT / "data" / "romanian_lexicon_with_freq.csv"
+)
+FREQ_DIR: Final[Path] = PROJECT_ROOT / "data" / "leipzig" / "freq"
 
-# If None auto-discover; otherwise set explicitly, e.g.:
-# CORPUS_IDS = ["ron_wikipedia_2021_1M"]
-CORPUS_IDS: Optional[List[str]] = None
+# If None: auto-discover from FREQ_DIR. Set explicitly to restrict to a
+# specific subset, e.g. CORPUS_IDS = ["ron_wikipedia_2021_1M"].
+CORPUS_IDS: Final[list[str] | None] = None
 
 # Keep imports aligned with rest of project layout.
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
@@ -48,10 +52,8 @@ except ImportError as exc:  # pragma: no cover
     raise exc
 
 
-def discover_corpora(freq_dir: Path) -> List[str]:
-    """
-    Discover available corpus IDs from freq_dir by listing *_freq.csv files.
-    """
+def discover_corpora(freq_dir: Path) -> list[str]:
+    """Return sorted corpus IDs by listing ``*_freq.csv`` in *freq_dir*."""
     return sorted(
         p.stem.removesuffix("_freq") for p in freq_dir.glob("*_freq.csv")
     )
@@ -69,12 +71,14 @@ def normalize_freq_key(token: str) -> str:
     return t.strip().lower()
 
 
-def load_freq_table(freq_path: Path) -> Dict[str, int]:
+def load_freq_table(freq_path: Path) -> dict[str, int]:
+    """Load a Leipzig frequency table, summing any duplicate keys.
+
+    Returns a mapping from normalized word → frequency. Frequencies of
+    0 are dropped (keeps the map small). Rows whose ``freq`` field
+    doesn't parse as int are skipped silently.
     """
-    Load a Leipzig frequency table from a CSV file.
-    Returns a mapping from normalized word to frequency.
-    """
-    freq_map: Dict[str, int] = {}
+    freq_map: dict[str, int] = {}
     with freq_path.open("r", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
@@ -87,18 +91,17 @@ def load_freq_table(freq_path: Path) -> Dict[str, int]:
             except ValueError:
                 continue
             if freq > 0:
+                # Sum (rather than overwrite) so duplicate keys in a
+                # source corpus don't silently lose counts.
                 freq_map[word] = freq_map.get(word, 0) + freq
     return freq_map
 
 
 def build_freq_maps(
-    freq_dir: Path, corpus_ids: List[str]
-) -> Dict[str, Dict[str, int]]:
-    """
-    Load frequency tables for the specified corpus IDs.
-    Returns a mapping from corpus ID to its frequency table (word -> freq).
-    """
-    freq_maps: Dict[str, Dict[str, int]] = {}
+    freq_dir: Path, corpus_ids: list[str]
+) -> dict[str, dict[str, int]]:
+    """Load frequency tables for the specified corpus IDs."""
+    freq_maps: dict[str, dict[str, int]] = {}
     for corpus_id in corpus_ids:
         freq_path = freq_dir / f"{corpus_id}_freq.csv"
         if not freq_path.exists():
@@ -125,26 +128,27 @@ def normalize_lemma(lemma: str) -> str:
     return norm.strip()
 
 
-def main():
-    """Main entry point for attaching frequency data to the lexicon."""
+def main() -> int:
+    """Run the attach step. Returns 0 on success, 1 on input error."""
     for label, path in (("lexicon", LEXICON_PATH), ("freq-dir", FREQ_DIR)):
         if not path.exists():
             print(f"ERROR: {label} not found: {path}")
-            return
+            return 1
 
     requested_ids = (
         CORPUS_IDS if CORPUS_IDS is not None else discover_corpora(FREQ_DIR)
     )
     if not requested_ids:
         print(
-            "No corpus frequency files found in freq-dir. Nothing to attach."
+            "No corpus frequency files found in freq-dir. "
+            "Nothing to attach."
         )
-        return
+        return 1
 
     freq_maps = build_freq_maps(FREQ_DIR, requested_ids)
     if not freq_maps:
         print("No usable frequency maps loaded. Exiting.")
-        return
+        return 1
 
     corpus_ids = sorted(freq_maps)
     print("Using corpora:")
@@ -156,12 +160,11 @@ def main():
         OUTPUT_PATH.open("w", encoding="utf-8", newline="") as f_out,
     ):
         reader = csv.DictReader(f_in)
-        base_fieldnames: List[str] = list(reader.fieldnames or [])
+        base_fieldnames: list[str] = list(reader.fieldnames or [])
         extra_cols = [
-            col
+            f"freq_{cid}"
             for cid in corpus_ids
-            for col in [f"freq_{cid}"]
-            if col not in base_fieldnames
+            if f"freq_{cid}" not in base_fieldnames
         ]
         out_fieldnames = base_fieldnames + extra_cols
         print(
@@ -174,12 +177,13 @@ def main():
             n_rows += 1
             key = normalize_lemma(row.get("lemma") or "")
             for cid in corpus_ids:
-                # Frequencies stored as strings: "0" for missing,
-                # else integer as string
+                # Missing → "0" so downstream loaders can parse the
+                # column uniformly as integer.
                 row[f"freq_{cid}"] = str(freq_maps[cid].get(key, 0))
             writer.writerow(row)
     print(f"Done. Wrote {n_rows} rows to {OUTPUT_PATH}")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

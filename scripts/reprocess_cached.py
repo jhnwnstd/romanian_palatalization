@@ -1,20 +1,35 @@
 #!/usr/bin/env python3
 """Re-parse all cached wikitext using the improved harvester logic.
 
-Runs entirely from cache — zero HTTP calls. Uses the existing
-wikitext and HTML caches to re-extract plurals, IPA, derivations,
-glosses, and gender with all the latest parsing improvements.
+Runs entirely from cache — zero HTTP calls. Uses the existing wikitext
+and HTML caches to re-extract plurals, IPA, derivations, glosses, and
+gender with all the latest parsing improvements.
 
-Usage:
+Contracts
+---------
+- ``rh.ENABLE_IPA_FETCH = False`` is set before any harvester code runs;
+  this guarantees no live IPA lookups will be made.
+- ``rh._WT_CACHE_EN`` / ``_WT_CACHE_RO`` must already be populated by
+  the time we start scanning; we call :func:`load_disk_cache` /
+  :func:`load_ipa_cache` to do that.
+- Output goes to ``OUTPUT_CSV`` (defined by the harvester module).
+
+Usage
+-----
+::
+
     python scripts/reprocess_cached.py
 """
 
+from __future__ import annotations
+
 import sys
 from pathlib import Path
+from typing import Final
 
 import pandas as pd
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PROJECT_ROOT: Final[Path] = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 
 import romanian_harvester as rh  # noqa: E402
@@ -42,7 +57,8 @@ from romanian_harvester import (  # noqa: E402
 rh.ENABLE_IPA_FETCH = False
 
 
-def main():
+def main() -> int:
+    """Run the cache-only reprocess. Returns 0 on success."""
     print("=" * 70)
     print("REPROCESS FROM CACHE (no HTTP calls)")
     print("=" * 70)
@@ -192,7 +208,8 @@ def main():
     print("=" * 70)
 
     print("Done!")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

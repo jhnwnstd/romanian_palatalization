@@ -313,8 +313,8 @@ def _process_targets_for_lemma(
     dex_entry: DexEntry,
 ) -> tuple[List[Dict[str, Any]], List[Dict[str, Any]], int]:
     """Process all targets for a given lemma."""
-    audit_records = []
-    disagreement_records = []
+    audit_records: list[dict[str, Any]] = []
+    disagreement_records: list[dict[str, Any]] = []
     repaired_count = 0
     for target in targets:
         disagreement = detect_disagreement(rows[target.row_idx], dex_entry)
@@ -549,9 +549,9 @@ def run_qc(  # pylint: disable=too-many-locals
                     csv_writer.writerow(
                         [
                             rec["lemma"],
-                            dis["field"],  # type: ignore[index]
-                            dis["csv_value"],  # type: ignore[index]
-                            dis["dex_value"],  # type: ignore[index]
+                            dis["field"],
+                            dis["csv_value"],
+                            dis["dex_value"],
                             rec.get("dex_url", ""),
                         ]
                     )

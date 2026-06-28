@@ -1,35 +1,48 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+"""Download and preprocess Leipzig Corpora frequency data for Romanian.
 
+Pipeline per corpus:
+
+1. Download ``{corpus_id}.tar.gz`` from the Leipzig server if not cached.
+2. Extract into ``data/leipzig/corpora/{corpus_id}/`` using the safe
+   ``filter='data'`` extraction policy.
+3. Locate the ``*-words*.txt`` / ``*-words_pos_base*.txt`` table.
+4. Build a cleaned ``word → freq`` map (filtering URLs, punctuation,
+   multi-word strings) and write it as ``{corpus_id}_freq.csv``.
+
+Contracts
+---------
+- The Leipzig archive layout puts the words file under
+  ``<archive>/<corpus_id>/<corpus_id>-words*.txt``. We accept the
+  alternative layout where the inner directory is missing.
+- Tarballs are extracted with ``filter='data'`` (PEP 706) to refuse
+  any member that would write outside the destination — required since
+  Python 3.12 and a good idea before that.
+- The output frequency CSV always has ``word,freq`` columns even if
+  empty, so downstream loaders can rely on the header.
 """
-Download and preprocess Leipzig Corpora frequency data for Romanian.
 
-- Downloads one or more fixed Romanian corpora (news/newscrawl/web/Wikipedia)
-- Extracts archives under: data/leipzig/corpora/<corpus_id>/
-- Finds the *-words*.txt / *-words_pos_base*.txt file
-- Builds a cleaned frequency table (word -> frequency) as CSV
-
-Usage:
-    python scripts/download_leipzig.py
-"""
+from __future__ import annotations
 
 import csv
 import subprocess
 import tarfile
 import unicodedata
 from pathlib import Path
-from typing import Dict
+from typing import Final
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DATA_DIR = PROJECT_ROOT / "data" / "leipzig"
+PROJECT_ROOT: Final[Path] = Path(__file__).resolve().parents[1]
+DATA_DIR: Final[Path] = PROJECT_ROOT / "data" / "leipzig"
 
-LEIPZIG_BASE_URL = "https://downloads.wortschatz-leipzig.de/corpora"
+LEIPZIG_BASE_URL: Final[str] = (
+    "https://downloads.wortschatz-leipzig.de/corpora"
+)
 
-RAW_DIR = DATA_DIR / "raw"
-CORPORA_DIR = DATA_DIR / "corpora"
-FREQ_DIR = DATA_DIR / "freq"
+RAW_DIR: Final[Path] = DATA_DIR / "raw"
+CORPORA_DIR: Final[Path] = DATA_DIR / "corpora"
+FREQ_DIR: Final[Path] = DATA_DIR / "freq"
 
-DEFAULT_CORPORA = [
+DEFAULT_CORPORA: Final[tuple[str, ...]] = (
     # News
     # "ron_news_2015_1M",
     # "ron_news_2019_1M",
@@ -50,10 +63,14 @@ DEFAULT_CORPORA = [
     # "ron_wikipedia_2014_1M",
     # "ron_wikipedia_2018_1M",
     # "ron_wikipedia_2021_1M",
-]
+)
 
 # Original download page (for reference):
 # https://wortschatz-leipzig.de/de/download/ron
+
+# Punctuation we strip from the ends of tokens before normalising. Kept
+# as a module constant rather than rebuilt per token.
+_TOKEN_TRIM: Final[str] = ".,;:!?\"“”„'«»()[]{}<>"
 
 
 def ensure_dir(path: Path) -> None:
@@ -80,7 +97,13 @@ def ensure_downloaded(corpus_id: str) -> Path:
 
 
 def ensure_extracted(corpus_id: str, archive: Path) -> Path:
-    """Extract a corpus archive if not already extracted."""
+    """Extract a corpus archive if not already extracted.
+
+    Uses the ``filter='data'`` extraction policy (PEP 706), which
+    refuses members containing absolute paths, ``..`` traversal, or
+    device/named-pipe nodes. The behavior is mandatory under Python
+    3.12+ and a sensible default before that for untrusted archives.
+    """
     dest_dir = CORPORA_DIR / corpus_id
     ensure_dir(CORPORA_DIR)
     if dest_dir.exists() and any(dest_dir.iterdir()):
@@ -89,7 +112,7 @@ def ensure_extracted(corpus_id: str, archive: Path) -> Path:
     print(f"  Extracting {archive} -> {dest_dir}")
     ensure_dir(dest_dir)
     with tarfile.open(archive, "r:gz") as tf:
-        tf.extractall(dest_dir)
+        tf.extractall(dest_dir, filter="data")
     return dest_dir
 
 
@@ -132,11 +155,19 @@ def find_words_file(corpus_dir: Path, corpus_id: str) -> Path:
 
 
 def clean_token(token: str) -> str:
-    """Clean and normalize a token, filtering out junk and noise."""
-    # Filters out punctuation-anchored junk, multi-word strings, and
-    # obvious noise like URLs.
+    """Normalize and filter a Leipzig token.
+
+    Returns the empty string for tokens we drop:
+
+    - empty after trimming punctuation
+    - containing whitespace (multi-word strings)
+    - URLs / email-like (``http``, ``www.``, ``://``, ``@``)
+    - no alphabetic character
+
+    Otherwise returns the NFC-normalized, lowercased form.
+    """
     t = unicodedata.normalize("NFC", token).strip()
-    t = t.strip(".,;:!?\"“”„'«»()[]{}<>")
+    t = t.strip(_TOKEN_TRIM)
     if not t:
         return ""
     if any(ch.isspace() for ch in t):
@@ -149,15 +180,16 @@ def clean_token(token: str) -> str:
     return lower
 
 
-def parse_words_file(path: Path) -> Dict[str, int]:
+def parse_words_file(path: Path) -> dict[str, int]:
     """Parse a Leipzig words file and build a frequency table."""
-    freq_map: Dict[str, int] = {}
+    freq_map: dict[str, int] = {}
     print(f"  Parsing words file: {path}")
     with path.open("r", encoding="utf-8") as f:
         for i, line in enumerate(f, 1):
             parts = line.rstrip("\n").split("\t")
             if len(parts) < 3:
                 continue
+            # Skip a header row (Leipzig files sometimes ship one).
             if i == 1 and not parts[0].isdigit():
                 continue
             freq_str = parts[2]
@@ -174,27 +206,34 @@ def parse_words_file(path: Path) -> Dict[str, int]:
     return freq_map
 
 
-def write_freq_csv(corpus_id: str, freq_map: Dict[str, int]) -> Path:
-    """Write a frequency table to CSV format."""
+def write_freq_csv(corpus_id: str, freq_map: dict[str, int]) -> Path:
+    """Write a frequency table to CSV (``word,freq``)."""
     ensure_dir(FREQ_DIR)
     out_path = FREQ_DIR / f"{corpus_id}_freq.csv"
     print(f"  Writing frequency CSV: {out_path}")
     with out_path.open("w", encoding="utf-8", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["word", "freq"])
+        # Sort by descending frequency, then alphabetically for ties,
+        # so the output file is deterministic across runs.
         for word, freq in sorted(
-            freq_map.items(), key=lambda x: (-x[1], x[0])
+            freq_map.items(), key=lambda kv: (-kv[1], kv[0])
         ):
-            # freq is int here, csv.writer converts to string automatically
             writer.writerow([word, freq])
     return out_path
 
 
-def main() -> None:
-    """Main entry point for downloading and processing Leipzig corpora."""
+def main() -> int:
+    """Download, extract, and build frequency tables for each corpus.
+
+    Returns 0 if every selected corpus completed; 1 if any failed.
+    Continues across failures so a single broken corpus doesn't abort
+    the others.
+    """
     print("Selected corpora:")
     print(*(f"  - {cid}" for cid in DEFAULT_CORPORA), sep="\n")
     print()
+    failures = 0
     for corpus_id in DEFAULT_CORPORA:
         print(f"Processing corpus: {corpus_id}")
         try:
@@ -203,13 +242,15 @@ def main() -> None:
             words_path = find_words_file(corpus_dir, corpus_id)
             freq_map = parse_words_file(words_path)
             write_freq_csv(corpus_id, freq_map)
-        except (
-            Exception
-        ) as exc:  # keep broad; we want to continue over partial failures
+        except Exception as exc:  # noqa: B902
+            # Broad on purpose: a single corpus failure shouldn't
+            # abort processing of the others.
             print(f"ERROR while processing {corpus_id}: {exc}")
+            failures += 1
         print()
-    print("Done.")
+    print(f"Done. ({failures} failure(s))")
+    return 0 if failures == 0 else 1
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
