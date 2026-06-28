@@ -64,13 +64,27 @@ where = ["src"]
 
 [tool.black]
 line-length = 79
-target-version = ["py39", "py310", "py311", "py312"]
+target-version = ["py311", "py312", "py313"]
 
 [tool.isort]
 profile = "black"
 line_length = 79
+known_first_party = ["romanian_palatalization"]
 
 [tool.flake8]
 max-line-length = 79
-extend-ignore = ["E203", "W503"]
-select = ["E", "F", "W", "B", "C4"]
+# B950 (Bugbear) handles excessive lines in a Black-compatible way;
+# disable E501 so we don't double-count overruns and leave room for
+# Black's intentional one-character overflow at line boundaries.
+extend-ignore = ["E203", "W503", "E501"]
+extend-select = ["B", "B950", "C4"]
+select = ["E", "F", "W"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unreachable = true
+no_implicit_optional = true
+# pandas, ijson, bs4 plugins ship incomplete or missing stubs; we still
+# want strict checking of our own code rather than turning strict off.
+ignore_missing_imports = true

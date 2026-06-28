@@ -1,337 +1,387 @@
 #!/usr/bin/env python3
-"""Build the inflection-dependence contingency table the right way.
+"""Build the inflection-dependence contingency table.
 
-This is the canonical script for the table that goes into the abstract.
-Replicates Steriade (2008) §10.2.3.5 lexical counts under the appropriate
-coding for our data:
+Canonical script for the table the abstract reports. Replicates the
+Steriade (2008) §10.2.3.5 lexical counts under the appropriate coding
+for our data:
 
-  ROW    — plural alternates yes/no  (using the `mutation` field, which is
-           the direct sg-vs-pl surface comparison: t→ț, d→z, s→ș for
-           coronals; c/g → orthographic ci/ge for dorsals).
-  COLUMN — verbalizer allomorph  (-i / -a)  — Steriade's affix-avoidance
-           tabulation in her (10.20).
-  EXCLUSIONS — derived verbs whose DEX page does not pass etymology
-           validation (verb tree's lemma matches the candidate; etymology
-           cites our noun, an "În + our noun" form, or a foreign source).
+ROW
+    ``plural alternates`` yes/no, derived from the ``mutation`` field
+    of the lexicon CSV (which is the direct singular-vs-plural surface
+    comparison: t→ț, d→z, s→ș for coronals; orthographic ci/ce/gi/ge
+    for dorsals).
 
-  USER-OVERRIDE KEEPS — back-formations the etym detector mis-rejects:
-           clint, dinte, vargă, verigă.
+COLUMN
+    Verbalizer allomorph (``-i`` vs ``-a``). This is Steriade's affix-
+    avoidance tabulation in her (10.20). We do not filter the column by
+    whether the verb's conjugated paradigm independently surfaces the
+    alternation — that is a separate (manifestation b) question, and
+    Steriade is explicit that it does not arise with derived verbs.
 
-Key methodological points:
+EXCLUSIONS
+    - Rows whose ``exception_reason`` begins with ``nde:`` (the three
+      non-derived-environment-blocking classes Steriade also excludes).
+    - Derived verbs that don't pass the DEX etymology audit. See
+      :mod:`romanian_palatalization.dex_etymology`.
+    - Explicit USER_KEEP allowlist for back-formations the etym audit
+      mis-rejects: clint, dinte, vargă, verigă.
 
-  1. The row is coded by ACTUAL alternation (`mutation`), not by the
-     surface allomorph (-i/-e vs -uri). Coronal -e plurals don't
-     palatalize, so they belong in the non-alternating row even though
-     their suffix is phonologically "front". This is the row recode
-     that fixed the original measurement error.
+The output is two panels — TOP-1000 most-frequent noun lemmas and FULL
+DEX (no frequency filter) — each split into dorsal (c, g), coronal
+(t, d, s), and pooled subpanels.
 
-  2. The column is NOT filtered by whether the conjugated verb
-     independently surfaces the alternation. Augmented verbs (plăti,
-     bloca, etc.) are KEPT even though their paradigms morphologically
-     bleed the trigger. This matches Steriade's own tabulation in
-     (10.20), which is an affix-avoidance test — what allomorph did the
-     speaker select?  Not — does the verb's paradigm show palatalization?
-
-     The orthogonal question of augment-driven trigger absence is
-     reported separately by scripts/audit_verb_alternation.py.
-
-Outputs two tables:
-  - TOP-1000 most-frequent noun lemmas
-  - FULL DEX (no frequency filter)
-
-Each split into three panels: dorsal (c, g), coronal (t, d, s), pooled.
+Important methodological note
+-----------------------------
+The row coding here is ``mutation``-based, NOT the historic
+``opportunity``-based allomorph proxy ``-i/-e`` vs ``-uri``. For
+coronals, the surface allomorph "-e" does not trigger assibilation
+(e.g. *casă/case* does not alternate), so coding by allomorph
+mis-classifies coronal -e nouns as alternating. The ``mutation`` field
+records the actual sg-vs-pl comparison, which is what Steriade's K/TS
+vs K/K split is about.
 """
+
 from __future__ import annotations
 
 import csv
-import ijson
-import re
+import sys
 from collections import Counter
+from dataclasses import dataclass
+from enum import StrEnum
 from pathlib import Path
-from urllib.parse import quote
+from typing import Callable, Final
 
 from scipy.stats import fisher_exact
 
-ROOT = Path(__file__).resolve().parent.parent
-CSV = ROOT / "data" / "romanian_lexicon_with_freq.csv"
-CACHE = ROOT / "dex_cache.json"
+# Add src to path so we can import the shared etymology + cache helpers.
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(_PROJECT_ROOT / "src"))
 
-PLURAL_FRONT = {"i", "e"}
-SEGS_DORSAL = {"c", "g"}
-SEGS_CORONAL = {"t", "d", "s"}
+from dex_cache_reader import (  # noqa: E402
+    DEFAULT_CACHE_PATH,
+    get_html,
+    load_cache_subset,
+)
+from dex_etymology import (  # noqa: E402
+    USER_KEEP,
+    categorize_etymology,
+    get_verb_etymology,
+    is_accepted,
+)
 
-# Back-formations whose DEX etymology field is "necunoscută" but which
-# we keep as valid noun-verb pairs because synchronically they look like
-# typical denominal pairs (the noun and verb share the same root, even
-# if the historical direction is verb→noun).
-USER_KEEP = {"clint", "dinte", "vargă", "verigă"}
+# ---------------------------------------------------------------------------
+# Inputs
+# ---------------------------------------------------------------------------
 
+CSV_PATH: Final[Path] = (
+    _PROJECT_ROOT / "data" / "romanian_lexicon_with_freq.csv"
+)
+CACHE_PATH: Final[Path] = DEFAULT_CACHE_PATH
 
-# ===========================================================================
-# DEX etymology validation
-# ===========================================================================
+TOP_N_FREQUENCY: Final[int] = 1_000
 
-VERB_POS_RE = re.compile(
-    r'<span[^>]*class="[^"]*tree-pos-info[^"]*"[^>]*>verb', re.IGNORECASE)
-TONIC_RE = re.compile(
-    r'<span[^>]*class="[^"]*tonic-accent[^"]*"[^>]*>(.*?)</span>',
-    re.IGNORECASE | re.DOTALL)
-INFLECTED_RE = re.compile(
-    r'<span[^>]*class="[^"]*tree-inflected-form[^"]*"[^>]*>.*?</span>',
-    re.IGNORECASE | re.DOTALL)
-POSINFO_RE = re.compile(
-    r'<span[^>]*class="[^"]*tree-pos-info[^"]*"[^>]*>.*?</span>',
-    re.IGNORECASE | re.DOTALL)
-ANY_TAG = re.compile(r'<[^>]+>')
-ETYM_RE = re.compile(
-    r'etimologie\s*[:\s]\s*(.{1,200}?)'
-    r'(?=\s+(?:DEX|MDA|DLRLC|DLRM|DEXI|CADE|NODEX|info|sinonime|antonime|format|$))',
-    re.IGNORECASE | re.DOTALL)
-FOREIGN_RE = re.compile(
-    r'\b(?:limba\s+)?(?:franceză|latină|slav[ăa]|veche|neogreacă|greacă|'
-    r'germană|italiană|maghiară|engleză|turcă|spaniolă|rusă|bulgară|sârbă|'
-    r'polonă|ucrainean|săsească|albaneză|portugheză|cehă|olandeză|catalană|'
-    r'lat\.|fr\.|gr\.|sl\.|magh\.|germ\.|it\.|engl\.|tc\.|sb\.|bg\.|rus\.|alb\.)',
-    re.IGNORECASE)
-UNKNOWN_RE = re.compile(
-    r'\bnecunoscut|et\.\s*nec\.|etimol\.\s*nec\.', re.IGNORECASE)
+DORSAL_STEMS: Final[frozenset[str]] = frozenset({"c", "g"})
+CORONAL_STEMS: Final[frozenset[str]] = frozenset({"t", "d", "s"})
+TARGET_STEMS: Final[frozenset[str]] = DORSAL_STEMS | CORONAL_STEMS
+PLURAL_FRONT_OPPS: Final[frozenset[str]] = frozenset({"i", "e"})
+ACCEPTED_VERBALIZERS: Final[frozenset[str]] = frozenset({"-i", "-a"})
 
 
-def heading_lemma(h: str) -> str | None:
-    h = TONIC_RE.sub(r"\1", h)
-    h = INFLECTED_RE.sub("", h)
-    h = POSINFO_RE.sub("", h)
-    h = ANY_TAG.sub("", h)
-    m = re.match(r"([^,;\s]+)", re.sub(r"\s+", " ", h).strip())
-    return m.group(1).strip().lower() if m else None
+# ---------------------------------------------------------------------------
+# Types
+# ---------------------------------------------------------------------------
 
 
-def get_etym_for_verb(html: str, candidate: str) -> str | None:
-    """Return the etymology field of the DEX verb tree whose lemma matches
-    `candidate`, or None if no such tree exists."""
-    h3 = list(re.finditer(
-        r'<h3[^>]*class="[^"]*tree-heading[^"]*"[^>]*>(.*?)</h3>',
-        html, re.DOTALL | re.IGNORECASE))
-    for i, m in enumerate(h3):
-        if not VERB_POS_RE.search(m.group(1)):
-            continue
-        if heading_lemma(m.group(1)) != candidate.lower():
-            continue
-        body = html[m.end(): h3[i + 1].start() if i + 1 < len(h3) else len(html)]
-        text = re.sub(r"\s+", " ", ANY_TAG.sub(" ", body)).strip()
-        ets = ETYM_RE.findall(text)
-        return ets[0].strip() if ets else ""
-    return None
+class StemClass(StrEnum):
+    """Articulatory class of the noun stem-final consonant."""
+
+    DORSAL = "dorsal"
+    CORONAL = "coronal"
 
 
-def stem_variants(noun: str) -> set[str]:
-    b = noun.lower()
-    stems = {b, b[:-1]} if (len(b) > 1 and b[-1] in "ăaeio") else {b}
-    out = set(stems)
-    for s in stems:
-        if "a" in s: out.add(s.replace("a", "ă"))
-        if "ă" in s: out.add(s.replace("ă", "a"))
-        if "o" in s: out.add(s[:s.find("o")] + "oa" + s[s.find("o") + 1:])
-        if "oa" in s: out.add(s.replace("oa", "o"))
-        if "e" in s: out.add(s[:s.find("e")] + "ea" + s[s.find("e") + 1:])
-        if "ea" in s: out.add(s.replace("ea", "e"))
-    return out
+class PluralAlt(StrEnum):
+    """Whether the noun's plural form palatalizes the stem-final."""
+
+    ALTERNATES = "alt"
+    NON_ALTERNATING = "nonalt"
 
 
-def categorize(noun: str, etym: str | None) -> str:
-    """Return A/B/C/D/E/F per the etymology category schema:
-      A — cites our noun
-      B — cites 'În + our noun' (prefixed denominal)
-      C — cites a different Romanian word
-      D — cites a foreign source (synchronic pair)
-      E — necunoscută (DEX disclaims any source)
-      F — no etymology field on page or no verb tree
+class Verbalizer(StrEnum):
+    """Verbalizer allomorph the derived verb selects."""
+
+    FRONT_I = "i"
+    BACK_A = "a"
+
+
+@dataclass(frozen=True, slots=True)
+class NounRecord:
+    """A single noun row that passes the contingency-table row filters.
+
+    Frozen + slots: this object flows between layers and shouldn't
+    mutate. ``derived_verbs`` is a tuple so the dataclass is hashable
+    if the caller needs it.
     """
-    if etym is None or etym == "":
-        return "F"
-    et = etym.lower()
-    nv = stem_variants(noun)
-    if UNKNOWN_RE.search(et):
-        return "E"
-    if FOREIGN_RE.search(et):
-        return "D"
-    m = re.search(r'\bvezi\s+([a-zA-ZăâîșțĂÂÎȘȚ]+)', et)
-    if m and any(
-        m.group(1).lower() == v or m.group(1).lower().startswith(v)
-        or v.startswith(m.group(1).lower()) for v in nv
-    ):
-        return "A"
-    m = re.search(r'\b(?:în|îm|in|im)\s*\+\s*([a-zA-ZăâîșțĂÂÎȘȚ]+)', et)
-    if m:
-        c = m.group(1).lower()
-        return "B" if any(c == v or c.startswith(v) or v.startswith(c)
-                          for v in nv) else "C"
-    m = re.search(r'\bA\s*\+\s*([a-zA-ZăâîșțĂÂÎȘȚ]+)', etym)
-    if m:
-        c = m.group(1).lower()
-        return "B" if any(c == v or c.startswith(v) or v.startswith(c)
-                          for v in nv) else "C"
-    m = re.search(r'\b([a-zA-ZăâîșțĂÂÎȘȚ]{2,})', et)
-    if m:
-        c = m.group(1).lower()
-        if c in {"cf", "vezi", "din", "de", "la", "se", "și", "sau"}:
-            m2 = re.search(
-                r'\b[a-zăâîșț]{2,}\s+([a-zA-ZăâîșțĂÂÎȘȚ]{2,})', et)
-            if m2:
-                c = m2.group(1).lower()
-        return "A" if any(c == v or c.startswith(v) or v.startswith(c)
-                          for v in nv) else "C"
-    return "F"
+
+    lemma: str
+    derived_verbs: tuple[str, ...]
+    stem_final: str
+    opportunity: str
+    deriv_suffix: str  # "-i" or "-a"
+    mutation: bool
+    frequency: float
+
+    @property
+    def stem_class(self) -> StemClass:
+        return (
+            StemClass.DORSAL
+            if self.stem_final in DORSAL_STEMS
+            else StemClass.CORONAL
+        )
+
+    @property
+    def plural_alt(self) -> PluralAlt:
+        return (
+            PluralAlt.ALTERNATES
+            if self.mutation
+            else PluralAlt.NON_ALTERNATING
+        )
+
+    @property
+    def verbalizer(self) -> Verbalizer:
+        return (
+            Verbalizer.FRONT_I
+            if self.deriv_suffix == "-i"
+            else Verbalizer.BACK_A
+        )
 
 
-def url_variants(form: str) -> list[str]:
-    q = quote(form)
-    return [
-        f"https://dexonline.ro/definitie/{q}/definitii",
-        f"https://dexonline.ro/definitie/{q}",
-        f"https://dexonline.ro/definitie/{form}/definitii",
-        f"https://dexonline.ro/definitie/{form}",
-    ]
+@dataclass(frozen=True, slots=True)
+class PanelStats:
+    """Fisher 2x2 result for one stem-class panel."""
+
+    alt_i: int
+    alt_a: int
+    nonalt_i: int
+    nonalt_a: int
+
+    @property
+    def n(self) -> int:
+        return self.alt_i + self.alt_a + self.nonalt_i + self.nonalt_a
+
+    @property
+    def is_complete(self) -> bool:
+        """All four marginals non-zero (required by Fisher's exact)."""
+        return (
+            self.alt_i + self.alt_a > 0
+            and self.nonalt_i + self.nonalt_a > 0
+            and self.alt_i + self.nonalt_i > 0
+            and self.alt_a + self.nonalt_a > 0
+        )
+
+    def fisher(self) -> tuple[float, float] | None:
+        if not self.is_complete:
+            return None
+        odds, p = fisher_exact(
+            [[self.alt_i, self.alt_a], [self.nonalt_i, self.nonalt_a]]
+        )
+        return float(odds), float(p)
+
+    def format_line(self, name: str) -> str:
+        head = (
+            f"  {name:8s}:  alt-pl  {self.alt_i:3d}  -i / "
+            f"{self.alt_a:3d}  -a    "
+            f"nonalt-pl  {self.nonalt_i:3d}  -i / "
+            f"{self.nonalt_a:3d}  -a    n = {self.n:4d}"
+        )
+        fisher = self.fisher()
+        if fisher is None:
+            return head
+        odds, p = fisher
+        return f"{head}    OR = {odds:.2f}    p = {p:.3f}"
 
 
-def load_cache_subset(verbs: set[str]) -> dict[str, str]:
-    needed = set()
-    for v in verbs:
-        needed.update(url_variants(v))
-    cache: dict[str, str] = {}
-    with CACHE.open("rb") as f:
-        for k, v in ijson.kvitems(f, ""):
-            if k in needed:
-                cache[k] = v
-    return cache
+# ---------------------------------------------------------------------------
+# Loading
+# ---------------------------------------------------------------------------
 
 
-def get_html(cache: dict[str, str], form: str) -> str | None:
-    for u in url_variants(form):
-        if u in cache:
-            return cache[u]
-    return None
+def _load_records() -> tuple[list[NounRecord], dict[str, float]]:
+    """Read the lexicon CSV and return:
+    - the NounRecord list passing the row filters
+    - a {lemma → frequency} dict for ALL nouns (needed for top-N ranking
+      independently of whether the noun is in the contingency table)
 
+    Filters applied here (the trust boundary):
+      pos == "N"
+      stem_final in TARGET_STEMS
+      mutation field is non-empty
+      opportunity in {i, e, uri}
+      deriv_suffix in {-i, -a}
+      derived_verbs non-empty
+      exception_reason not starting with "nde:"
+    """
+    records: list[NounRecord] = []
+    seen: set[str] = set()
+    frequency_by_lemma: dict[str, float] = {}
 
-def keep_pair(noun: str, dvs: list[str], cache: dict[str, str]) -> bool:
-    """Etymology validation: at least one of the derived verbs must
-    categorize as A, B, or D."""
-    if noun in USER_KEEP:
-        return True
-    cats = set()
-    for dv in dvs:
-        html = get_html(cache, dv)
-        if html is None:
-            cats.add("?")
-            continue
-        cats.add(categorize(noun, get_etym_for_verb(html, dv)))
-    return bool(cats & {"A", "B", "D"})
-
-
-# ===========================================================================
-# Build the table
-# ===========================================================================
-
-def load_data() -> tuple[list[tuple], dict[str, float]]:
-    """Load all (lemma, dvs, stem_final, opportunity, deriv_suffix, mutation,
-    freq) tuples that survive the basic row filters."""
-    work = []
-    seen = set()
-    freq = {}
-    with CSV.open(encoding="utf-8") as f:
-        for r in csv.DictReader(f):
-            if r["pos"] != "N":
+    with CSV_PATH.open(encoding="utf-8") as f:
+        for row in csv.DictReader(f):
+            if row["pos"] != "N":
                 continue
+            lemma = row["lemma"]
             try:
-                freq[r["lemma"]] = float(r.get("freq_ron_news_2024_1M") or 0)
+                freq = float(row.get("freq_ron_news_2024_1M") or 0)
             except ValueError:
-                freq[r["lemma"]] = 0.0
-            sf = r["stem_final"]
-            if sf not in SEGS_DORSAL | SEGS_CORONAL:
+                freq = 0.0
+            frequency_by_lemma[lemma] = freq
+
+            stem_final = row["stem_final"]
+            if stem_final not in TARGET_STEMS:
                 continue
-            mut_str = r["mutation"].strip()
-            if mut_str == "":
+            if row["mutation"].strip() == "":
                 continue
-            opp = r["opportunity"].strip()
-            if opp not in PLURAL_FRONT and opp != "uri":
+            opp = row["opportunity"].strip()
+            if opp not in PLURAL_FRONT_OPPS and opp != "uri":
                 continue
-            ds = r["deriv_suffixes"].strip()
-            if ds not in ("-i", "-a"):
+            deriv_suffix = row["deriv_suffixes"].strip()
+            if deriv_suffix not in ACCEPTED_VERBALIZERS:
                 continue
-            dv_str = (r.get("derived_verbs") or "").strip()
-            if not dv_str:
+            derived_verbs_field = (row.get("derived_verbs") or "").strip()
+            if not derived_verbs_field:
                 continue
-            if (r.get("exception_reason") or "").startswith("nde:"):
+            if (row.get("exception_reason") or "").startswith("nde:"):
                 continue
-            if r["lemma"] in seen:
+            if lemma in seen:
                 continue
-            seen.add(r["lemma"])
-            mutation = mut_str.upper() == "TRUE"
-            dvs = [d.strip() for d in dv_str.split("|") if d.strip()]
-            work.append((r["lemma"], dvs, sf, opp, ds, mutation,
-                         freq[r["lemma"]]))
-    return work, freq
+            seen.add(lemma)
+            verbs = tuple(
+                v.strip() for v in derived_verbs_field.split("|") if v.strip()
+            )
+            records.append(
+                NounRecord(
+                    lemma=lemma,
+                    derived_verbs=verbs,
+                    stem_final=stem_final,
+                    opportunity=opp,
+                    deriv_suffix=deriv_suffix,
+                    mutation=row["mutation"].strip().upper() == "TRUE",
+                    frequency=freq,
+                )
+            )
+    return records, frequency_by_lemma
 
 
-def fisher_panel(name: str, cells: Counter) -> str:
-    fi = cells[("alt", "i")]
-    fa = cells[("alt", "a")]
-    bi = cells[("nonalt", "i")]
-    ba = cells[("nonalt", "a")]
-    n = fi + fa + bi + ba
-    out = (f"  {name:8s}:  alt-pl  {fi:3d}  -i / {fa:3d}  -a    "
-           f"nonalt-pl  {bi:3d}  -i / {ba:3d}  -a    n = {n:4d}")
-    if (fi + fa) > 0 and (bi + ba) > 0 and (fi + bi) > 0 and (fa + ba) > 0:
-        odds, p = fisher_exact([[fi, fa], [bi, ba]])
-        out += f"    OR = {odds:.2f}    p = {p:.3f}"
-    return out
+# ---------------------------------------------------------------------------
+# Etymology audit
+# ---------------------------------------------------------------------------
 
 
-def build(work: list[tuple], cache: dict[str, str],
-          freq_filter) -> tuple[dict[str, Counter], int]:
-    """Build the three panels (dorsal / coronal / pooled) over the rows
-    that pass etymology validation and the frequency filter."""
-    cells = {"dorsal": Counter(), "coronal": Counter(),
-             "pooled": Counter()}
-    n_kept = 0
-    for noun, dvs, sf, opp, ds, mutation, fr in work:
-        if not freq_filter(noun, fr):
+def _passes_etymology_audit(record: NounRecord, cache: dict[str, str]) -> bool:
+    """At least one derived verb must classify as A, B, or D, OR the
+    lemma must appear in USER_KEEP."""
+    if record.lemma in USER_KEEP:
+        return True
+    for verb in record.derived_verbs:
+        html = get_html(cache, verb)
+        if html is None:
             continue
-        if not keep_pair(noun, dvs, cache):
+        etymology = get_verb_etymology(html, verb)
+        if is_accepted(categorize_etymology(record.lemma, etymology)):
+            return True
+    return False
+
+
+# ---------------------------------------------------------------------------
+# Table building
+# ---------------------------------------------------------------------------
+
+
+_ScopeFilter = Callable[[NounRecord], bool]
+
+
+def _build_panels(
+    records: list[NounRecord],
+    cache: dict[str, str],
+    scope: _ScopeFilter,
+) -> tuple[dict[StemClass | str, PanelStats], int]:
+    """Build dorsal, coronal, and pooled panels for the records that
+    pass ``scope`` and the etymology audit.
+
+    Returns the three panels keyed by ``StemClass`` plus a sentinel
+    "pooled" string, and the count of kept records.
+    """
+    cells: dict[StemClass | str, Counter[tuple[PluralAlt, Verbalizer]]] = {
+        StemClass.DORSAL: Counter(),
+        StemClass.CORONAL: Counter(),
+        "pooled": Counter(),
+    }
+    n_kept = 0
+    for record in records:
+        if not scope(record):
+            continue
+        if not _passes_etymology_audit(record, cache):
             continue
         n_kept += 1
-        seg = "dorsal" if sf in SEGS_DORSAL else "coronal"
-        row = "alt" if mutation else "nonalt"
-        col = "i" if ds == "-i" else "a"
-        cells[seg][(row, col)] += 1
-        cells["pooled"][(row, col)] += 1
-    return cells, n_kept
+        key = (record.plural_alt, record.verbalizer)
+        cells[record.stem_class][key] += 1
+        cells["pooled"][key] += 1
+
+    def pack(c: Counter[tuple[PluralAlt, Verbalizer]]) -> PanelStats:
+        return PanelStats(
+            alt_i=c[(PluralAlt.ALTERNATES, Verbalizer.FRONT_I)],
+            alt_a=c[(PluralAlt.ALTERNATES, Verbalizer.BACK_A)],
+            nonalt_i=c[(PluralAlt.NON_ALTERNATING, Verbalizer.FRONT_I)],
+            nonalt_a=c[(PluralAlt.NON_ALTERNATING, Verbalizer.BACK_A)],
+        )
+
+    return (
+        {k: pack(v) for k, v in cells.items()},
+        n_kept,
+    )
 
 
-def main():
-    work, freq = load_data()
-    print(f"Loaded {len(work)} (lemma, dvs, ...) tuples that pass row filters.")
-    all_dvs = {dv for _, dvs, *_ in work for dv in dvs}
-    cache = load_cache_subset(all_dvs)
-    print(f"Cached DEX pages: {len(cache)} (for {len(all_dvs)} unique verbs)")
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
 
-    ranked = sorted(freq.items(), key=lambda x: -x[1])
-    top1000 = {lem for lem, _ in ranked[:1000]}
 
-    scopes = [
-        ("TOP-1000", lambda n, fr: n in top1000),
-        ("FULL DEX", lambda n, fr: True),
+def main() -> None:
+    records, frequency_by_lemma = _load_records()
+    print(
+        f"Loaded {len(records)} (lemma, dvs, ...) tuples "
+        f"that pass row filters."
+    )
+
+    unique_verbs = {v for r in records for v in r.derived_verbs}
+    cache = load_cache_subset(unique_verbs, cache_path=CACHE_PATH)
+    print(
+        f"Cached DEX pages: {len(cache)} "
+        f"(for {len(unique_verbs)} unique verbs)"
+    )
+
+    ranked = sorted(frequency_by_lemma.items(), key=lambda kv: -kv[1])
+    top_lemmas: frozenset[str] = frozenset(
+        lemma for lemma, _ in ranked[:TOP_N_FREQUENCY]
+    )
+
+    scopes: list[tuple[str, _ScopeFilter]] = [
+        (f"TOP-{TOP_N_FREQUENCY}", lambda r: r.lemma in top_lemmas),
+        ("FULL DEX", lambda r: True),
     ]
 
     print("\n" + "=" * 78)
-    print("Contingency table: row = plural alternates (mutation),"
-          " column = verbalizer allomorph")
+    print(
+        "Contingency table: row = plural alternates (mutation),"
+        " column = verbalizer allomorph"
+    )
     print("=" * 78)
-    for label, fn in scopes:
-        cells, n = build(work, cache, fn)
-        print(f"\n{label}  (n_kept = {n})")
-        for s in ("dorsal", "coronal", "pooled"):
-            print(fisher_panel(s, cells[s]))
+    for label, scope in scopes:
+        panels, n_kept = _build_panels(records, cache, scope)
+        print(f"\n{label}  (n_kept = {n_kept})")
+        for name in (StemClass.DORSAL, StemClass.CORONAL, "pooled"):
+            stats = panels[name]
+            display_name = name.value if isinstance(name, StemClass) else name
+            print(stats.format_line(display_name))
 
 
 if __name__ == "__main__":
