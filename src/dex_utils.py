@@ -6,8 +6,12 @@ used by the harvester and the DEX-supplement scripts.
 
 Cache architecture
 ------------------
-- ``HTML_CACHE`` is a small in-process dict (L1). It satisfies repeat
-  lookups within a single run without hitting disk.
+- ``HTML_CACHE`` is a bounded LRU (L1) — a :class:`_BoundedL1Cache`
+  with a hard size cap (``DEX_L1_MAX``, default 512 entries). It
+  satisfies repeat lookups within a single run without hitting disk
+  while capping resident memory at ~entries * avg_html_size. The cap
+  is critical for the bulk-fill driver: 200k unique URLs at ~150 KB
+  each in an unbounded dict would balloon to ~30 GB and OOM the host.
 - ``DISK_CACHE`` is a SQLite-backed k/v store (L2). It persists across
   runs. Every successful HTTP fetch writes through to L2, so worker
   threads see each other's writes immediately and crashes don't lose
@@ -20,26 +24,32 @@ and there is no module-import I/O cost.
 
 Thread safety
 -------------
-- ``_CACHE_LOCK`` guards mutations of the in-memory ``HTML_CACHE``.
-- The :class:`_SqliteKVStore` carries its own internal lock for its
+- :class:`_BoundedL1Cache` carries its own internal lock that guards
+  the OrderedDict and the LRU bookkeeping. The ``try_get`` helper
+  exposes an atomic check-and-fetch so callers don't need an external
+  lock to bridge ``__contains__`` and ``__getitem__``.
+- :class:`_SqliteKVStore` carries its own internal lock for its
   SQLite connection (single shared connection used across worker
   threads, per SQLite's threading model with ``check_same_thread=False``).
 - The two locks protect disjoint resources, so they can't deadlock.
 """
 
+import os
 import random
 import re
 import sqlite3
 import threading
 import time
 import unicodedata
+from collections import OrderedDict
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
+from typing import List, Optional, Set, Tuple
 from urllib.parse import quote
 
 import requests
 from bs4 import BeautifulSoup
+from requests.adapters import HTTPAdapter
 
 # ------------------------------------------------------------
 # Config (polite crawling)
@@ -50,10 +60,20 @@ UA = (
     "(+academic research on Romanian palatalization; "
     "contact via github.com/anthropics/claude-code)"
 )
-HEADERS = {"User-Agent": UA}
-THROTTLE = (0.05, 0.1)  # jittered sleep per request (min, max)
-RETRIES = 4
-TIMEOUT = 10
+HEADERS = {"User-Agent": UA, "Accept-Encoding": "gzip, deflate, br"}
+# Throttle bounds (sec). Tunable via DEX_THROTTLE_MIN / DEX_THROTTLE_MAX
+# so a bulk-fill driver can choose a faster cadence without editing code.
+# Defaults stay polite (~10-20 req/s per worker before network latency).
+THROTTLE: Tuple[float, float] = (
+    float(os.environ.get("DEX_THROTTLE_MIN", "0.05")),
+    float(os.environ.get("DEX_THROTTLE_MAX", "0.10")),
+)
+RETRIES = int(os.environ.get("DEX_RETRIES", "4"))
+TIMEOUT = int(os.environ.get("DEX_TIMEOUT", "10"))
+# Connection pool sizing. The default urllib3 adapter caps at 10
+# connections per host; with N>=16 workers all hitting dexonline.ro
+# that becomes the bottleneck. Bump it to match plausible worker counts.
+_POOL_SIZE = int(os.environ.get("DEX_POOL_SIZE", "32"))
 
 KEEP_POS = {"s.m.", "s.f.", "s.n.", "adj.", "vb."}
 DASHES = {"-", "—", "–"}
@@ -276,7 +296,94 @@ class DexEntry:  # pylint: disable=too-many-instance-attributes
 # ------------------------------------------------------------
 SESSION = requests.Session()
 SESSION.headers.update(HEADERS)
-HTML_CACHE: Dict[str, str] = {}  # In-memory L1 cache for this run
+# Mount a wider adapter pool so N>>10 workers don't queue on a starved
+# connection pool. urllib3's default pool_maxsize is 10; once N workers
+# exceed that, requests block waiting for a free connection slot.
+_HTTP_ADAPTER = HTTPAdapter(
+    pool_connections=_POOL_SIZE,
+    pool_maxsize=_POOL_SIZE,
+    pool_block=False,
+    max_retries=0,  # we handle retries in polite_get
+)
+SESSION.mount("https://", _HTTP_ADAPTER)
+SESSION.mount("http://", _HTTP_ADAPTER)
+
+
+class _BoundedL1Cache:
+    """Thread-safe size-bounded LRU cache for HTML strings.
+
+    The L1 cache satisfies repeat lookups within a single run. It used
+    to be an unbounded dict, which is a memory-safety hazard for a
+    200k-fetch bulk fill: at ~50-500 KB per page the RSS would grow
+    into the tens of GB and OOM the environment.
+
+    This class caps the resident-set entries at ``max_entries``
+    (default 512, tunable via the ``DEX_L1_MAX`` env var). On overflow
+    the least-recently-used entry is evicted; the on-disk SQLite L2
+    cache holds the canonical copy and re-promotes on next demand.
+
+    ``try_get`` returns the html string or ``None`` in a single
+    atomic critical section, replacing the contains-then-get pattern
+    callers used to write under an external lock.
+    """
+
+    __slots__ = ("_max", "_lock", "_data")
+
+    def __init__(self, max_entries: int) -> None:
+        self._max = max(1, max_entries)
+        self._lock = threading.Lock()
+        self._data: "OrderedDict[str, str]" = OrderedDict()
+
+    def __contains__(self, url: object) -> bool:
+        if not isinstance(url, str):
+            return False
+        with self._lock:
+            return url in self._data
+
+    def __getitem__(self, url: str) -> str:
+        with self._lock:
+            html = self._data[url]
+            self._data.move_to_end(url)
+            return html
+
+    def __setitem__(self, url: str, html: str) -> None:
+        with self._lock:
+            if url in self._data:
+                self._data.move_to_end(url)
+                self._data[url] = html
+                return
+            self._data[url] = html
+            # Evict LRU entries until we're back at the cap. Always
+            # the head of the OrderedDict by construction.
+            while len(self._data) > self._max:
+                self._data.popitem(last=False)
+
+    def __len__(self) -> int:
+        with self._lock:
+            return len(self._data)
+
+    def try_get(self, url: str) -> Optional[str]:
+        """Atomic check-and-fetch; returns ``None`` on miss.
+
+        Equivalent to ``cache[url] if url in cache else None`` but
+        without the race window between ``__contains__`` and
+        ``__getitem__`` where a concurrent eviction could turn the
+        get into a KeyError.
+        """
+        with self._lock:
+            html = self._data.get(url)
+            if html is None:
+                return None
+            self._data.move_to_end(url)
+            return html
+
+    def clear(self) -> None:
+        with self._lock:
+            self._data.clear()
+
+
+_L1_MAX = int(os.environ.get("DEX_L1_MAX", "512"))
+HTML_CACHE: _BoundedL1Cache = _BoundedL1Cache(_L1_MAX)
 
 
 class _SqliteKVStore:
@@ -301,12 +408,24 @@ class _SqliteKVStore:
         self._path = path
         self._lock = threading.Lock()
         self._conn = sqlite3.connect(str(path), check_same_thread=False)
-        # Default DELETE journal mode keeps the per-transaction
-        # journal small; commits are durable per-row.
-        self._conn.execute(
-            "CREATE TABLE IF NOT EXISTS cache "
-            "(url TEXT PRIMARY KEY, html TEXT NOT NULL)"
-        )
+        # Performance PRAGMAs for a fetch cache. The cache is recoverable
+        # (we can always re-fetch from DEX), so trading FULL fsync for
+        # NORMAL is the right safety/speed point: per-commit fsync stays
+        # but per-page fsync inside a transaction is skipped. On a crash
+        # we lose at most the last unfsync'd group of pages, not the
+        # whole DB.
+        #   journal_mode = DELETE keeps the per-transaction journal
+        #   small. WAL was rejected after a prior crash left a 6.7 GB
+        #   orphan .wal file.
+        self._conn.executescript("""
+            PRAGMA journal_mode = DELETE;
+            PRAGMA synchronous = NORMAL;
+            PRAGMA temp_store = MEMORY;
+            PRAGMA cache_size = -65536;
+            PRAGMA mmap_size = 268435456;
+            CREATE TABLE IF NOT EXISTS cache
+                (url TEXT PRIMARY KEY, html TEXT NOT NULL);
+            """)
         self._conn.commit()
 
     def __contains__(self, url: object) -> bool:
@@ -344,8 +463,6 @@ class _SqliteKVStore:
 # Persistent disk cache (SQLite, in repo root).
 DISK_CACHE_PATH = Path(__file__).resolve().parent.parent / "dex_cache.db"
 DISK_CACHE: _SqliteKVStore = _SqliteKVStore(DISK_CACHE_PATH)
-# Guards mutations of HTML_CACHE only. DISK_CACHE has its own lock.
-_CACHE_LOCK = threading.Lock()
 
 
 def load_disk_cache() -> None:
@@ -378,45 +495,55 @@ def _cached_response(url: str, html: str) -> requests.Response:
 def polite_get(url: str) -> requests.Response:
     """GET with retries, rate limiting, and persistent caching.
 
-    L1 (in-memory ``HTML_CACHE``) is checked first under
-    ``_CACHE_LOCK``. L2 (SQLite ``DISK_CACHE``) is checked next; on
+    L1 (in-memory ``HTML_CACHE``, bounded LRU) is checked first via
+    one atomic call. L2 (SQLite ``DISK_CACHE``) is checked next; on
     L2 hit the page is promoted to L1 so subsequent requests within
     the same run avoid the SQLite round-trip.
 
     On HTTP success the page is written to both L1 and L2. The L2
     write is durable (one INSERT-or-REPLACE commit), so a crash
     mid-batch does not lose successful fetches.
+
+    On 4xx/5xx exhausting all retries, the last ``RequestException``
+    is re-raised. 429/503 retries don't set ``last_exc`` directly,
+    so on pure-429-exhaustion we synthesize one rather than raise
+    ``RuntimeError`` (which would lose the HTTP status code).
     """
-    with _CACHE_LOCK:
-        if url in HTML_CACHE:
-            return _cached_response(url, HTML_CACHE[url])
+    cached = HTML_CACHE.try_get(url)
+    if cached is not None:
+        return _cached_response(url, cached)
     if url in DISK_CACHE:
         html = DISK_CACHE[url]
-        with _CACHE_LOCK:
-            HTML_CACHE[url] = html
+        HTML_CACHE[url] = html
         return _cached_response(url, html)
     last_exc: Optional[requests.RequestException] = None
+    last_status: Optional[int] = None
     for attempt in range(1, RETRIES + 1):
         try:
             response = SESSION.get(url, timeout=TIMEOUT)
             if response.status_code in (429, 503):
+                last_status = response.status_code
                 time.sleep(min(10, attempt * 1.5))
                 continue
             response.raise_for_status()
             text = response.text
-            with _CACHE_LOCK:
-                HTML_CACHE[url] = text
+            HTML_CACHE[url] = text
             DISK_CACHE[url] = text
             time.sleep(random.uniform(*THROTTLE))
             return response
         except requests.RequestException as exc:
             last_exc = exc
             time.sleep(min(10, attempt * 1.2))
-    if last_exc is None:
-        raise RuntimeError(
-            f"Failed to retrieve {url} after {RETRIES} attempts"
+    if last_exc is not None:
+        raise last_exc
+    # Retries exhausted on 429/503 only. Synthesize a real
+    # HTTPError so callers can introspect the status code instead
+    # of guessing why a RuntimeError surfaced.
+    if last_status is not None:
+        raise requests.HTTPError(
+            f"{last_status} from {url} after {RETRIES} attempts"
         )
-    raise last_exc
+    raise RuntimeError(f"Failed to retrieve {url} after {RETRIES} attempts")
 
 
 # ------------------------------------------------------------

@@ -19,15 +19,15 @@ supplemented CSV.
 Concurrency
 -----------
 Workers are bounded by ``N_WORKERS`` and share the DEX disk cache.
-Cache mutation is guarded by ``_CACHE_LOCK`` in ``dex_utils``;
-``save_disk_cache`` writes atomically via tmp-file + rename. The
-periodic ``save_every`` checkpoint keeps the cache crash-safe across
-long runs.
+Cache mutation is guarded by the SQLite store's internal lock in
+``dex_utils``; each successful fetch is committed per-row, so a crash
+mid-run does not lose successful fetches.
 """
 
 from __future__ import annotations
 
 import csv
+import os
 import re
 import sys
 import threading
@@ -44,7 +44,6 @@ from dex_utils import (  # noqa: E402
     HTML_CACHE,
     norm_lemma,
     polite_get,
-    save_disk_cache,
 )
 
 REPO: Final[Path] = Path(__file__).parent.parent
@@ -63,8 +62,13 @@ TARGET_STEMS: Final[frozenset[str]] = frozenset({"c", "g", "t", "d", "s", "z"})
 # Limit to the N highest-frequency eligible lemmas. None = process all.
 TOP_N_BY_FREQUENCY: Final[int | None] = None
 
-# Concurrent workers for DEX queries.
-N_WORKERS: int = 8
+# Concurrent workers for DEX queries. The polite-crawl throttle in
+# dex_utils.polite_get plus dexonline.ro's tolerance support
+# substantially more than 8. 16 is a conservative default; raise via
+# the DEX_SUPPLEMENT_WORKERS env var if your network and DEX latency
+# can sustain it. The HTTPAdapter pool size in dex_utils is sized for
+# 32 concurrent connections by default.
+N_WORKERS: int = int(os.environ.get("DEX_SUPPLEMENT_WORKERS", "16"))
 
 # ---------------------------------------------------------------------------
 # Candidate generation
@@ -146,9 +150,14 @@ def _title_lemma(html: str) -> str | None:
 
 
 def _fast_get_html(candidate: str) -> str | None:
-    """Return cached HTML for `candidate` without BeautifulSoup parsing.
-    Falls back to polite_get only if not in cache. Uses URL-encoded keys
-    matching what polite_get would store (urllib.parse.quote)."""
+    """Return cached HTML for ``candidate`` without BeautifulSoup parsing.
+
+    Probes the L1 (HTML_CACHE) and L2 (DISK_CACHE) caches across a few
+    URL variants the harvester or QC scripts may have written under
+    (the historical cache mixes quoted and unquoted forms). Falls back
+    to polite_get only when no variant is cached, so warm runs do zero
+    network I/O.
+    """
     from urllib.parse import quote
 
     cand = norm_lemma(candidate)
@@ -158,17 +167,22 @@ def _fast_get_html(candidate: str) -> str | None:
     urls = [
         f"https://dexonline.ro/definitie/{cand_quoted}/definitii",
         f"https://dexonline.ro/definitie/{cand_quoted}",
-        # Also try the unquoted form in case any cached entries used it
+        # Also try the unquoted form in case any cached entries used it.
         f"https://dexonline.ro/definitie/{cand}/definitii",
         f"https://dexonline.ro/definitie/{cand}",
     ]
     for url in urls:
-        if url in HTML_CACHE:
-            return HTML_CACHE[url]
+        # Atomic check-and-fetch avoids the contains/get race window
+        # under L1 eviction; the bounded L1 cache may evict between
+        # a separate ``in`` test and indexing.
+        hit = HTML_CACHE.try_get(url)
+        if hit is not None:
+            return hit
         if url in DISK_CACHE:
-            HTML_CACHE[url] = DISK_CACHE[url]
-            return DISK_CACHE[url]
-    # Cache miss — fetch via polite_get (handles throttle, cache write, retries).
+            html = DISK_CACHE[url]
+            HTML_CACHE[url] = html
+            return html
+    # Cold miss — fetch via polite_get (handles throttle + writes).
     try:
         resp = polite_get(urls[0])
         return resp.text
@@ -300,7 +314,6 @@ def main() -> None:
     state = {"idx": 0}
 
     t0 = time.time()
-    save_every = 500
 
     def process_row(row: dict[str, str]) -> None:
         nonlocal queries, confirmed
@@ -337,8 +350,6 @@ def main() -> None:
                     f"eta_total={est_total:.0f}min",
                     flush=True,
                 )
-            if idx % save_every == 0:
-                save_disk_cache()
 
     print(f"\nLaunching {N_WORKERS} worker threads ...")
     with ThreadPoolExecutor(max_workers=N_WORKERS) as pool:
@@ -349,7 +360,6 @@ def main() -> None:
             except Exception as e:
                 print(f"  worker error: {e!r}", flush=True)
 
-    save_disk_cache()
     elapsed = time.time() - t0
 
     print("\n=== Done ===")

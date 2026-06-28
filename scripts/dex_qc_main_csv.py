@@ -15,8 +15,12 @@ Usage:
 """
 
 import csv
+import os
 import sys
+import threading
+import time
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -30,8 +34,14 @@ from dex_utils import (  # noqa: E402  # pylint: disable=wrong-import-position
     dex_has_entry,
     fetch_dex_page,
     norm_lemma,
-    save_disk_cache,
 )
+
+# Concurrent workers for DEX fetches. The polite-crawl throttle in
+# dex_utils.polite_get already limits per-worker request rate; with
+# DEX_THROTTLE_MIN=0.05 a single worker peaks around ~10 req/s before
+# network latency, so 16 workers stay well below dexonline.ro's
+# tolerable load. Override via DEX_QC_WORKERS env var.
+N_WORKERS: int = int(os.environ.get("DEX_QC_WORKERS", "16"))
 
 # ------------------------------------------------------------
 # Config
@@ -284,6 +294,25 @@ def detect_disagreement(
 # ------------------------------------------------------------
 # Main QC pipeline helpers
 # ------------------------------------------------------------
+def _maybe_log_qc_progress(done: int, total: int, t0: float) -> None:
+    """Print a progress line every 50 completions during parallel QC.
+
+    Called under ``state_lock`` so the rate calculation reflects the
+    counter snapshot used for the print.
+    """
+    if done % 50:
+        return
+    elapsed = time.time() - t0
+    rate = done / elapsed if elapsed > 0 else 0.0
+    eta_min = ((total - done) / rate / 60.0) if rate > 0 else float("inf")
+    print(
+        f"  [{done:5}/{total}]  rate={rate:.2f} lemmas/s  "
+        f"elapsed={elapsed / 60:.1f}min  "
+        f"eta_remaining={eta_min:.1f}min",
+        flush=True,
+    )
+
+
 def _create_audit_record(
     target: QCTarget, status: str, changes: str = "", dex_url: str = ""
 ) -> Dict[str, Any]:
@@ -368,70 +397,105 @@ def _qc_derivational_fields(
     Light-weight QC on derived_verbs / derived_adj using DEX.
 
     Strategy:
-      - For each lemma with non-empty derived_verbs / derived_adj:
-          * Split the pipe-separated list.
-          * For each derived lemma, check whether DEX has any entry.
-          * If DEX clearly has no entry for that lemma, drop it.
-      - Log any pruning into the existing audit log.
+      - Pass 1: collect every unique derived lemma referenced by any
+        row's derived_verbs / derived_adj column.
+      - Pass 2: hit DEX in parallel (N_WORKERS) to populate the
+        presence map. The check itself is read-only with respect to
+        the rows list, so this fan-out is safe.
+      - Pass 3: walk rows sequentially, prune lemmas marked absent,
+        log the pruning into the existing audit log.
 
-    We never drop data just because of network errors or exhausted budget.
+    We never drop data just because of network errors or exhausted
+    budget. The split between fetch (slow, parallel) and filter (fast,
+    sequential) lets the network phase dominate wall-clock.
     """
 
-    # Cache: derived lemma -> bool (True = DEX has entry, False = clearly no)
+    # Pass 1: collect unique derived lemmas (after normalization).
+    unique_derived: List[str] = []
+    seen: set[str] = set()
+    for row in rows:
+        for field in ("derived_verbs", "derived_adj"):
+            raw = (row.get(field) or "").strip()
+            if not raw:
+                continue
+            for part in raw.split("|"):
+                norm = norm_lemma(part.strip())
+                if norm and norm not in seen:
+                    seen.add(norm)
+                    unique_derived.append(norm)
+
+    if not unique_derived:
+        return
+
+    # Pass 2: parallel DEX presence checks.
+    print(
+        f"  Derivational QC: {len(unique_derived):,} unique lemmas to "
+        f"check (workers={N_WORKERS})"
+    )
     dex_presence_cache: Dict[str, bool] = {}
-    queries_used = 0
+    cache_lock = threading.Lock()
+    # Bound the budget atomically so concurrent workers don't all
+    # decide there's still budget at the same moment.
+    budget_lock = threading.Lock()
+    state = {"queries_used": 0}
+    t0 = time.time()
 
-    def _has_dex(lemma: str) -> bool:
-        nonlocal queries_used
-        lemma_norm = norm_lemma(lemma)
-        if not lemma_norm:
-            return False
-
-        if lemma_norm in dex_presence_cache:
-            return dex_presence_cache[lemma_norm]
-
-        if max_extra_queries is not None and queries_used >= max_extra_queries:
-            # Budget exhausted: be conservative and KEEP it
-            dex_presence_cache[lemma_norm] = True
-            return True
-
+    def _check(lemma_norm: str) -> None:
+        with budget_lock:
+            if (
+                max_extra_queries is not None
+                and state["queries_used"] >= max_extra_queries
+            ):
+                # Budget exhausted: be conservative and KEEP it.
+                with cache_lock:
+                    dex_presence_cache[lemma_norm] = True
+                return
+            state["queries_used"] += 1
         try:
             present = dex_has_entry(lemma_norm, restrict_to_keep_pos=False)
         except Exception:
-            # On any error, don't nuke the data
+            # On any error, don't nuke the data.
             present = True
+        with cache_lock:
+            dex_presence_cache[lemma_norm] = present
 
-        dex_presence_cache[lemma_norm] = present
-        queries_used += 1
-        return present
+    with ThreadPoolExecutor(max_workers=N_WORKERS) as pool:
+        futures = [pool.submit(_check, lem) for lem in unique_derived]
+        done = 0
+        for fut in as_completed(futures):
+            fut.result()
+            done += 1
+            if done % 100 == 0:
+                elapsed = time.time() - t0
+                rate = done / elapsed if elapsed > 0 else 0.0
+                print(
+                    f"    deriv-QC [{done:5}/{len(unique_derived)}] "
+                    f"rate={rate:.2f}/s elapsed={elapsed / 60:.1f}min",
+                    flush=True,
+                )
 
+    # Pass 3: sequential prune + audit-log emission.
     for row in rows:
         base_lemma = row.get("lemma") or ""
         for field in ("derived_verbs", "derived_adj"):
             raw = (row.get(field) or "").strip()
             if not raw:
                 continue
-
             parts = [p.strip() for p in raw.split("|")]
             lemmas = [norm_lemma(p) for p in parts if norm_lemma(p)]
             if not lemmas:
                 continue
-
             kept: List[str] = []
             dropped: List[str] = []
-
             for dlemma in lemmas:
-                if _has_dex(dlemma):
+                # default True when unseen (e.g., empty-input lemma)
+                if dex_presence_cache.get(dlemma, True):
                     kept.append(dlemma)
                 else:
                     dropped.append(dlemma)
-
-            # Nothing pruned → nothing to log
             if not dropped:
                 continue
-
             row[field] = " | ".join(kept) if kept else ""
-
             audit_records.append(
                 {
                     "lemma": base_lemma,
@@ -496,9 +560,16 @@ def run_qc(  # pylint: disable=too-many-locals
     disagreement_records: List[Dict[str, Any]] = []
     repaired_count = 0
     failed_count = 0
-    for i, lemma in enumerate(unique_lemmas, 1):
-        if i % 25 == 0:
-            print(f"Processing {i}/{len(unique_lemmas)}...")
+    # Shared-state lock protects audit/disagreement lists and counters.
+    # Per-row writes in _process_targets_for_lemma touch disjoint
+    # row_idx values across lemmas, so the rows list itself is safe to
+    # mutate without a lock.
+    state_lock = threading.Lock()
+    progress = {"done": 0}
+    t0 = time.time()
+
+    def _worker(lemma: str) -> None:
+        nonlocal repaired_count, failed_count
         try:
             headers, _ = fetch_dex_page(lemma)
             dex_entry = best_dex_noun_header(headers, lemma)
@@ -506,21 +577,51 @@ def run_qc(  # pylint: disable=too-many-locals
                 new_audit, fail_count = _process_no_dex_entry(
                     targets_by_lemma[lemma]
                 )
-                audit_records.extend(new_audit)
-                failed_count += fail_count
-                continue
-            new_audit, new_disagreements, repairs = _process_targets_for_lemma(
+                with state_lock:
+                    audit_records.extend(new_audit)
+                    failed_count += fail_count
+                    progress["done"] += 1
+                    _maybe_log_qc_progress(
+                        progress["done"], len(unique_lemmas), t0
+                    )
+                return
+            (
+                new_audit,
+                new_disagreements,
+                repairs,
+            ) = _process_targets_for_lemma(
                 targets_by_lemma[lemma], rows, dex_entry
             )
-            audit_records.extend(new_audit)
-            disagreement_records.extend(new_disagreements)
-            repaired_count += repairs
+            with state_lock:
+                audit_records.extend(new_audit)
+                disagreement_records.extend(new_disagreements)
+                repaired_count += repairs
+                progress["done"] += 1
+                _maybe_log_qc_progress(
+                    progress["done"], len(unique_lemmas), t0
+                )
         except Exception as exc:  # pylint: disable=broad-exception-caught
             new_audit, fail_count = _process_error(
                 targets_by_lemma[lemma], exc
             )
-            audit_records.extend(new_audit)
-            failed_count += fail_count
+            with state_lock:
+                audit_records.extend(new_audit)
+                failed_count += fail_count
+                progress["done"] += 1
+                _maybe_log_qc_progress(
+                    progress["done"], len(unique_lemmas), t0
+                )
+
+    print(f"\nLaunching {N_WORKERS} worker threads for QC fetch ...")
+    with ThreadPoolExecutor(max_workers=N_WORKERS) as pool:
+        for fut in as_completed(
+            pool.submit(_worker, lemma) for lemma in unique_lemmas
+        ):
+            # Propagate any unexpected worker-internal exceptions
+            # (the _worker body catches per-lemma errors itself, so
+            # anything reaching here is a programmer bug, not a
+            # network blip — surface it loudly).
+            fut.result()
     _qc_derivational_fields(
         rows,
         audit_records,
@@ -555,7 +656,6 @@ def run_qc(  # pylint: disable=too-many-locals
                             rec.get("dex_url", ""),
                         ]
                     )
-    save_disk_cache()
     print("\n=== DEX QC Summary ===")
     print(f"Total rows:            {len(rows)}")
     print(f"Rows needing QC:       {len(targets)}")
