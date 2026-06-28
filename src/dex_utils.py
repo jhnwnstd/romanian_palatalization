@@ -1,13 +1,35 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Core DEX (Dicționarul Explicativ al Limbii Române) lookup utilities.
-Extracted from dex_lookup.py to be reusable by QC scripts.
+"""Core DEX (Dicționarul Explicativ al Limbii Române) lookup utilities.
+
+Exposes :func:`polite_get` and the persistent ``DISK_CACHE`` k/v store
+used by the harvester and the DEX-supplement scripts.
+
+Cache architecture
+------------------
+- ``HTML_CACHE`` is a small in-process dict (L1). It satisfies repeat
+  lookups within a single run without hitting disk.
+- ``DISK_CACHE`` is a SQLite-backed k/v store (L2). It persists across
+  runs. Every successful HTTP fetch writes through to L2, so worker
+  threads see each other's writes immediately and crashes don't lose
+  partial work.
+
+The L2 store used to be a single 6.9 GB JSON file loaded into memory at
+module-import time. That implementation has been retired; the on-disk
+schema is now SQLite (``dex_cache.db``). Random lookups are O(log n)
+and there is no module-import I/O cost.
+
+Thread safety
+-------------
+- ``_CACHE_LOCK`` guards mutations of the in-memory ``HTML_CACHE``.
+- The :class:`_SqliteKVStore` carries its own internal lock for its
+  SQLite connection (single shared connection used across worker
+  threads, per SQLite's threading model with ``check_same_thread=False``).
+- The two locks protect disjoint resources, so they can't deadlock.
 """
 
-import json
 import random
 import re
+import sqlite3
 import threading
 import time
 import unicodedata
@@ -63,12 +85,12 @@ _SHORT_POS_MAP = {"f": "s.f.", "m": "s.m.", "n": "s.n."}
 # ------------------------------------------------------------
 # Helpers / normalization
 # ------------------------------------------------------------
-def nfc(s: str) -> str:
+def _nfc(s: str) -> str:
     """Normalize to Unicode NFC."""
     return unicodedata.normalize("NFC", s or "")
 
 
-def norm_ws(s: str) -> str:
+def _norm_ws(s: str) -> str:
     """
     Normalize whitespace: replace nbsp/narrow-nbsp with regular space,
     collapse runs.
@@ -79,13 +101,13 @@ def norm_ws(s: str) -> str:
 
 def norm_lemma(s: str) -> str:
     """Normalize lemma: NFC, strip punctuation/whitespace."""
-    s = nfc(s or "").strip()
+    s = _nfc(s or "").strip()
     s = s.strip(".,;:!?)(")
-    s = norm_ws(s)
+    s = _norm_ws(s)
     return s
 
 
-def clean_plural_token(pl: str) -> str:
+def _clean_plural_token(pl: str) -> str:
     """Normalize plural token; return '-' if invalid."""
     if not pl or pl in DASHES:
         return "-"
@@ -95,7 +117,7 @@ def clean_plural_token(pl: str) -> str:
     return x
 
 
-def classify_plural(pl: str) -> str:
+def _classify_plural(pl: str) -> str:
     """Classify plural as 'i', 'e', 'uri', 'none', or 'unknown'.
 
     Returns:
@@ -119,7 +141,7 @@ def classify_plural(pl: str) -> str:
     return "unknown"
 
 
-def gender_from_pos(pos_raw: str) -> str:
+def _gender_from_pos(pos_raw: str) -> str:
     """Map s.m./s.f./s.n. to MASC/FEM/NEUT."""
     return {"s.m.": "MASC", "s.f.": "FEM", "s.n.": "NEUT"}.get(pos_raw, "")
 
@@ -142,10 +164,10 @@ POS_CANON = {
 }
 
 
-def canonize_pos_token(raw: str) -> str:
+def _canonize_pos_token(raw: str) -> str:
     """Canonize POS abbreviation."""
     token = raw or ""
-    token = norm_ws(token)
+    token = _norm_ws(token)
     token = re.sub(r"\s+", "", token.lower())
     if token in POS_CANON:
         return POS_CANON[token]
@@ -154,11 +176,11 @@ def canonize_pos_token(raw: str) -> str:
     return ""
 
 
-def scan_abbr_pos_anywhere(soup: "BeautifulSoup") -> Optional[str]:
+def _scan_abbr_pos_anywhere(soup: "BeautifulSoup") -> Optional[str]:
     """Scan for <abbr> tags containing noun POS."""
     for ab in soup.find_all("abbr"):
         txt = ab.get_text(" ", strip=True) or ""
-        pos = canonize_pos_token(txt)
+        pos = _canonize_pos_token(txt)
         if pos in {"s.m.", "s.f.", "s.n."}:
             return pos
         title = ab.get("title") or ""
@@ -173,12 +195,12 @@ def scan_abbr_pos_anywhere(soup: "BeautifulSoup") -> Optional[str]:
     return ""
 
 
-def scan_pos_in_text(soup: "BeautifulSoup") -> Optional[str]:
+def _scan_pos_in_text(soup: "BeautifulSoup") -> Optional[str]:
     """Scan for s.m./s.f./s.n. in full text."""
-    blob = norm_ws(soup.get_text(" ", strip=True))
+    blob = _norm_ws(soup.get_text(" ", strip=True))
     match = re.search(r"\bs\.\s*[mfn]\.\b", blob, flags=re.I)
     if match:
-        return canonize_pos_token(match.group(0))
+        return _canonize_pos_token(match.group(0))
     return ""
 
 
@@ -209,18 +231,18 @@ HEADER_POS_RE = re.compile(
 )
 
 
-def collapse_stress_spaces(text: str) -> str:
+def _collapse_stress_spaces(text: str) -> str:
     """Collapse DEX spaced-stress marks: 'CONF O RT' -> 'CONFORT'."""
     return _STRESS_SPACE_RE.sub(
         lambda m: m.group(1) + m.group(2) + m.group(3), text
     )
 
 
-def pick_noun_pos_from_blob(posblob: str) -> Optional[str]:
+def _pick_noun_pos_from_blob(posblob: str) -> Optional[str]:
     """Extract noun POS from posblob string."""
     if not posblob:
         return None
-    blob = norm_ws(posblob.lower())
+    blob = _norm_ws(posblob.lower())
     for tag in ("s. m.", "s.m.", "s. f.", "s.f.", "s. n.", "s.n."):
         if tag in blob:
             return tag.replace(" ", "")
@@ -254,62 +276,98 @@ class DexEntry:  # pylint: disable=too-many-instance-attributes
 # ------------------------------------------------------------
 SESSION = requests.Session()
 SESSION.headers.update(HEADERS)
-HTML_CACHE: Dict[str, str] = {}  # In-memory cache for this run
+HTML_CACHE: Dict[str, str] = {}  # In-memory L1 cache for this run
 
-# Persistent disk cache (in repo root)
-DISK_CACHE_PATH = Path(__file__).resolve().parent.parent / "dex_cache.json"
-DISK_CACHE: Dict[str, str] = {}
-cache_dirty = False  # Track if we need to save
-# Guards concurrent reads/writes of HTML_CACHE and DISK_CACHE. Worker threads
-# write under this lock; save_disk_cache snapshots under it before serializing
-# to disk (avoids "dictionary changed size during iteration" mid-json.dump).
+
+class _SqliteKVStore:
+    """Dict-like view of a SQLite k/v cache.
+
+    Implements ``__contains__``, ``__getitem__``, ``__setitem__``, and
+    ``__len__`` so existing callers that treated ``DISK_CACHE`` as a
+    dict keep working unchanged.
+
+    Reads and writes go straight to the on-disk DB — there is no
+    in-memory mirror at this layer. Repeated lookups within a run
+    should hit the in-process ``HTML_CACHE`` (L1) instead.
+
+    A single shared SQLite connection is reused across worker threads
+    (``check_same_thread=False``) and guarded by an internal lock so
+    concurrent writes serialize correctly.
+    """
+
+    __slots__ = ("_path", "_conn", "_lock")
+
+    def __init__(self, path: Path) -> None:
+        self._path = path
+        self._lock = threading.Lock()
+        self._conn = sqlite3.connect(
+            str(path), check_same_thread=False
+        )
+        # Default DELETE journal mode keeps the per-transaction
+        # journal small; commits are durable per-row.
+        self._conn.execute(
+            "CREATE TABLE IF NOT EXISTS cache "
+            "(url TEXT PRIMARY KEY, html TEXT NOT NULL)"
+        )
+        self._conn.commit()
+
+    def __contains__(self, url: object) -> bool:
+        if not isinstance(url, str):
+            return False
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT 1 FROM cache WHERE url = ? LIMIT 1", (url,)
+            ).fetchone()
+        return row is not None
+
+    def __getitem__(self, url: str) -> str:
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT html FROM cache WHERE url = ?", (url,)
+            ).fetchone()
+        if row is None:
+            raise KeyError(url)
+        return str(row[0])
+
+    def __setitem__(self, url: str, html: str) -> None:
+        with self._lock:
+            self._conn.execute(
+                "INSERT OR REPLACE INTO cache "
+                "(url, html) VALUES (?, ?)",
+                (url, html),
+            )
+            self._conn.commit()
+
+    def __len__(self) -> int:
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT COUNT(*) FROM cache"
+            ).fetchone()
+        return int(row[0])
+
+
+# Persistent disk cache (SQLite, in repo root).
+DISK_CACHE_PATH = Path(__file__).resolve().parent.parent / "dex_cache.db"
+DISK_CACHE: _SqliteKVStore = _SqliteKVStore(DISK_CACHE_PATH)
+# Guards mutations of HTML_CACHE only. DISK_CACHE has its own lock.
 _CACHE_LOCK = threading.Lock()
 
 
 def load_disk_cache() -> None:
-    """Load persistent cache from disk on startup."""
-    global DISK_CACHE  # pylint: disable=global-statement
-    if DISK_CACHE_PATH.exists():
-        try:
-            with open(DISK_CACHE_PATH, "r", encoding="utf-8") as f:
-                DISK_CACHE = json.load(f)
-            print(
-                f"[dex_utils] Loaded {len(DISK_CACHE)} cached DEX "
-                "pages from disk"
-            )
-        except (json.JSONDecodeError, OSError) as e:
-            print(f"[dex_utils] Warning: Could not load cache: {e}")
-            DISK_CACHE = {}
-    else:
-        DISK_CACHE = {}
+    """No-op retained for backward compatibility.
+
+    With the SQLite backend, the on-disk cache is queried lazily per
+    lookup. Nothing needs to be loaded into memory at module import.
+    """
 
 
 def save_disk_cache() -> None:
-    """Save persistent cache to disk. Thread-safe: snapshots under lock and
-    writes via a temp file + atomic rename so partial writes can never
-    corrupt the on-disk cache."""
-    global cache_dirty  # pylint: disable=global-statement
-    if not cache_dirty:
-        return
-    with _CACHE_LOCK:
-        snapshot = dict(DISK_CACHE)
-    tmp_path = DISK_CACHE_PATH.with_suffix(DISK_CACHE_PATH.suffix + ".tmp")
-    try:
-        with open(tmp_path, "w", encoding="utf-8") as f:
-            json.dump(snapshot, f, ensure_ascii=False, indent=2)
-        tmp_path.replace(DISK_CACHE_PATH)  # atomic rename
-        cache_dirty = False
-        print(f"[dex_utils] Saved {len(snapshot)} DEX pages to disk cache")
-    except OSError as exc:
-        try:
-            tmp_path.unlink(missing_ok=True)
-        except OSError:
-            pass
-        print(f"[dex_utils] Warning: Could not save cache: {exc}")
+    """No-op retained for backward compatibility.
 
-
-# Load cache on module import
-load_disk_cache()
+    Every cache write goes through ``polite_get`` → ``DISK_CACHE``
+    setitem, which commits to SQLite per row. There is nothing to
+    flush.
+    """
 
 
 def _cached_response(url: str, html: str) -> requests.Response:
@@ -324,15 +382,24 @@ def _cached_response(url: str, html: str) -> requests.Response:
 
 def polite_get(url: str) -> requests.Response:
     """GET with retries, rate limiting, and persistent caching.
-    Thread-safe: cache reads/writes are guarded by _CACHE_LOCK."""
-    global cache_dirty  # pylint: disable=global-statement
+
+    L1 (in-memory ``HTML_CACHE``) is checked first under
+    ``_CACHE_LOCK``. L2 (SQLite ``DISK_CACHE``) is checked next; on
+    L2 hit the page is promoted to L1 so subsequent requests within
+    the same run avoid the SQLite round-trip.
+
+    On HTTP success the page is written to both L1 and L2. The L2
+    write is durable (one INSERT-or-REPLACE commit), so a crash
+    mid-batch does not lose successful fetches.
+    """
     with _CACHE_LOCK:
         if url in HTML_CACHE:
             return _cached_response(url, HTML_CACHE[url])
-        if url in DISK_CACHE:
-            html = DISK_CACHE[url]
+    if url in DISK_CACHE:
+        html = DISK_CACHE[url]
+        with _CACHE_LOCK:
             HTML_CACHE[url] = html
-            return _cached_response(url, html)
+        return _cached_response(url, html)
     last_exc: Optional[requests.RequestException] = None
     for attempt in range(1, RETRIES + 1):
         try:
@@ -344,8 +411,7 @@ def polite_get(url: str) -> requests.Response:
             text = response.text
             with _CACHE_LOCK:
                 HTML_CACHE[url] = text
-                DISK_CACHE[url] = text
-                cache_dirty = True
+            DISK_CACHE[url] = text
             time.sleep(random.uniform(*THROTTLE))
             return response
         except requests.RequestException as exc:
@@ -363,7 +429,7 @@ def polite_get(url: str) -> requests.Response:
 # ------------------------------------------------------------
 def dex_url_for(lemma: str) -> str:
     """Build DEX URL for a given lemma."""
-    lemma_norm = norm_lemma(nfc(lemma))
+    lemma_norm = norm_lemma(_nfc(lemma))
     return f"{BASE}/definitie/{quote(lemma_norm)}/definitii"
 
 
@@ -385,14 +451,14 @@ def _try_parse_flex_header(
     line: str, seen_headers: Set[Tuple[str, str, str]]
 ) -> Optional[DexEntry]:
     """Try to parse a flex header (lemma + plural + POS)."""
-    collapsed = collapse_stress_spaces(line)
+    collapsed = _collapse_stress_spaces(line)
     match = HEADER_FLEX_RE.match(collapsed)
     if not match:
         return None
     lemma = norm_lemma(match.group("lemma"))
-    plural = clean_plural_token(match.group("plural"))
-    posblob = nfc(match.group("posblob") or "").strip()
-    noun_pos = pick_noun_pos_from_blob(posblob)
+    plural = _clean_plural_token(match.group("plural"))
+    posblob = _nfc(match.group("posblob") or "").strip()
+    noun_pos = _pick_noun_pos_from_blob(posblob)
     if not noun_pos or noun_pos not in KEEP_POS:
         return None
     key = (lemma, plural, noun_pos)
@@ -403,10 +469,10 @@ def _try_parse_flex_header(
         lemma=lemma,
         pos_raw=noun_pos,
         plural=plural,
-        gender=gender_from_pos(noun_pos),
+        gender=_gender_from_pos(noun_pos),
         url="",
         dex_confidence="header",
-        plural_class=classify_plural(plural),
+        plural_class=_classify_plural(plural),
         notes="parsed_header_flex",
     )
 
@@ -418,7 +484,7 @@ def _try_parse_inline_header(
 
     Also extracts plural from 'Pl. ...' in the definition text.
     """
-    collapsed = collapse_stress_spaces(line)
+    collapsed = _collapse_stress_spaces(line)
     match = _DEX_INLINE_RE.match(collapsed)
     if not match:
         return None
@@ -426,7 +492,7 @@ def _try_parse_inline_header(
     posblob = match.group("posblob").strip()
     rest = match.group("rest") or ""
 
-    noun_pos = pick_noun_pos_from_blob(posblob)
+    noun_pos = _pick_noun_pos_from_blob(posblob)
     if not noun_pos or noun_pos not in KEEP_POS:
         return None
 
@@ -434,12 +500,12 @@ def _try_parse_inline_header(
     plural = "-"
     pl_match = _DEX_PL_STRICT_RE.search(";" + rest)
     if pl_match:
-        plural = clean_plural_token(pl_match.group(1))
+        plural = _clean_plural_token(pl_match.group(1))
     if plural == "-":
         pl_match = _DEX_PL_SPACED_RE.search(";" + rest)
         if pl_match:
             collapsed = _collapse_spaced_plural(pl_match.group(1))
-            plural = clean_plural_token(collapsed)
+            plural = _clean_plural_token(collapsed)
 
     key = (lemma, plural, noun_pos)
     if key in seen_headers:
@@ -451,30 +517,30 @@ def _try_parse_inline_header(
         lemma=lemma,
         pos_raw=noun_pos,
         plural=plural,
-        gender=gender_from_pos(noun_pos),
+        gender=_gender_from_pos(noun_pos),
         url="",
         dex_confidence=confidence,
-        plural_class=classify_plural(plural),
+        plural_class=_classify_plural(plural),
         notes="parsed_inline",
     )
 
 
 def _try_parse_pos_only_header(line: str) -> Optional[DexEntry]:
     """Try to parse a POS-only header (lemma + POS)."""
-    collapsed = collapse_stress_spaces(line)
+    collapsed = _collapse_stress_spaces(line)
     match = HEADER_POS_RE.match(collapsed)
     if not match:
         return None
     lemma, pos = match.groups()
     lemma = norm_lemma(lemma)
-    pos = nfc(pos).strip()
+    pos = _nfc(pos).strip()
     if pos not in KEEP_POS:
         return None
     return DexEntry(
         lemma=lemma,
         pos_raw=pos,
         plural="-",
-        gender=gender_from_pos(pos),
+        gender=_gender_from_pos(pos),
         url="",
         dex_confidence="pos_only",
         plural_class="unknown",
@@ -521,12 +587,12 @@ def _extract_plural_from_page(
     handling DEX's spaced-stress format.
     Returns the plural token or ``"-"`` if not found.
     """
-    blob = norm_ws(soup.get_text(" ", strip=True))
+    blob = _norm_ws(soup.get_text(" ", strip=True))
     lemma_lower = (lemma or "").lower()
 
     # Try strict pattern first (no spaced stress)
     for m in _DEX_PL_STRICT_RE.finditer(blob):
-        candidate = clean_plural_token(m.group(1))
+        candidate = _clean_plural_token(m.group(1))
         if (
             candidate != "-"
             and candidate.lower() != lemma_lower
@@ -537,7 +603,7 @@ def _extract_plural_from_page(
     # Try spaced-stress pattern
     for m in _DEX_PL_SPACED_RE.finditer(blob):
         collapsed = _collapse_spaced_plural(m.group(1).strip())
-        candidate = clean_plural_token(collapsed)
+        candidate = _clean_plural_token(collapsed)
         if (
             candidate != "-"
             and candidate.lower() != lemma_lower
@@ -548,7 +614,7 @@ def _extract_plural_from_page(
     return "-"
 
 
-def parse_header_lines(
+def _parse_header_lines(
     soup: "BeautifulSoup",
 ) -> List[DexEntry]:
     """
@@ -589,12 +655,12 @@ def parse_header_lines(
             page_plural = _extract_plural_from_page(soup, page_lemma)
             if page_plural != "-":
                 noun_have[0].plural = page_plural
-                noun_have[0].plural_class = classify_plural(page_plural)
+                noun_have[0].plural_class = _classify_plural(page_plural)
                 noun_have[0].dex_confidence = "header"
                 noun_have[0].notes = "plural_from_page_text"
         return entries
 
-    pos_canon = scan_abbr_pos_anywhere(soup) or scan_pos_in_text(soup)
+    pos_canon = _scan_abbr_pos_anywhere(soup) or _scan_pos_in_text(soup)
     if pos_canon in {"s.m.", "s.f.", "s.n."}:
         # Try to get plural from page text
         page_plural = _extract_plural_from_page(soup, "")
@@ -604,10 +670,10 @@ def parse_header_lines(
                 lemma="",
                 pos_raw=pos_canon,
                 plural=page_plural,
-                gender=gender_from_pos(pos_canon),
+                gender=_gender_from_pos(pos_canon),
                 url="",
                 dex_confidence=confidence,
-                plural_class=classify_plural(page_plural),
+                plural_class=_classify_plural(page_plural),
                 notes="abbr_fallback",
             )
         )
@@ -625,7 +691,7 @@ def fetch_dex_page(lemma: str) -> Tuple[List[DexEntry], str]:
     url = dex_url_for(lemma)
     response = polite_get(url)
     soup = BeautifulSoup(response.text, "html.parser")
-    headers = parse_header_lines(soup)
+    headers = _parse_header_lines(soup)
     for header in headers:
         header.url = url
         if not header.lemma:
@@ -715,7 +781,7 @@ def dex_has_entry(lemma: str, restrict_to_keep_pos: bool = False) -> bool:
     lemma?
 
     Uses two signals:
-      1. parse_header_lines() producing any entries (works for nouns,
+      1. _parse_header_lines() producing any entries (works for nouns,
          adjectives via the structured header parsers)
       2. the raw HTML containing definition markers ("sursa:"), which
          is present for verbs and other POS that the header parsers

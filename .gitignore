@@ -60,6 +60,14 @@ venv.bak/
 data/*
 !data/romanian_lexicon_raw.csv
 
+# DEX HTML cache: lives in repo root as a SQLite k/v store.
+# Together with its journal/WAL/SHM sidecar files (created by SQLite at
+# runtime) this is multi-GB and rebuildable from upstream.
+dex_cache.db
+dex_cache.db-journal
+dex_cache.db-shm
+dex_cache.db-wal
+
 # Documentation directory: ignore contents but track data_dict.md
 docs/*
 !docs/data_dict.md

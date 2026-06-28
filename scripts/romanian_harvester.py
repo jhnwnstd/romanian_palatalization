@@ -515,12 +515,12 @@ def normalize_unicode(s: str) -> str:
     return s
 
 
-def normalize_ws(s: str) -> str:
+def _normalize_ws(s: str) -> str:
     """Collapse whitespace to single spaces and strip edges."""
     return re.sub(r"\s+", " ", s or "").strip()
 
 
-def strip_wiki_markup(s: str) -> str:
+def _strip_wiki_markup(s: str) -> str:
     """Remove wiki markup (fast-path: skip regex if no markup chars)."""
     if not s:
         return s
@@ -533,7 +533,7 @@ def strip_wiki_markup(s: str) -> str:
     return s.strip()
 
 
-def clean_ipa_raw(ipa_str: str) -> str:
+def _clean_ipa_raw(ipa_str: str) -> str:
     """Remove IPA delimiters, HTML, percent-encoding; keep stress markers.
 
     Handles malformed HTML patterns like:
@@ -614,11 +614,11 @@ def clean_ipa_raw(ipa_str: str) -> str:
     return s.strip()
 
 
-def clean_plural(s: str) -> str:
+def _clean_plural(s: str) -> str:
     """Strip markup, take first variant, reject placeholders."""
     if not s:
         return ""
-    s = strip_wiki_markup(s)
+    s = _strip_wiki_markup(s)
     s = normalize_unicode(s)
     first = re.split(r"\s*[,;/]|(?:\s+or\s+)|(?:\s+aka\s+)", s)[0]
     first = re.sub(r"\s*\([^)]*\)\s*$", "", first).strip()
@@ -634,7 +634,7 @@ def clean_plural(s: str) -> str:
     return cleaned[:100]
 
 
-def normalize_gloss(gloss: str) -> str:
+def _normalize_gloss(gloss: str) -> str:
     """Normalize gloss field with enhanced HTML/template cleanup."""
     if not gloss:
         return ""
@@ -648,9 +648,9 @@ def normalize_gloss(gloss: str) -> str:
     s = re.sub(r"<ref></ref>", "", s)
 
     # Basic cleanup
-    s = strip_wiki_markup(s)
+    s = _strip_wiki_markup(s)
     s = normalize_unicode(s)
-    s = normalize_ws(s)
+    s = _normalize_ws(s)
 
     # Remove unclosed template markers (artifacts from incomplete parsing)
     s = re.sub(r"\}\}+$", "", s)  # Trailing }}
@@ -664,11 +664,11 @@ def normalize_gloss(gloss: str) -> str:
     if not re.match(r"^\([^)]+\)$", s):
         s = re.sub(r"\s*\([^)]*\)\s*", " ", s)
 
-    s = normalize_ws(s)
+    s = _normalize_ws(s)
     return s
 
 
-def extract_best_gloss(block: str) -> str:
+def _extract_best_gloss(block: str) -> str:
     """Pick the first non-empty, non-inflectional gloss from a POS block."""
     if not block:
         return ""
@@ -676,8 +676,8 @@ def extract_best_gloss(block: str) -> str:
     for mg in GLOSS_LINE_RE.finditer(block):
         raw = mg.group(1) or ""
         # Strip simple link brackets early
-        raw = normalize_ws(re.sub(r"\[\[|\]\]", "", raw))
-        gloss_norm = normalize_gloss(raw)
+        raw = _normalize_ws(re.sub(r"\[\[|\]\]", "", raw))
+        gloss_norm = _normalize_gloss(raw)
         if not gloss_norm:
             continue
 
@@ -724,11 +724,11 @@ def is_candidate_title(t: str) -> bool:
     return all(ch in ROMANIAN_CHARS for ch in low)
 
 
-def has_romanian_section(wt: str) -> bool:
+def _has_romanian_section(wt: str) -> bool:
     return bool(ROMANIAN_SECTION_RE.search(wt))
 
 
-def is_uncountable(ro_section: str) -> bool:
+def _is_uncountable(ro_section: str) -> bool:
     """Check if wikitext contains uncountable noun template."""
     return bool(UNCOUNTABLE_RE.search(ro_section))
 
@@ -747,7 +747,7 @@ def has_verb_pos(ro_section: str) -> bool:
 # ============================================================================
 
 
-def extract_gender_from_template(block: str) -> Optional[str]:
+def _extract_gender_from_template(block: str) -> Optional[str]:
     """Extract gender from {{ro-noun}} template."""
     # Pattern: {{ro-noun|m|... or {{ro-noun|f|... or {{ro-noun|n|...
     m = re.search(r"\{\{ro-noun\s*\|\s*([mfn])\s*(?:\||}})", block, re.I)
@@ -757,16 +757,16 @@ def extract_gender_from_template(block: str) -> Optional[str]:
     return ""
 
 
-def extract_plural_from_template(block: str) -> str:
+def _extract_plural_from_template(block: str) -> str:
     """Extract plural from inline template parameters."""
     for pattern in PLURAL_KEYS:
         m = pattern.search(block)
         if m:
-            return normalize_ws(m.group(1))
+            return _normalize_ws(m.group(1))
     return ""
 
 
-def extract_from_templates(wikitext: str) -> dict[str, Any]:
+def _extract_from_templates(wikitext: str) -> dict[str, Any]:
     """Extract metadata from ro-noun, ro-adj, ro-verb templates.
 
     Returns dict with: plural, gender, m_pl, is_propn
@@ -790,7 +790,7 @@ def extract_from_templates(wikitext: str) -> dict[str, Any]:
     )
     if m_noun:
         result["gender"] = GENDER_MAP.get(m_noun.group(1).lower(), "")
-        result["plural"] = clean_plural(m_noun.group(2))
+        result["plural"] = _clean_plural(m_noun.group(2))
 
     # Extract masculine plural from ro-adj
     m_adj = re.search(
@@ -799,12 +799,12 @@ def extract_from_templates(wikitext: str) -> dict[str, Any]:
         re.I,
     )
     if m_adj and m_adj.group(1):
-        result["m_pl"] = clean_plural(m_adj.group(1))
+        result["m_pl"] = _clean_plural(m_adj.group(1))
 
     return result
 
 
-def extract_etym_language_tag(wikitext: str) -> Optional[str]:
+def _extract_etym_language_tag(wikitext: str) -> Optional[str]:
     """Extract etymology source language tag."""
     m = ETYM_LANG_RE.search(wikitext)
     if m:
@@ -867,7 +867,7 @@ def _candidate_base_stems_for_verb(verb_lower: str, suffix: str) -> set[str]:
     return stems
 
 
-def augment_denominal_verbs_with_heuristics(
+def _augment_denominal_verbs_with_heuristics(
     noun_lemmas: Set[str],
     verb_lemmas: Set[str],
 ) -> int:
@@ -922,7 +922,7 @@ def augment_denominal_verbs_with_heuristics(
 
         # Optional precision boost: require that the noun lemma
         # actually occurs somewhere in the Romanian section
-        wt = get_wikitext_cached(verb_norm)
+        wt = _get_wikitext_cached(verb_norm)
         m = ROMANIAN_SECTION_RE.search(wt)
         ro_section = m.group(1) if m else wt
         ro_lower = normalize_unicode(ro_section).lower()
@@ -1039,7 +1039,7 @@ DERIV_SUFFIX_CATEGORIES = [
 SUFFIX_CAT_LIMIT = 5000
 
 
-def mine_derivation_categories() -> int:
+def _mine_derivation_categories() -> int:
     """Mine Wiktionary suffix categories to discover N→V and N→Adj links.
 
     For each suffix category, fetches members and then checks their
@@ -1052,7 +1052,7 @@ def mine_derivation_categories() -> int:
 
     for cat_name, derived_pos in DERIV_SUFFIX_CATEGORIES:
         print(f"  Mining {cat_name}...")
-        members = fetch_category_members(
+        members = _fetch_category_members(
             WIKI_API_EN, cat_name, limit=SUFFIX_CAT_LIMIT
         )
         if not members:
@@ -1069,12 +1069,12 @@ def mine_derivation_categories() -> int:
             print(f"    Batch-prefetching {len(uncached)} uncached...")
             for i in range(0, len(uncached), 800):
                 chunk = uncached[i : i + 800]
-                batch_fetch_wikitext(WIKI_API_EN, chunk, _WT_CACHE_EN)
+                _batch_fetch_wikitext(WIKI_API_EN, chunk, _WT_CACHE_EN)
 
         added = 0
         for title in members:
             title_norm = normalize_unicode(title)
-            wt = get_wikitext_cached(title_norm)
+            wt = _get_wikitext_cached(title_norm)
             if not wt:
                 continue
             m = ROMANIAN_SECTION_RE.search(wt)
@@ -1159,7 +1159,7 @@ def extract_derived_terms_from_entry(title: str, ro_section: str) -> None:
     for term in terms:
         if term not in _WT_CACHE_EN and term not in _WT_CACHE_RO:
             continue
-        wt = get_wikitext_cached(term)
+        wt = _get_wikitext_cached(term)
         if not wt:
             continue
         sec_m = ROMANIAN_SECTION_RE.search(wt)
@@ -1185,16 +1185,16 @@ def extract_derived_terms_from_entry(title: str, ro_section: str) -> None:
 # ============================================================================
 
 
-def extract_ipa_from_wikitext(ro_section: str) -> list[str]:
+def _extract_ipa_from_wikitext(ro_section: str) -> list[str]:
     results = []
     for m in IPA_WT_RE.finditer(ro_section):
-        cand = clean_ipa_raw(m.group(1))
+        cand = _clean_ipa_raw(m.group(1))
         if cand:
             results.append(cand)
     return list(dict.fromkeys(results))
 
 
-def extract_ipa_list_from_html(html: str) -> list[str]:
+def _extract_ipa_list_from_html(html: str) -> list[str]:
     """Extract IPA transcriptions from rendered HTML."""
     if not HAS_BS4 or not html or BeautifulSoup is None:
         return []
@@ -1219,7 +1219,7 @@ def extract_ipa_list_from_html(html: str) -> list[str]:
     cleaned = []
     seen = set()
     for c in candidates:
-        c_clean = clean_ipa_raw(c)
+        c_clean = _clean_ipa_raw(c)
         if c_clean and c_clean not in seen:
             cleaned.append(c_clean)
             seen.add(c_clean)
@@ -1227,7 +1227,7 @@ def extract_ipa_list_from_html(html: str) -> list[str]:
     return cleaned
 
 
-def fetch_html_section(api: str, title: str) -> str:
+def _fetch_html_section(api: str, title: str) -> str:
     """Fetch rendered HTML for entire page."""
     # Check HTML cache
     if api == WIKI_API_EN and title in _HTML_CACHE_EN:
@@ -1257,7 +1257,7 @@ def fetch_html_section(api: str, title: str) -> str:
     return ""
 
 
-def get_ipa_for_form(title: str) -> list[str]:
+def _get_ipa_for_form(title: str) -> list[str]:
     """Get IPA for a word form from EN/RO HTML rendering."""
     if not ENABLE_IPA_FETCH:
         return []
@@ -1269,15 +1269,15 @@ def get_ipa_for_form(title: str) -> list[str]:
     ipas: list[str] = []
 
     # EN Wiktionary first
-    html_en = fetch_html_section(WIKI_API_EN, title)
+    html_en = _fetch_html_section(WIKI_API_EN, title)
     if html_en:
-        ipas = extract_ipa_list_from_html(html_en)
+        ipas = _extract_ipa_list_from_html(html_en)
 
     # Fallback to RO Wiktionary
     if not ipas:
-        html_ro = fetch_html_section(WIKI_API_RO, title)
+        html_ro = _fetch_html_section(WIKI_API_RO, title)
         if html_ro:
-            ipas = extract_ipa_list_from_html(html_ro)
+            ipas = _extract_ipa_list_from_html(html_ro)
 
     _IPA_CACHE[title] = ipas
     return ipas
@@ -1295,8 +1295,8 @@ def _sanitize_table_plural(text: str) -> Optional[str]:
 
     # Remove HTML tags
     text = re.sub(r"<[^>]+>", "", text)
-    text = strip_wiki_markup(text)
-    text = normalize_ws(text)
+    text = _strip_wiki_markup(text)
+    text = _normalize_ws(text)
 
     # Reject if too short or looks like markup
     if len(text) < 3 or text in ("-", "—", "–", "i", "e", "uri"):
@@ -1305,7 +1305,7 @@ def _sanitize_table_plural(text: str) -> Optional[str]:
     return text
 
 
-def extract_plural_from_table(html: str) -> Optional[str]:
+def _extract_plural_from_table(html: str) -> Optional[str]:
     """Extract plural from declension table in rendered HTML."""
     if not HAS_BS4 or not html or BeautifulSoup is None:
         return None
@@ -1328,7 +1328,7 @@ def extract_plural_from_table(html: str) -> Optional[str]:
     return None
 
 
-def confirm_plural_via_tables_or_templates(
+def _confirm_plural_via_tables_or_templates(
     title: str,
     block: Optional[str] = None,
     tpl: Optional[dict[str, Any]] = None,
@@ -1337,7 +1337,7 @@ def confirm_plural_via_tables_or_templates(
     Return confirmed plural from template params, POS block, or HTML table.
     """
 
-    def is_valid_plural(s: str) -> bool:
+    def _is_valid_plural(s: str) -> bool:
         if not s:
             return False
         s_lower = s.lower()
@@ -1349,16 +1349,16 @@ def confirm_plural_via_tables_or_templates(
 
     # Try template first
     if tpl and tpl.get("plural"):
-        cand = clean_plural(tpl["plural"])
-        if is_valid_plural(cand):
+        cand = _clean_plural(tpl["plural"])
+        if _is_valid_plural(cand):
             return cand
 
     # Try inline template in block
     if block:
-        inline_pl = extract_plural_from_template(block)
+        inline_pl = _extract_plural_from_template(block)
         if inline_pl:
-            cand = clean_plural(inline_pl)
-            if is_valid_plural(cand):
+            cand = _clean_plural(inline_pl)
+            if _is_valid_plural(cand):
                 return cand
 
     # Check cache first to avoid repeated HTML parsing
@@ -1369,20 +1369,20 @@ def confirm_plural_via_tables_or_templates(
     # Try HTML tables (EN then RO)
     result = ""
     if HAS_BS4:
-        html_en = fetch_html_section(WIKI_API_EN, title)
-        cand_en = extract_plural_from_table(html_en)
+        html_en = _fetch_html_section(WIKI_API_EN, title)
+        cand_en = _extract_plural_from_table(html_en)
         if cand_en:
-            cand = clean_plural(cand_en)
-            if is_valid_plural(cand):
+            cand = _clean_plural(cand_en)
+            if _is_valid_plural(cand):
                 result = cand
                 _PLURAL_TABLE_CACHE[title] = result
                 return result
 
-        html_ro = fetch_html_section(WIKI_API_RO, title)
-        cand_ro = extract_plural_from_table(html_ro)
+        html_ro = _fetch_html_section(WIKI_API_RO, title)
+        cand_ro = _extract_plural_from_table(html_ro)
         if cand_ro:
-            cand = clean_plural(cand_ro)
-            if is_valid_plural(cand):
+            cand = _clean_plural(cand_ro)
+            if _is_valid_plural(cand):
                 result = cand
                 _PLURAL_TABLE_CACHE[title] = result
                 return result
@@ -1510,7 +1510,7 @@ def load_ipa_cache() -> None:
                 continue
             new_list: list[str] = []
             for ipa in ipas:
-                c = clean_ipa_raw(ipa)
+                c = _clean_ipa_raw(ipa)
                 if c:
                     new_list.append(c)
             if new_list:
@@ -1522,7 +1522,7 @@ def load_ipa_cache() -> None:
         _IPA_CACHE = {}
 
 
-def save_ipa_cache() -> None:
+def _save_ipa_cache() -> None:
     """Save IPA cache to disk."""
     try:
         with open(IPA_CACHE_PATH, "w", encoding="utf-8") as f:
@@ -1532,7 +1532,7 @@ def save_ipa_cache() -> None:
         print(f"Warning: failed to save IPA cache: {e}")
 
 
-def batch_fetch_wikitext(
+def _batch_fetch_wikitext(
     api: str, titles: list[str], cache: dict[str, str]
 ) -> None:
     """Batch-fetch wikitext for multiple titles."""
@@ -1596,7 +1596,7 @@ def _fetch_wikitext_from_api(api_url: str, title: str) -> Optional[str]:
     return None
 
 
-def get_wikitext_cached(title: str) -> str:
+def _get_wikitext_cached(title: str) -> str:
     """Get wikitext for title with caching (EN preferred, RO fallback)."""
     if title in _WT_CACHE_EN:
         return _WT_CACHE_EN[title]
@@ -1618,7 +1618,7 @@ def get_wikitext_cached(title: str) -> str:
 # ============================================================================
 
 
-def fetch_category_members(
+def _fetch_category_members(
     api: str, category: str, limit: int = 5000
 ) -> list[str]:
     """Fetch all members of a Wiktionary category."""
@@ -1665,7 +1665,7 @@ def parse_romanian_entry(
     if not title:
         return None
     title_normalized = normalize_unicode(title)
-    wt = get_wikitext_cached(title_normalized)
+    wt = _get_wikitext_cached(title_normalized)
     m = ROMANIAN_SECTION_RE.search(wt)
     if not m:
         return None
@@ -1694,8 +1694,8 @@ def parse_romanian_entry(
             break
     if pos is None or block is None:
         return None
-    unc = is_uncountable(ro)
-    tpl = extract_from_templates(ro)
+    unc = _is_uncountable(ro)
+    tpl = _extract_from_templates(ro)
     if tpl.get("is_propn"):
         return None
     result = {
@@ -1713,7 +1713,7 @@ def parse_romanian_entry(
         "ipa_raw_pl": "",
     }
     if pos == "N":
-        gender = tpl.get("gender") or extract_gender_from_template(block) or ""
+        gender = tpl.get("gender") or _extract_gender_from_template(block) or ""
         result["gender"] = gender
         plural = ""
         if tpl.get("plural"):
@@ -1722,21 +1722,21 @@ def parse_romanian_entry(
             for pattern in PLURAL_KEYS:
                 m_pl = re.search(pattern, block)
                 if m_pl:
-                    plural = normalize_ws(m_pl.group(1))
+                    plural = _normalize_ws(m_pl.group(1))
                     break
             if not plural:
                 mtab = TABLE_ANY_PL_RE.search(ro)
                 if mtab:
-                    plural = normalize_ws(mtab.group(1))
+                    plural = _normalize_ws(mtab.group(1))
         if plural:
-            plural = clean_plural(plural)
+            plural = _clean_plural(plural)
         # Only fall back to HTML table extraction if wikitext
         # gave us nothing usable.  This avoids expensive HTTP
         # calls for entries where the template already provided
         # a valid plural.
         if not plural or plural in ("-", ""):
             if not unc:
-                confirmed = confirm_plural_via_tables_or_templates(
+                confirmed = _confirm_plural_via_tables_or_templates(
                     title=title_normalized, block=block, tpl=tpl
                 )
                 if confirmed:
@@ -1749,12 +1749,12 @@ def parse_romanian_entry(
         if plural and re.fullmatch(r"(?:i|ii|e|uri)", plural.strip(), re.I):
             plural = ""
         result["plural"] = plural
-    gloss = extract_best_gloss(block)
+    gloss = _extract_best_gloss(block)
     if gloss:
         result["gloss"] = gloss
     for em in ETYM_RE.finditer(ro):
         etym_text = em.group(1)
-        ety_lang = extract_etym_language_tag(etym_text)
+        ety_lang = _extract_etym_language_tag(etym_text)
         if ety_lang:
             result["etym_lang"] = ety_lang
             break
@@ -1808,13 +1808,13 @@ def parse_romanian_entry(
     # skipped — the downstream pipeline generates IPA via G2P.
     if not skip_ipa and pos in {"N", "ADJ"}:
         try:
-            ipas_lemma = extract_ipa_from_wikitext(ro)
+            ipas_lemma = _extract_ipa_from_wikitext(ro)
             if not ipas_lemma and title_normalized in _HTML_CACHE_EN:
-                ipas_lemma = extract_ipa_list_from_html(
+                ipas_lemma = _extract_ipa_list_from_html(
                     _HTML_CACHE_EN[title_normalized]
                 )
             if not ipas_lemma and title_normalized in _HTML_CACHE_RO:
-                ipas_lemma = extract_ipa_list_from_html(
+                ipas_lemma = _extract_ipa_list_from_html(
                     _HTML_CACHE_RO[title_normalized]
                 )
             if ipas_lemma:
@@ -1823,7 +1823,7 @@ def parse_romanian_entry(
             pass
         if result["plural"]:
             try:
-                ipas_pl = get_ipa_for_form(result["plural"])
+                ipas_pl = _get_ipa_for_form(result["plural"])
                 if ipas_pl:
                     result["ipa_raw_pl"] = " | ".join(ipas_pl)
             except (requests.RequestException, ValueError):
@@ -1842,32 +1842,32 @@ def harvest_data() -> pd.DataFrame:
     seen = set()
     print("Discovering titles...")
     noun_titles_en = set(
-        fetch_category_members(
+        _fetch_category_members(
             WIKI_API_EN, "Category:Romanian nouns", limit=NOUN_LIMIT
         )
     )
     verb_titles_en = set(
-        fetch_category_members(
+        _fetch_category_members(
             WIKI_API_EN, "Category:Romanian verbs", limit=VERB_LIMIT
         )
     )
     adj_titles_en = set(
-        fetch_category_members(
+        _fetch_category_members(
             WIKI_API_EN, "Category:Romanian adjectives", limit=ADJ_LIMIT
         )
     )
     noun_titles_ro = set(
-        fetch_category_members(
+        _fetch_category_members(
             WIKI_API_RO, "Category:Substantive în română", limit=RO_NOUN_LIMIT
         )
     )
     adj_titles_ro = set(
-        fetch_category_members(
+        _fetch_category_members(
             WIKI_API_RO, "Category:Adjective în română", limit=RO_ADJ_LIMIT
         )
     )
     verb_titles_ro = set(
-        fetch_category_members(
+        _fetch_category_members(
             WIKI_API_RO, "Category:Verbe în română", limit=RO_VERB_LIMIT
         )
     )
@@ -1910,8 +1910,8 @@ def harvest_data() -> pd.DataFrame:
     print("Batch-prefetching wikitext...")
     for i in range(0, len(all_titles), 800):
         chunk = all_titles[i : i + 800]
-        batch_fetch_wikitext(WIKI_API_EN, chunk, _WT_CACHE_EN)
-        batch_fetch_wikitext(WIKI_API_RO, chunk, _WT_CACHE_RO)
+        _batch_fetch_wikitext(WIKI_API_EN, chunk, _WT_CACHE_EN)
+        _batch_fetch_wikitext(WIKI_API_RO, chunk, _WT_CACHE_RO)
         if i % 2400 == 0:
             print(f"  Prefetched {i}/{len(all_titles)} titles...")
 
@@ -1921,7 +1921,7 @@ def harvest_data() -> pd.DataFrame:
         if i % 500 == 0:
             print(f"  Scanned {i}/{len(titles_for_verbs)} verb titles...")
         title_norm = normalize_unicode(title)
-        wt = get_wikitext_cached(title_norm)
+        wt = _get_wikitext_cached(title_norm)
         if not wt:
             continue
         m = ROMANIAN_SECTION_RE.search(wt)
@@ -1950,7 +1950,7 @@ def harvest_data() -> pd.DataFrame:
             normalize_unicode(t) for t in verb_title_set
         }
 
-        heuristic_added = augment_denominal_verbs_with_heuristics(
+        heuristic_added = _augment_denominal_verbs_with_heuristics(
             noun_lemmas_for_heuristic,
             verb_lemmas_for_heuristic,
         )
@@ -1962,7 +1962,7 @@ def harvest_data() -> pd.DataFrame:
         if i % 500 == 0:
             print(f"  Scanned {i}/{len(titles_for_adjs)} adjective titles...")
         title_norm = normalize_unicode(title)
-        wt = get_wikitext_cached(title_norm)
+        wt = _get_wikitext_cached(title_norm)
         if not wt:
             continue
         m = ROMANIAN_SECTION_RE.search(wt)
@@ -1979,7 +1979,7 @@ def harvest_data() -> pd.DataFrame:
     # Derivation category mining: discover N→V and N→Adj from
     # Wiktionary suffix categories (e.g., "terms suffixed with -i")
     print("\nMining Wiktionary suffix categories for derivations...")
-    cat_added = mine_derivation_categories()
+    cat_added = _mine_derivation_categories()
     print(f"  Category mining added {cat_added} derivation pairs")
     print(
         f"  Total denominal verbs: "
@@ -1999,7 +1999,7 @@ def harvest_data() -> pd.DataFrame:
         if i % 2000 == 0:
             print(f"  Scanned {i}/{len(titles_for_rows)} entries...")
         title_norm = normalize_unicode(title)
-        wt = get_wikitext_cached(title_norm)
+        wt = _get_wikitext_cached(title_norm)
         if not wt:
             continue
         sec_m = ROMANIAN_SECTION_RE.search(wt)
@@ -2026,7 +2026,7 @@ def harvest_data() -> pd.DataFrame:
             all_rows.append(entry)
             seen.add(title)
     save_disk_cache()
-    save_ipa_cache()
+    _save_ipa_cache()
     df = pd.DataFrame(all_rows)
     return df
 

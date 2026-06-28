@@ -152,7 +152,7 @@ def should_process_row(row: Dict[str, str]) -> bool:
     return False
 
 
-def orth_change_is_vowels_or_le(orth_change: str) -> bool:
+def _orth_change_is_vowels_or_le(orth_change: str) -> bool:
     """Return True if orth_change is vowel-only or includes 'le'.
 
     Examples: 'e→i', 'a→le', 'ă→ăe'
@@ -226,7 +226,7 @@ def ensure_ipa_fields(
         row[norm_key] = _ipa_normalizer(ipa)
 
 
-def strip_final_vowel(lemma: str) -> str:
+def _strip_final_vowel(lemma: str) -> str:
     """Strip a single final vowel from lemma if present."""
     if len(lemma) <= 1:
         return lemma
@@ -235,7 +235,7 @@ def strip_final_vowel(lemma: str) -> str:
     return lemma
 
 
-def longest_common_substring(a: str, b: str) -> int:
+def _longest_common_substring(a: str, b: str) -> int:
     """Return the length of the longest contiguous matching substring."""
     m = [[0] * (1 + len(b)) for _ in range(1 + len(a))]
     longest = 0
@@ -247,14 +247,14 @@ def longest_common_substring(a: str, b: str) -> int:
     return longest
 
 
-def jaccard_similarity(a: str, b: str) -> float:
+def _jaccard_similarity(a: str, b: str) -> float:
     """Compute Jaccard similarity of character bigrams."""
     bigrams_a = {a[i : i + 2] for i in range(len(a) - 1)}
     bigrams_b = {b[i : i + 2] for i in range(len(b) - 1)}
     return len(bigrams_a & bigrams_b) / (len(bigrams_a | bigrams_b) or 1)
 
 
-def common_prefix_length(a: str, b: str) -> int:
+def _common_prefix_length(a: str, b: str) -> int:
     """Count matching characters at start of strings."""
     for i, (ca, cb) in enumerate(zip(a, b)):
         if ca != cb:
@@ -262,7 +262,7 @@ def common_prefix_length(a: str, b: str) -> int:
     return min(len(a), len(b))
 
 
-def common_suffix_length(a: str, b: str) -> int:
+def _common_suffix_length(a: str, b: str) -> int:
     """Count matching characters at end of strings."""
     for i, (ca, cb) in enumerate(zip(reversed(a), reversed(b))):
         if ca != cb:
@@ -299,7 +299,7 @@ def _calibrate_plural_thresholds() -> None:
     _PL_CALIBRATED = True
 
 
-def compute_plural_plausibility(
+def _compute_plural_plausibility(
     lemma: str, plural: str
 ) -> Tuple[float, float, float]:
     """
@@ -310,12 +310,12 @@ def compute_plural_plausibility(
         return 0.0, 0.0, 0.0
     max_len = max(len(lemma), len(plural))
     seq_sim = SequenceMatcher(None, lemma, plural).ratio()
-    lcs_len = longest_common_substring(lemma, plural)
+    lcs_len = _longest_common_substring(lemma, plural)
     lcs_ratio = lcs_len / max_len if max_len > 0 else 0.0
-    ngram_sim = jaccard_similarity(lemma, plural)
+    ngram_sim = _jaccard_similarity(lemma, plural)
     edge_len = max(
-        common_prefix_length(lemma, plural),
-        common_suffix_length(lemma, plural),
+        _common_prefix_length(lemma, plural),
+        _common_suffix_length(lemma, plural),
     )
     edge_focus = edge_len / max_len if max_len > 0 else 0.0
     plausibility = (seq_sim + lcs_ratio + ngram_sim + edge_focus) / 4
@@ -342,7 +342,7 @@ def validate_plural_quality(row: Dict[str, str]) -> None:
         return
     len_ratio = len(plural) / len(lemma) if len(lemma) else 0.0
     len_ok = 0.5 <= len_ratio <= 2.0
-    plausibility, seq_sim, lcs_ratio = compute_plural_plausibility(
+    plausibility, seq_sim, lcs_ratio = _compute_plural_plausibility(
         lemma, plural
     )
 
@@ -361,7 +361,7 @@ def validate_plural_quality(row: Dict[str, str]) -> None:
     # has a reasonable length ratio, accept it at a lower threshold.
     stem_change_rescue = False
     if len_ok and plausibility >= 0.15 and len(lemma) >= 3:
-        pfx = common_prefix_length(lemma, plural)
+        pfx = _common_prefix_length(lemma, plural)
         if pfx >= 1 and not lemma[:pfx].replace("-", "").isspace():
             # Shares at least 1 leading character — likely a stem change
             stem_change_rescue = True
@@ -403,7 +403,7 @@ def derive_stem_final_and_cluster(row: Dict[str, str]) -> None:
             return
 
     # Final clusters after stripping final vowel
-    stem = strip_final_vowel(lemma_l)
+    stem = _strip_final_vowel(lemma_l)
     for cluster, consonant in FINAL_CLUSTERS.items():
         if stem.endswith(cluster):
             row["stem_final"] = consonant
@@ -452,7 +452,7 @@ def derive_frontstem_dorsal(row: Dict[str, str]) -> None:
     # Check both the lemma tail (to catch ci/ce at word boundary, e.g.
     # bici, ghiveci) and the stem tail after stripping the inflectional
     # vowel (to catch medial sequences like -gic-, -cie-).
-    stem = strip_final_vowel(lemma)
+    stem = _strip_final_vowel(lemma)
     lemma_tail = lemma[-4:] if len(lemma) >= 4 else lemma
     stem_tail = stem[-4:] if len(stem) >= 4 else stem
     if re.search(r"(?<!h)[cg][ie]", lemma_tail) or re.search(
@@ -461,7 +461,7 @@ def derive_frontstem_dorsal(row: Dict[str, str]) -> None:
         row["frontstem_dorsal"] = "True"
 
 
-def needleman_wunsch(s1: str, s2: str) -> Tuple[str, str]:
+def _needleman_wunsch(s1: str, s2: str) -> Tuple[str, str]:
     """
     Global alignment using Needleman-Wunsch algorithm.
     Returns (aligned_s1, aligned_s2) with '-' for gaps.
@@ -502,7 +502,7 @@ def needleman_wunsch(s1: str, s2: str) -> Tuple[str, str]:
     return "".join(reversed(aligned_s1)), "".join(reversed(aligned_s2))
 
 
-def has_tautomorphemic_front_vowel(
+def _has_tautomorphemic_front_vowel(
     lemma: str, plural: str, stem_final: str
 ) -> bool:
     """
@@ -529,7 +529,7 @@ def has_tautomorphemic_front_vowel(
         return False
 
     # Global alignment
-    aligned_lemma, aligned_plural = needleman_wunsch(lemma, plural)
+    aligned_lemma, aligned_plural = _needleman_wunsch(lemma, plural)
 
     # Map lemma indices → aligned positions
     lemma_to_aligned: Dict[int, int] = {}
@@ -575,7 +575,7 @@ def has_tautomorphemic_front_vowel(
     return False
 
 
-def detect_orth_change_dynamic(lemma: str, plural: str) -> str:
+def _detect_orth_change_dynamic(lemma: str, plural: str) -> str:
     """Detect minimal orthographic change via alignment.
 
     Returns "X→Y" where X is lemma segment, Y is plural segment.
@@ -589,7 +589,7 @@ def detect_orth_change_dynamic(lemma: str, plural: str) -> str:
     if lemma == plural:
         return "no change"
 
-    aligned_lemma, aligned_plural = needleman_wunsch(lemma, plural)
+    aligned_lemma, aligned_plural = _needleman_wunsch(lemma, plural)
 
     diff_cols = [
         i
@@ -704,14 +704,14 @@ def derive_mutation_and_orth_change(row: Dict[str, str]) -> None:
     if not stem_final:
         row["mutation"] = "False"
         # Still compute orth_change for reference
-        orth_change = detect_orth_change_dynamic(lemma, plural)
+        orth_change = _detect_orth_change_dynamic(lemma, plural)
         if orth_change in {"∅→iur", "∅→riu"} and plural.endswith("uri"):
             orth_change = "∅→uri"
         row["orth_change"] = orth_change
         return
 
     # STEP 1: Discover orth_change dynamically
-    orth_change = detect_orth_change_dynamic(lemma, plural)
+    orth_change = _detect_orth_change_dynamic(lemma, plural)
 
     # Fix ∅→iur and ∅→riu typos (should be ∅→uri for -uri plurals)
     if orth_change in {"∅→iur", "∅→riu"} and plural.endswith("uri"):
@@ -916,7 +916,7 @@ def derive_opportunity(row: Dict[str, str]) -> None:
     if mutation == "False":
         # Use alignment to find what vowel follows stem_final in plural
         # This prevents false positives from irrelevant i/e elsewhere
-        aligned_lemma, aligned_plural = needleman_wunsch(
+        aligned_lemma, aligned_plural = _needleman_wunsch(
             lemma.lower(), plural.lower()
         )
 
@@ -959,7 +959,7 @@ def derive_opportunity(row: Dict[str, str]) -> None:
             return
 
 
-def explode_pipe_group(
+def _explode_pipe_group(
     row: Dict[str, str],
     main_field: str,
     companion_fields: List[str],
@@ -981,10 +981,10 @@ def explode_pipe_group(
             row[name] = vals[0] if vals else ""
         return [row]
 
-    def split_field(name: str) -> List[str]:
+    def _split_field(name: str) -> List[str]:
         return _split(row.get(name, ""))
 
-    companion_lists = [split_field(name) for name in companion_fields]
+    companion_lists = [_split_field(name) for name in companion_fields]
     n = len(items)
 
     if n <= 1:
@@ -993,12 +993,12 @@ def explode_pipe_group(
             row[name] = vals[0] if vals else ""
         return [row]
 
-    def pad_to(lst: List[str], length: int) -> List[str]:
+    def _pad_to(lst: List[str], length: int) -> List[str]:
         if len(lst) < length:
             lst = lst + [""] * (length - len(lst))
         return lst[:length]
 
-    companion_lists = [pad_to(vals, n) for vals in companion_lists]
+    companion_lists = [_pad_to(vals, n) for vals in companion_lists]
     exploded: List[Dict[str, str]] = []
     for idx, item in enumerate(items):
         new_row = dict(row)
@@ -1011,14 +1011,14 @@ def explode_pipe_group(
 
 def explode_derived_verbs_row(row: Dict[str, str]) -> List[Dict[str, str]]:
     """Explode pipe-separated derived verbs into separate rows."""
-    return explode_pipe_group(
+    return _explode_pipe_group(
         row,
         main_field="derived_verbs",
         companion_fields=["deriv_suffixes", "ipa_derived_verbs"],
     )
 
 
-def normalize_unicode_g2p(s: str) -> str:
+def _normalize_unicode_g2p(s: str) -> str:
     """Normalize Unicode for G2P (cedilla → comma-below diacritics)."""
     s = unicodedata.normalize("NFC", s)
     s = s.replace("ş", "ș").replace("Ş", "Ș")
@@ -1059,7 +1059,7 @@ def to_ipa(word: str) -> str:
     """Broad Romanian G2P conversion."""
     if not isinstance(word, str) or not word:
         return ""
-    w = normalize_unicode_g2p(word).lower()
+    w = _normalize_unicode_g2p(word).lower()
     for pat, repl in IPA_RULES:
         w = re.sub(pat, repl, w)
     return w
@@ -1070,7 +1070,7 @@ DIMINUTIVE_J_SUFFIXES = ("aică", "oaică", "uică", "eică", "iică")
 
 def tweak_nominal_ipa(lemma: str, ipa: str) -> str:
     """Adjust IPA for diminutive suffixes (i+kə → j+kə)."""
-    lemma_norm = normalize_unicode_g2p(lemma).lower()
+    lemma_norm = _normalize_unicode_g2p(lemma).lower()
     if lemma_norm.endswith(DIMINUTIVE_J_SUFFIXES):
         ipa = re.sub(r"i(kə)$", r"j\1", ipa)
     return ipa
@@ -1182,11 +1182,11 @@ def derive_target_is_suffix(row: Dict[str, str]) -> None:
             target_start = len(lemma) - len(cluster)
             target_end = len(lemma)
         else:
-            stem = strip_final_vowel(lemma)
+            stem = _strip_final_vowel(lemma)
             target_start = len(stem) - len(cluster)
             target_end = len(stem)
     else:
-        stem = strip_final_vowel(lemma)
+        stem = _strip_final_vowel(lemma)
         target_start = -1
         for i in range(len(stem) - 1, -1, -1):
             if stem[i] == stem_final:
@@ -1218,7 +1218,7 @@ def derive_derived_verbs_fields(row: Dict[str, str]) -> None:
     suffixes: List[str] = []
     ipa_list: List[str] = []
     for verb in verb_list:
-        norm = normalize_unicode_g2p(verb).lower()
+        norm = _normalize_unicode_g2p(verb).lower()
         # Check longer/more specific suffixes BEFORE the bare ones
         # so iza/ifica/ări/ăni/arisi don't collapse to -a/-i.
         if norm.endswith("ifica"):
@@ -1416,7 +1416,7 @@ def derive_nde_class(row: Dict[str, str]) -> None:
     # vowel in the lemma.  Words like butoi→butoaie (t followed by o,
     # not a front vowel) should NOT be classified as gimpe.
     orth_change = row.get("orth_change", "")
-    if orth_change_is_vowels_or_le(orth_change):
+    if _orth_change_is_vowels_or_le(orth_change):
         sf_fv_pattern = stem_final + "[ie]"
         if re.search(sf_fv_pattern, lemma):
             row["nde_class"] = "gimpe"
@@ -1447,7 +1447,7 @@ def derive_nde_class(row: Dict[str, str]) -> None:
     #   - alice → alice: lemma=plural, both have 'ce' ✓
     #   - abstinentă → abstinente: lemma has 'ti' internally,
     #     but plural creates NEW 'te' at end ✗ (not GIMPE)
-    if has_tautomorphemic_front_vowel(lemma, plural, stem_final):
+    if _has_tautomorphemic_front_vowel(lemma, plural, stem_final):
         row["nde_class"] = "gimpe"
         return
 
@@ -1463,7 +1463,7 @@ def fix_nde_mutations(row: Dict[str, str]) -> None:
         row["palatal_consonant_pl"] = ""
 
 
-def lemma_has_palatal_coronal(lemma: str, stem_final: str) -> bool:
+def _lemma_has_palatal_coronal(lemma: str, stem_final: str) -> bool:
     """
     Detect if lemma already has the palatal output grapheme for a coronal.
 
@@ -1534,7 +1534,7 @@ def fix_underlying_palatals(row: Dict[str, str]) -> None:
 
     # Case 2: Palatal coronals already in lemma (ț/ș/j/z in palatal sense)
     if stem_final in {"t", "d", "s", "z"}:
-        if lemma_has_palatal_coronal(lemma, stem_final) and not nde_class:
+        if _lemma_has_palatal_coronal(lemma, stem_final) and not nde_class:
             # Lemma already has the palatal grapheme → underlyingly palatal
             # Exclude from alternation domain
             row["stem_final"] = ""
@@ -1713,7 +1713,7 @@ def derive_exception_reason(row: Dict[str, str]) -> None:
     #    (e.g., ușcă, where ș+c is not a clean sc cluster for analysis).
     if lemma:
         lemma_lower = lemma.lower()
-        stem = strip_final_vowel(lemma_lower)
+        stem = _strip_final_vowel(lemma_lower)
         tail = stem[-4:] if len(stem) >= 4 else stem
         if stem_final in PALATAL_SURFACE:
             pal = PALATAL_SURFACE[stem_final]
