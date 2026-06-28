@@ -300,9 +300,7 @@ class _SqliteKVStore:
     def __init__(self, path: Path) -> None:
         self._path = path
         self._lock = threading.Lock()
-        self._conn = sqlite3.connect(
-            str(path), check_same_thread=False
-        )
+        self._conn = sqlite3.connect(str(path), check_same_thread=False)
         # Default DELETE journal mode keeps the per-transaction
         # journal small; commits are durable per-row.
         self._conn.execute(
@@ -332,17 +330,14 @@ class _SqliteKVStore:
     def __setitem__(self, url: str, html: str) -> None:
         with self._lock:
             self._conn.execute(
-                "INSERT OR REPLACE INTO cache "
-                "(url, html) VALUES (?, ?)",
+                "INSERT OR REPLACE INTO cache " "(url, html) VALUES (?, ?)",
                 (url, html),
             )
             self._conn.commit()
 
     def __len__(self) -> int:
         with self._lock:
-            row = self._conn.execute(
-                "SELECT COUNT(*) FROM cache"
-            ).fetchone()
+            row = self._conn.execute("SELECT COUNT(*) FROM cache").fetchone()
         return int(row[0])
 
 

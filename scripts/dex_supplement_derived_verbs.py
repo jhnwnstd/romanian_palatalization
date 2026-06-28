@@ -279,7 +279,8 @@ def main() -> None:
         fieldnames = reader.fieldnames or []
     print(f"  Loaded {len(rows):,} raw_dex rows")
 
-    # Build the row list to supplement: only those whose lemma appears in targets_by_lemma.
+    # Build the row list to supplement: only rows whose lemma appears
+    # in targets_by_lemma.
     targets = []
     for r in rows:
         lemma = (r.get("lemma") or "").strip().lower()
@@ -332,7 +333,8 @@ def main() -> None:
                 print(
                     f"  [{idx:5}/{len(targets)}]  confirmed={confirmed:4d}  "
                     f"queries={queries:7d}  rate={rate:.2f} lemmas/s  "
-                    f"elapsed={elapsed/60:.1f}min  eta_total={est_total:.0f}min",
+                    f"elapsed={elapsed / 60:.1f}min  "
+                    f"eta_total={est_total:.0f}min",
                     flush=True,
                 )
             if idx % save_every == 0:
@@ -354,7 +356,7 @@ def main() -> None:
     print(f"  Eligible nouns processed: {len(targets):,}")
     print(f"  Nouns supplemented with at least one verb: {confirmed:,}")
     print(f"  Total candidate queries: {queries:,}")
-    print(f"  Elapsed: {elapsed/60:.1f} min", flush=True)
+    print(f"  Elapsed: {elapsed / 60:.1f} min", flush=True)
 
     # Show a sample of supplemented entries
     print("\n=== Sample supplemented (first 30) ===")
@@ -375,7 +377,8 @@ def main() -> None:
         f"  cp {OUTPUT_CSV} {RAW_DEX_CSV}   # backup the original first if you like"
     )
     print(
-        "  ./run_pipeline.sh                # re-runs stages 4-6 with the new derived_verbs"
+        "  ./run_pipeline.sh                "
+        "# re-runs stages 4-6 with the new derived_verbs"
     )
 
 

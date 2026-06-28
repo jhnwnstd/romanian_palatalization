@@ -1713,7 +1713,9 @@ def parse_romanian_entry(
         "ipa_raw_pl": "",
     }
     if pos == "N":
-        gender = tpl.get("gender") or _extract_gender_from_template(block) or ""
+        gender = (
+            tpl.get("gender") or _extract_gender_from_template(block) or ""
+        )
         result["gender"] = gender
         plural = ""
         if tpl.get("plural"):
