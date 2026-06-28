@@ -19,6 +19,8 @@ OPTIONAL_PACKAGES = {
     "flake8": "flake8",
     "flake8-bugbear": "bugbear",
     "flake8-comprehensions": "flake8_comprehensions",
+    "ijson": "ijson",
+    "scipy": "scipy",
     "mypy": "mypy",
     "isort": "isort",
 }
@@ -82,6 +84,8 @@ def main() -> int:
     print("  pip install .")
     print("Or for editable install with dev tools:")
     print("  pip install -e .[dev]")
+    print("Optional utility-script extras:")
+    print("  pip install -e .[tools]")
     return 1
 
 

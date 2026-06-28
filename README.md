@@ -1,6 +1,6 @@
 # Romanian Palatalization 
 
-[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
@@ -31,6 +31,12 @@ For development (includes linting, type checking, and testing tools):
 
 ```bash
 pip install -e .[dev]
+```
+
+For the auxiliary analysis and migration scripts as well:
+
+```bash
+pip install -e .[dev,tools]
 ```
 
 Optional sanity check:
@@ -102,7 +108,7 @@ romanian_palatalization/
 
 ## Requirements
 
-* Python 3.9 or higher
+* Python 3.11 or higher
 * R 4.x (for statistical analysis)
 * R packages used in `analysis/analyze_romanian_palatalization.R`
   (including `cmdstanr` and other Bayesian modeling dependencies)

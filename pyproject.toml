@@ -50,6 +50,10 @@ dev = [
     "pytest>=7.0.0",
     "types-requests>=2.31.0.0",
 ]
+tools = [
+    "ijson>=3.2.0",
+    "scipy>=1.11.0",
+]
 
 [project.urls]
 "Bug Tracker" = "https://github.com/jhnwnstd/romanian_palatalization/issues"
