@@ -1,35 +1,35 @@
-Loaded 377 (lemma, dvs, ...) tuples that pass row filters.
-Etymology decisions: 708 explicit pairs, 4 user-keep lemmas, 374 verb verdicts.
+Loaded 384 (lemma, dvs, ...) tuples that pass row filters.
+Etymology decisions: 715 explicit pairs, 4 user-keep lemmas, 374 verb verdicts.
 
 ==============================================================================
 STERIADE-STRICT  (column INCLUDES trigger-absent verbs)
 Tests Steriade's literal lexeme-level affix-avoidance claim.
 ==============================================================================
 
-TOP-1000  (n_kept = 80)
+TOP-1000  (n_kept = 87)
   dorsal  :  alt-pl    4  -i /   9  -a    nonalt-pl    1  -i /   7  -a    n =   21    OR = 3.11    p = 0.606
-  coronal :  alt-pl    6  -i /   4  -a    nonalt-pl    6  -i /  43  -a    n =   59    OR = 10.75    p = 0.003
-  pooled  :  alt-pl   10  -i /  13  -a    nonalt-pl    7  -i /  50  -a    n =   80    OR = 5.49    p = 0.005
+  coronal :  alt-pl    9  -i /   4  -a    nonalt-pl    7  -i /  46  -a    n =   66    OR = 14.79    p = 1.37e-04
+  pooled  :  alt-pl   13  -i /  13  -a    nonalt-pl    8  -i /  53  -a    n =   87    OR = 6.62    p = 6.26e-04
 
-FULL DEX  (n_kept = 377)
+FULL DEX  (n_kept = 384)
   dorsal  :  alt-pl   59  -i /  36  -a    nonalt-pl    8  -i /  17  -a    n =  120    OR = 3.48    p = 0.012
-  coronal :  alt-pl   15  -i /  23  -a    nonalt-pl   48  -i / 171  -a    n =  257    OR = 2.32    p = 0.025
-  pooled  :  alt-pl   74  -i /  59  -a    nonalt-pl   56  -i / 188  -a    n =  377    OR = 4.21    p = 2.89e-10
+  coronal :  alt-pl   18  -i /  23  -a    nonalt-pl   49  -i / 174  -a    n =  264    OR = 2.78    p = 0.006
+  pooled  :  alt-pl   77  -i /  59  -a    nonalt-pl   57  -i / 191  -a    n =  384    OR = 4.37    p = 8.68e-11
 
 ==============================================================================
 BOTH-AXES-EXCLUDED  (column EXCLUDES TRIGGER-ABSENT verbs)
 Robustness check: symmetric construct, sacrifices coronal stratum power.
 ==============================================================================
 
-TOP-1000  (n_kept = 40)
+TOP-1000  (n_kept = 47)
   dorsal  :  alt-pl    4  -i /   8  -a    nonalt-pl    1  -i /   4  -a    n =   17    OR = 2.00    p = 1.000
-  coronal :  alt-pl    2  -i /   1  -a    nonalt-pl    3  -i /  17  -a    n =   23    OR = 11.33    p = 0.107
-  pooled  :  alt-pl    6  -i /   9  -a    nonalt-pl    4  -i /  21  -a    n =   40    OR = 3.50    p = 0.135
+  coronal :  alt-pl    5  -i /   1  -a    nonalt-pl    4  -i /  20  -a    n =   30    OR = 25.00    p = 0.005
+  pooled  :  alt-pl    9  -i /   9  -a    nonalt-pl    5  -i /  24  -a    n =   47    OR = 4.80    p = 0.024
 
-FULL DEX  (n_kept = 203)
+FULL DEX  (n_kept = 210)
   dorsal  :  alt-pl   59  -i /  29  -a    nonalt-pl    7  -i /  10  -a    n =  105    OR = 2.91    p = 0.056
-  coronal :  alt-pl    4  -i /   8  -a    nonalt-pl   16  -i /  70  -a    n =   98    OR = 2.19    p = 0.258
-  pooled  :  alt-pl   63  -i /  37  -a    nonalt-pl   23  -i /  80  -a    n =  203    OR = 5.92    p = 4.04e-09
+  coronal :  alt-pl    7  -i /   8  -a    nonalt-pl   17  -i /  73  -a    n =  105    OR = 3.76    p = 0.040
+  pooled  :  alt-pl   66  -i /  37  -a    nonalt-pl   24  -i /  83  -a    n =  210    OR = 6.17    p = 1.14e-09
 
 ==============================================================================
 CONTAMINATION DIAGNOSTIC: trigger-absent share of -i column
@@ -45,11 +45,12 @@ CONTAMINATION DIAGNOSTIC: trigger-absent share of -i column
     noalt, verdict=TRIGGER-ABSENT:   2  (2.7%)
     noalt, verdict=UNKNOWN       :   1  (1.4%)
 
-  coronal -i column (n=71):
-    alt  , verdict=ALTERNATES    :   4  (5.6%)
-    alt  , verdict=TRIGGER-ABSENT:  11  (15.5%)
-    noalt, verdict=ALTERNATES    :   5  (7.0%)
-    noalt, verdict=NO-PARADIGM   :   7  (9.9%)
-    noalt, verdict=TRIGGER-ABSENT:  35  (49.3%)
-    noalt, verdict=UNKNOWN       :   8  (11.3%)
-    noalt, verdict=USER_KEEP     :   1  (1.4%)
+  coronal -i column (n=75):
+    alt  , verdict=ALTERNATES    :   4  (5.3%)
+    alt  , verdict=TRIGGER-ABSENT:  11  (14.7%)
+    alt  , verdict=UNKNOWN       :   3  (4.0%)
+    noalt, verdict=ALTERNATES    :   5  (6.7%)
+    noalt, verdict=NO-PARADIGM   :   7  (9.3%)
+    noalt, verdict=TRIGGER-ABSENT:  35  (46.7%)
+    noalt, verdict=UNKNOWN       :   9  (12.0%)
+    noalt, verdict=USER_KEEP     :   1  (1.3%)
