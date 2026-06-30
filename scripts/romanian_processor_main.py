@@ -212,32 +212,44 @@ def process_csv(input_path: str, output_path: str) -> None:
                     exp_row.get("plural", ""),
                 )
                 if key in seen_entries:
-                    # Keep the version with more derivation data
+                    # Merge derivation data into the existing entry.
+                    # Two sources of duplicate keys:
+                    #   1. explode_derived_verbs_row split a multi-verb
+                    #      input row into one row per verb (the common
+                    #      case for nouns with several denominal verbs).
+                    #   2. The raw CSV genuinely had two rows for the
+                    #      same (lemma, pos, plural) — rare but possible.
+                    # In both cases we want the UNION of the verbs, not
+                    # the first one to arrive. Dropping the second was a
+                    # latent bug that systematically lost ~80% of
+                    # multi-verb data (e.g., fabrică keeping the plural
+                    # noun "fabrici" while dropping the real infinitive
+                    # "fabrica").
                     existing_idx = seen_entries[key]
                     existing = rows[existing_idx]
-                    new_has_dv = bool(exp_row.get("derived_verbs"))
-                    old_has_dv = bool(existing.get("derived_verbs"))
+                    old_dv = (existing.get("derived_verbs") or "").strip()
+                    new_dv = (exp_row.get("derived_verbs") or "").strip()
+                    if new_dv:
+                        old_verbs = [
+                            v.strip() for v in old_dv.split("|") if v.strip()
+                        ]
+                        new_verbs = [
+                            v.strip() for v in new_dv.split("|") if v.strip()
+                        ]
+                        merged = old_verbs + [
+                            v for v in new_verbs if v not in old_verbs
+                        ]
+                        if merged != old_verbs:
+                            existing["derived_verbs"] = "|".join(merged)
+                            # Re-derive companion fields from the union.
+                            derive_derived_verbs_fields(existing)
                     new_has_da = bool(exp_row.get("derived_adj"))
                     old_has_da = bool(existing.get("derived_adj"))
-                    if (new_has_dv and not old_has_dv) or (
-                        new_has_da and not old_has_da
-                    ):
-                        # Merge: copy derivation fields from new
-                        if new_has_dv and not old_has_dv:
-                            existing["derived_verbs"] = exp_row[
-                                "derived_verbs"
-                            ]
-                            existing["deriv_suffixes"] = exp_row.get(
-                                "deriv_suffixes", ""
-                            )
-                            existing["ipa_derived_verbs"] = exp_row.get(
-                                "ipa_derived_verbs", ""
-                            )
-                        if new_has_da and not old_has_da:
-                            existing["derived_adj"] = exp_row["derived_adj"]
-                            existing["ipa_derived_adj"] = exp_row.get(
-                                "ipa_derived_adj", ""
-                            )
+                    if new_has_da and not old_has_da:
+                        existing["derived_adj"] = exp_row["derived_adj"]
+                        existing["ipa_derived_adj"] = exp_row.get(
+                            "ipa_derived_adj", ""
+                        )
                     duplicates_skipped += 1
                     continue
                 seen_entries[key] = len(rows)

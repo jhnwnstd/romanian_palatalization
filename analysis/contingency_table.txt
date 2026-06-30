@@ -1,16 +1,55 @@
-Loaded 458 (lemma, dvs, ...) tuples that pass row filters.
-Etymology decisions: 637 explicit pairs, 4 user-keep lemmas.
+Loaded 377 (lemma, dvs, ...) tuples that pass row filters.
+Etymology decisions: 708 explicit pairs, 4 user-keep lemmas, 374 verb verdicts.
 
 ==============================================================================
-Contingency table: row = plural alternates (mutation), column = verbalizer allomorph
+STERIADE-STRICT  (column INCLUDES trigger-absent verbs)
+Tests Steriade's literal lexeme-level affix-avoidance claim.
 ==============================================================================
 
-TOP-1000  (n_kept = 76)
-  dorsal  :  alt-pl    2  -i /   8  -a    nonalt-pl    1  -i /   6  -a    n =   17    OR = 1.50    p = 1.000
+TOP-1000  (n_kept = 80)
+  dorsal  :  alt-pl    4  -i /   9  -a    nonalt-pl    1  -i /   7  -a    n =   21    OR = 3.11    p = 0.606
   coronal :  alt-pl    6  -i /   4  -a    nonalt-pl    6  -i /  43  -a    n =   59    OR = 10.75    p = 0.003
-  pooled  :  alt-pl    8  -i /  12  -a    nonalt-pl    7  -i /  49  -a    n =   76    OR = 4.67    p = 0.018
+  pooled  :  alt-pl   10  -i /  13  -a    nonalt-pl    7  -i /  50  -a    n =   80    OR = 5.49    p = 0.005
 
-FULL DEX  (n_kept = 362)
-  dorsal  :  alt-pl   54  -i /  34  -a    nonalt-pl    8  -i /  16  -a    n =  112    OR = 3.18    p = 0.020
-  coronal :  alt-pl   14  -i /  23  -a    nonalt-pl   44  -i / 169  -a    n =  250    OR = 2.34    p = 0.033
-  pooled  :  alt-pl   68  -i /  57  -a    nonalt-pl   52  -i / 185  -a    n =  362    OR = 4.24    p = 1.11e-09
+FULL DEX  (n_kept = 377)
+  dorsal  :  alt-pl   59  -i /  36  -a    nonalt-pl    8  -i /  17  -a    n =  120    OR = 3.48    p = 0.012
+  coronal :  alt-pl   15  -i /  23  -a    nonalt-pl   48  -i / 171  -a    n =  257    OR = 2.32    p = 0.025
+  pooled  :  alt-pl   74  -i /  59  -a    nonalt-pl   56  -i / 188  -a    n =  377    OR = 4.21    p = 2.89e-10
+
+==============================================================================
+BOTH-AXES-EXCLUDED  (column EXCLUDES TRIGGER-ABSENT verbs)
+Robustness check: symmetric construct, sacrifices coronal stratum power.
+==============================================================================
+
+TOP-1000  (n_kept = 40)
+  dorsal  :  alt-pl    4  -i /   8  -a    nonalt-pl    1  -i /   4  -a    n =   17    OR = 2.00    p = 1.000
+  coronal :  alt-pl    2  -i /   1  -a    nonalt-pl    3  -i /  17  -a    n =   23    OR = 11.33    p = 0.107
+  pooled  :  alt-pl    6  -i /   9  -a    nonalt-pl    4  -i /  21  -a    n =   40    OR = 3.50    p = 0.135
+
+FULL DEX  (n_kept = 203)
+  dorsal  :  alt-pl   59  -i /  29  -a    nonalt-pl    7  -i /  10  -a    n =  105    OR = 2.91    p = 0.056
+  coronal :  alt-pl    4  -i /   8  -a    nonalt-pl   16  -i /  70  -a    n =   98    OR = 2.19    p = 0.258
+  pooled  :  alt-pl   63  -i /  37  -a    nonalt-pl   23  -i /  80  -a    n =  203    OR = 5.92    p = 4.04e-09
+
+==============================================================================
+CONTAMINATION DIAGNOSTIC: trigger-absent share of -i column
+(under STERIADE-STRICT coding)
+==============================================================================
+
+  dorsal -i column (n=74):
+    alt  , verdict=ALTERNATES    :  49  (66.2%)
+    alt  , verdict=NO-PARADIGM   :   9  (12.2%)
+    alt  , verdict=UNKNOWN       :   7  (9.5%)
+    noalt, verdict=ALTERNATES    :   5  (6.8%)
+    noalt, verdict=NO-PARADIGM   :   1  (1.4%)
+    noalt, verdict=TRIGGER-ABSENT:   2  (2.7%)
+    noalt, verdict=UNKNOWN       :   1  (1.4%)
+
+  coronal -i column (n=71):
+    alt  , verdict=ALTERNATES    :   4  (5.6%)
+    alt  , verdict=TRIGGER-ABSENT:  11  (15.5%)
+    noalt, verdict=ALTERNATES    :   5  (7.0%)
+    noalt, verdict=NO-PARADIGM   :   7  (9.9%)
+    noalt, verdict=TRIGGER-ABSENT:  35  (49.3%)
+    noalt, verdict=UNKNOWN       :   8  (11.3%)
+    noalt, verdict=USER_KEEP     :   1  (1.4%)
