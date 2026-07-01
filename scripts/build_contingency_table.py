@@ -1,75 +1,97 @@
 #!/usr/bin/env python3
 """Build the inflection-dependence contingency table.
 
-Canonical script for the table the abstract reports. Replicates the
-Steriade (2008) §10.2.3.5 lexical counts under the appropriate coding
-for our data:
+Canonical script for the table Steriade 2008 §10.2.3.5 offers as
+support for her paradigm-consultation account. Replicates her lexical
+counts on the modern lexicon, and reports the same test under three
+additional codings so the reader can see how sensitive the effect is
+to methodological choices.
 
-ROW
-    ``plural alternates`` yes/no, derived from the ``mutation`` field
-    of the lexicon CSV (which is the direct singular-vs-plural surface
-    comparison: t→ț, d→z, s→ș for coronals; orthographic ci/ce/gi/ge
-    for dorsals).
-
-COLUMN
-    Verbalizer allomorph (``-i`` vs ``-a``). This is Steriade's affix-
-    avoidance tabulation in her (10.20). We do not filter the column by
-    whether the verb's conjugated paradigm independently surfaces the
-    alternation — that is a separate (manifestation b) question, and
-    Steriade is explicit that it does not arise with derived verbs.
-
-EXCLUSIONS — row-side (applied in both codings)
-    - Rows whose ``exception_reason`` begins with ``nde:`` (the three
-      non-derived-environment-blocking classes Steriade also excludes).
-    - Derived verbs that don't pass the DEX etymology audit. The audit
-      categorizations are persisted in
-      ``data/derived_verb_etymology.csv`` (the canonical pipeline
-      artifact); only categories A, B, D are accepted.
-    - Explicit USER_KEEP allowlist for back-formations the etym audit
-      mis-rejects: clint, dinte, vargă, verigă.
-
-TWO CODINGS — emitted side-by-side
-----------------------------------
-The column-side trigger-absent question (whether to include verbs whose
-conjugation morphologically bleeds the trigger — the ``-esc``/``-ez``
-augmented classes) is methodologically contestable, so the script
-produces BOTH panels and prints the contamination diagnostic, letting
-the reader see what the choice buys.
-
-1. **STERIADE-STRICT** (column includes trigger-absent verbs).
-   Tests Steriade's literal lexeme-level affix-avoidance claim: given a
-   K/Tʃ vs K/K base, which verbalizer allomorph does the speaker
-   select? The augment is downstream of selection, so trigger-absent
-   verbs stay in. Caveat: the coronal ``-i`` column ends up ~79%
-   trigger-absent — the diagnostic block reports the exact share.
-
-2. **BOTH-AXES-EXCLUDED** (column excludes TRIGGER-ABSENT verbs).
-   Symmetric construct: both axes measure "actually licenses
-   palatalization." Cleaner column, but excluding ~80% of the coronal
-   ``-i`` column collapses the coronal stratum's power to detect an
-   effect alone; significance survives only in the pool.
-
-When forced to one table for space-constrained reports, prefer
-STERIADE-STRICT: it tests the literal claim, every stratum is
-significant, and the contamination is a coding choice defensible in
-one caption sentence. BOTH-AXES-EXCLUDED is the appropriate robustness
-check for a full paper.
-
-Etymology + paradigm sources of truth
--------------------------------------
-- ``data/derived_verb_etymology.csv`` — per-pair etymology category.
-- ``data/verb_paradigm_verdict.csv`` — per-verb conjugation verdict
-  (ALTERNATES / TRIGGER-ABSENT / NO-PARADIGM). Both are first-class
-  CSV pipeline artifacts; neither requires a live DEX cache lookup.
-
-Row coding (settled)
+The claim under test
 --------------------
-The row is ``mutation``-based, NOT the historic ``opportunity``-based
-allomorph proxy ``-i/-e`` vs ``-uri``. For coronals, the surface
-allomorph ``-e`` does not trigger assibilation (e.g. *casă/case*),
-so coding by allomorph mis-classifies coronal-``-e`` nouns as
-alternating. The ``mutation`` field records the actual sg-vs-pl
-comparison, which is the surface-to-surface licensing condition.
+For a noun with a target obstruent stem-final, the plural allomorph
+and the verbalizer allomorph co-vary: nouns whose plural palatalizes
+the stem-final tend to select the palatalizing verbalizer ``-i``;
+nouns whose plural doesn't palatalize tend to select ``-a``.
+
+Axes and coding
+---------------
+Two axes, two coding choices each → four panels.
+
+ROW = "does the plural palatalize?"
+  (a) MUTATION-FLAG — the lexicon's ``mutation`` boolean, a direct
+      surface-orth comparison of singular vs plural. Cheap and
+      Steriade-original.
+  (b) IPA-SG-vs-PL — compare the last consonantal segment of the
+      singular's normalised IPA to the same position in the plural's,
+      after stripping known plural-suffix material. Three empirical
+      states:
+        BASE→BASE   → K/K   (non-alternating)
+        BASE→PAL    → K/T͡ʃ ALTERNATING (mutation)
+        PAL→PAL     → K/T͡ʃ LEXICAL (base already palatal — arici,
+                       pace, elogiu; behaviourally K/T͡ʃ under both
+                       theories, so pooled with ALTERNATING; the split
+                       is reported for transparency)
+        PAL→BASE    → inconsistent, dropped
+      Catches (i) cluster cases where the orthographic comparison
+      conflates the sc→ʃt cascade into a single ``True`` flag; (ii)
+      lexical-palatal bases that the orthographic comparison
+      correctly marks non-mutating but that behave as K/T͡ʃ.
+
+COL = "does the derivation palatalize?"
+  (a) SUFFIX-ONLY — ``-i`` vs ``-a``. Steriade's literal claim is
+      about affix avoidance, which is what this measures.
+  (b) ALTERNATES-ONLY — a ``-i`` verb only counts as PAL evidence
+      if its paradigm verdict is ``ALTERNATES`` (verb actually surfaces
+      the palatalization in a diagnostic cell). ``TRIGGER-ABSENT``
+      verbs (whose ``-esc``/``-ez`` augment bleeds the phonological
+      trigger) test morphology, not phonology, and are dropped —
+      they can't distinguish "the base can palatalize" from "the base
+      can't". ``NO-PARADIGM`` verbs are also dropped (no evidence).
+
+The four panels
+---------------
+    row = MUTATION,  col = SUFFIX-ONLY       → LITERAL-STERIADE
+    row = MUTATION,  col = ALTERNATES-ONLY   → MUTATION-ALT
+    row = IPA,       col = SUFFIX-ONLY       → IPA-SUFFIX
+    row = IPA,       col = ALTERNATES-ONLY   → PRIMARY  (recommended)
+
+The PRIMARY panel is the honest test: both axes measure surface
+palatalization, neither is contaminated by allomorph choice masquerading
+as phonology or by augment-bled morphology masquerading as inertness.
+LITERAL-STERIADE reproduces the paper's own coding exactly; the other
+two are robustness cells of the 2×2 factorial. If all four agree in
+direction and significance, the effect is armoured against coding.
+
+Exclusions applied everywhere
+-----------------------------
+- ``pos == 'N'``; ``stem_final in {c, g, t, d, s, z}``
+- ``exception_reason`` doesn't start with ``nde:`` (Steriade's NDEB
+  excludes)
+- ``derived_verbs`` field non-empty
+- Nouns whose etymology-accepted verbs use *both* ``-i`` and ``-a``
+  emit two records (one per suffix), each carrying only the verbs of
+  that suffix. This keeps the ambiguous noun's evidence honest instead
+  of collapsing it to whichever suffix happens to be preferred.
+- Column-side: etymology audit accepts the (noun, verb) pair, or the
+  noun is in the ``USER_KEEP`` back-formation allowlist
+- Column-side: verbalizer restricted to ``{-i, -a}``. ``-ui`` is a
+  third suffix Steriade treats separately; reported in a small sidebar,
+  not in the main table
+- Row-side: rows whose IPA lemma or plural is missing/foreign-only get
+  a UNCLEAR classification and are dropped from the IPA-row panels
+  (but retained in the MUTATION-row panels, which don't need IPA)
+
+Two frequency scopes
+--------------------
+- TOP-1000: the top-1000 nouns by frequency, matching the size of
+  Steriade's own hand-collected sample.
+- FULL DEX: the modern-lexicon replication.
+
+Statistics
+----------
+Fisher's exact 2×2 per stem-class panel (dorsal / coronal / pooled).
+Fisher over chi-square because per-stem-class cells can be small.
 """
 
 from __future__ import annotations
@@ -83,16 +105,12 @@ from pathlib import Path
 from typing import Callable, Final
 
 from scipy.stats import fisher_exact
+from scipy.stats.contingency import odds_ratio
 
-# Add src to path so we can import the shared etymology + cache helpers.
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_PROJECT_ROOT / "src"))
 
 from dex_etymology import USER_KEEP  # noqa: E402
-
-# ---------------------------------------------------------------------------
-# Inputs / outputs
-# ---------------------------------------------------------------------------
 
 CSV_PATH: Final[Path] = (
     _PROJECT_ROOT / "data" / "romanian_lexicon_with_freq.csv"
@@ -106,14 +124,163 @@ VERDICT_CSV_PATH: Final[Path] = (
 OUTPUT_PATH: Final[Path] = _PROJECT_ROOT / "analysis" / "contingency_table.txt"
 
 TRIGGER_ABSENT: Final[str] = "TRIGGER-ABSENT"
+ALTERNATES: Final[str] = "ALTERNATES"
 
 TOP_N_FREQUENCY: Final[int] = 1_000
 
 DORSAL_STEMS: Final[frozenset[str]] = frozenset({"c", "g"})
-CORONAL_STEMS: Final[frozenset[str]] = frozenset({"t", "d", "s"})
+CORONAL_STEMS: Final[frozenset[str]] = frozenset({"t", "d", "s", "z"})
 TARGET_STEMS: Final[frozenset[str]] = DORSAL_STEMS | CORONAL_STEMS
 PLURAL_FRONT_OPPS: Final[frozenset[str]] = frozenset({"i", "e"})
 ACCEPTED_VERBALIZERS: Final[frozenset[str]] = frozenset({"-i", "-a"})
+
+
+# ---------------------------------------------------------------------------
+# IPA classifier for the row axis
+# ---------------------------------------------------------------------------
+#
+# The row axis under IPA coding is a three-state comparison of the
+# last stem-final consonant in the singular's normalised IPA to the
+# same position in the plural's. Both sides use the shared tokeniser
+# below so tie-barred affricates count as one segment.
+
+BASE_IPA: Final[dict[str, str]] = {
+    "c": "k",
+    "g": "ɡ",
+    "t": "t",
+    "d": "d",
+    "s": "s",
+    "z": "z",
+}
+PAL_IPA: Final[dict[str, str]] = {
+    "c": "t͡ʃ",
+    "g": "d͡ʒ",
+    "t": "t͡s",
+    "d": "z",
+    "s": "ʃ",
+    "z": "ʒ",
+}
+
+_PLURAL_SUFFIXES: Final[tuple[str, ...]] = (
+    "uri",
+    "urj",
+    "urʲ",
+    "ele",
+    "ile",
+    "j",
+    "ʲ",
+    "i",
+    "e",
+)
+# Singular strippable material — only vowels that participate in
+# inflectional class (-ă/-ə for feminine, -e for -e class). Other
+# vowels (o, ɨ) at word end are treated as stem-internal.
+_SING_SUFFIXES: Final[tuple[str, ...]] = ("ə", "e")
+
+_VOWELS: Final[set[str]] = set("aeiouəɨɛɔ")
+_GLIDES: Final[set[str]] = set("jw")
+_MARKS: Final[set[str]] = set("ˈˌ.'` ")
+
+
+def _tokens(ipa: str) -> list[str]:
+    """Split IPA into segment atoms; tie-barred affricates (t͡ʃ etc.)
+    are one atom of three code points."""
+    out: list[str] = []
+    i = 0
+    while i < len(ipa):
+        ch = ipa[i]
+        if ch in _MARKS:
+            i += 1
+            continue
+        if i + 2 < len(ipa) and ipa[i + 1] == "͡":
+            out.append(ipa[i : i + 3])
+            i += 3
+        else:
+            out.append(ch)
+            i += 1
+    return out
+
+
+def _first_variant(field_val: str) -> str:
+    """Return the first non-empty, non-foreign-language variant of a
+    pipe-separated IPA field. ``fr:absorbant``-style rows are dropped."""
+    for v in field_val.split(" | "):
+        v = v.strip()
+        if not v:
+            continue
+        if len(v) >= 3 and v[2] == ":" and v[:2].isalpha() and v[:2].islower():
+            continue
+        return v
+    return ""
+
+
+def _strip_suffix(ipa: str, suffixes: tuple[str, ...]) -> str:
+    """Strip the longest matching suffix once."""
+    for s in sorted(suffixes, key=len, reverse=True):
+        if ipa.endswith(s):
+            return ipa[: -len(s)]
+    return ipa
+
+
+def _last_consonantal(ipa: str) -> str | None:
+    """Walk reverse-tokens, skipping trailing vowels/glides/ʲ,
+    return the first consonantal segment we find."""
+    for tok in reversed(_tokens(ipa)):
+        head = tok[0]
+        if head in _VOWELS or head in _GLIDES or tok == "ʲ":
+            continue
+        return tok
+    return None
+
+
+def _form_class(ipa: str, sf: str, suffixes: tuple[str, ...]) -> str:
+    """Classify one form ('pal' / 'base' / 'other') for stem-final sf.
+
+    Cluster carve-out: for s-stems and c-stems, if /ʃ/ appears within
+    the last 4 chars of the stripped stem, the form counts as
+    palatalised (the sc→ʃt cascade puts ʃ before a coronal stop, not
+    at the very end).
+    """
+    ipa = _first_variant(ipa)
+    if not ipa:
+        return "other"
+    stem = _strip_suffix(ipa, suffixes)
+    if not stem:
+        return "other"
+    last = _last_consonantal(stem)
+    if last is None:
+        return "other"
+    if last == PAL_IPA[sf]:
+        return "pal"
+    if last == BASE_IPA[sf]:
+        return "base"
+    if sf in ("s", "c") and "ʃ" in stem[-4:]:
+        return "pal"
+    return "other"
+
+
+class IPARowClass(StrEnum):
+    """Three-state outcome of the sg-vs-pl IPA comparison."""
+
+    NONALT = "nonalt"  # sg base, pl base
+    ALT = "alt"  # sg base, pl palatal (a real mutation)
+    LEX = "lex"  # sg palatal, pl palatal (already palatal)
+    UNCLEAR = "unclear"  # missing IPA or PAL→BASE inconsistency
+
+
+def _classify_ipa_row(sg_ipa: str, pl_ipa: str, sf: str) -> IPARowClass:
+    """Three-state classification of the plural mutation via sg-vs-pl."""
+    sg = _form_class(sg_ipa, sf, _SING_SUFFIXES)
+    pl = _form_class(pl_ipa, sf, _PLURAL_SUFFIXES)
+    if sg == "other" or pl == "other":
+        return IPARowClass.UNCLEAR
+    if sg == "base" and pl == "pal":
+        return IPARowClass.ALT
+    if sg == "base" and pl == "base":
+        return IPARowClass.NONALT
+    if sg == "pal" and pl == "pal":
+        return IPARowClass.LEX
+    return IPARowClass.UNCLEAR  # pal→base is inconsistent
 
 
 # ---------------------------------------------------------------------------
@@ -122,42 +289,36 @@ ACCEPTED_VERBALIZERS: Final[frozenset[str]] = frozenset({"-i", "-a"})
 
 
 class StemClass(StrEnum):
-    """Articulatory class of the noun stem-final consonant."""
-
     DORSAL = "dorsal"
     CORONAL = "coronal"
 
 
-class PluralAlt(StrEnum):
-    """Whether the noun's plural form palatalizes the stem-final."""
+class RowCoding(StrEnum):
+    """How the row axis (plural class) is coded."""
 
-    ALTERNATES = "alt"
-    NON_ALTERNATING = "nonalt"
+    MUTATION = "mutation"  # orthographic ``mutation`` field
+    IPA = "ipa"  # sg-vs-pl IPA comparison
 
 
-class Verbalizer(StrEnum):
-    """Verbalizer allomorph the derived verb selects."""
+class ColCoding(StrEnum):
+    """How the column axis (verbalizer class) is coded."""
 
-    FRONT_I = "i"
-    BACK_A = "a"
+    SUFFIX_ONLY = "suffix"  # -i vs -a, no paradigm filter
+    ALTERNATES_ONLY = "alternates"  # -i verbs must be ALTERNATES verdict
 
 
 @dataclass(frozen=True, slots=True)
 class NounRecord:
-    """A single noun row that passes the contingency-table row filters.
-
-    Frozen + slots: this object flows between layers and shouldn't
-    mutate. ``derived_verbs`` is a tuple so the dataclass is hashable
-    if the caller needs it.
-    """
+    """A single noun row that passes the row-side filters."""
 
     lemma: str
     derived_verbs: tuple[str, ...]
     stem_final: str
     opportunity: str
-    deriv_suffix: str  # "-i" or "-a"
+    deriv_suffix: str
     mutation: bool
     frequency: float
+    ipa_row_class: IPARowClass
 
     @property
     def stem_class(self) -> StemClass:
@@ -167,26 +328,23 @@ class NounRecord:
             else StemClass.CORONAL
         )
 
-    @property
-    def plural_alt(self) -> PluralAlt:
-        return (
-            PluralAlt.ALTERNATES
-            if self.mutation
-            else PluralAlt.NON_ALTERNATING
-        )
-
-    @property
-    def verbalizer(self) -> Verbalizer:
-        return (
-            Verbalizer.FRONT_I
-            if self.deriv_suffix == "-i"
-            else Verbalizer.BACK_A
-        )
+    def plural_alt(self, coding: RowCoding) -> bool | None:
+        """Return True (alt) / False (nonalt) / None (drop) under the
+        given row coding."""
+        if coding is RowCoding.MUTATION:
+            return self.mutation
+        if self.ipa_row_class is IPARowClass.ALT:
+            return True
+        if self.ipa_row_class is IPARowClass.LEX:
+            return True  # pooled with ALT — both are K/T͡ʃ class
+        if self.ipa_row_class is IPARowClass.NONALT:
+            return False
+        return None  # UNCLEAR
 
 
 @dataclass(frozen=True, slots=True)
 class PanelStats:
-    """Fisher 2x2 result for one stem-class panel."""
+    """Fisher 2×2 result for one panel."""
 
     alt_i: int
     alt_a: int
@@ -199,7 +357,6 @@ class PanelStats:
 
     @property
     def is_complete(self) -> bool:
-        """All four marginals non-zero (required by Fisher's exact)."""
         return (
             self.alt_i + self.alt_a > 0
             and self.nonalt_i + self.nonalt_a > 0
@@ -207,13 +364,30 @@ class PanelStats:
             and self.alt_a + self.nonalt_a > 0
         )
 
-    def fisher(self) -> tuple[float, float] | None:
+    def fisher(self) -> tuple[float, float, float, float] | None:
+        """Return (odds ratio, 95% CI low, 95% CI high, p) or None if
+        any margin is zero.
+
+        OR and CI come from :func:`scipy.stats.contingency.odds_ratio`
+        with ``kind='sample'`` (matches Fisher's plain ``a·d/(b·c)``).
+        The CI is the exact conditional Fisher CI. p-value is Fisher's
+        two-sided exact test.
+        """
         if not self.is_complete:
             return None
-        odds, p = fisher_exact(
-            [[self.alt_i, self.alt_a], [self.nonalt_i, self.nonalt_a]]
+        table = [
+            [self.alt_i, self.alt_a],
+            [self.nonalt_i, self.nonalt_a],
+        ]
+        _, p = fisher_exact(table)
+        or_result = odds_ratio(table, kind="sample")
+        ci = or_result.confidence_interval(confidence_level=0.95)
+        return (
+            float(or_result.statistic),
+            float(ci.low),
+            float(ci.high),
+            float(p),
         )
-        return float(odds), float(p)
 
     def format_line(self, name: str) -> str:
         head = (
@@ -225,11 +399,20 @@ class PanelStats:
         fisher = self.fisher()
         if fisher is None:
             return head
-        odds, p = fisher
-        # Use scientific notation for vanishingly small p so highly
-        # significant results don't collapse to "0.000" in the report.
+        odds, ci_low, ci_high, p = fisher
         p_fmt = f"{p:.2e}" if p < 1e-3 else f"{p:.3f}"
-        return f"{head}    OR = {odds:.2f}    p = {p_fmt}"
+
+        def _or_fmt(x: float) -> str:
+            if x == float("inf"):
+                return "  inf"
+            if x >= 100:
+                return f"{x:5.0f}"
+            return f"{x:5.2f}"
+
+        return (
+            f"{head}    OR = {_or_fmt(odds)}  "
+            f"[{_or_fmt(ci_low)}, {_or_fmt(ci_high)}]    p = {p_fmt}"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -237,70 +420,46 @@ class PanelStats:
 # ---------------------------------------------------------------------------
 
 
-def _resolve_deriv_suffix(
+def _resolve_records(
     lemma: str,
     verbs: list[str],
     suffixes: list[str],
     accepted_by_pair: dict[tuple[str, str], bool],
     user_keep: set[str],
-) -> str | None:
-    """Pick the single ``deriv_suffix`` value that represents this noun.
+) -> list[tuple[str, tuple[str, ...]]]:
+    """Return one (suffix, verbs-for-that-suffix) pair per emit.
 
-    The lexicon may emit multi-token suffixes (e.g., ``-i|-a``) when a
-    noun has more than one denominal verb. The contingency table is a
-    per-noun structure so we have to pick one. The rule: among the
-    derived verbs the etymology audit ACCEPTS, take their suffix. If
-    every accepted verb uses the same suffix (the empirical pattern in
-    our data — zero genuinely-ambiguous cases), that's our answer. If
-    none of the listed verbs are accepted, return ``None`` so the
-    caller can drop the row gracefully.
-
-    USER_KEEP lemmas (back-formations the audit mis-rejects) fall
-    through to the first valid suffix.
+    A noun with etymology-accepted verbs under one suffix returns a
+    single-element list. A noun with accepted verbs under *both* ``-i``
+    and ``-a`` returns two elements — the analysis then counts the
+    noun once in each column, since the language demonstrably accepts
+    both derivations from the same base. A USER_KEEP noun with no
+    audited pair falls back to the first ACCEPTED_VERBALIZERS suffix
+    in the field. Any other configuration returns an empty list (drop).
     """
     pairs = [
         (v, s) for v, s in zip(verbs, suffixes) if s in ACCEPTED_VERBALIZERS
     ]
     if not pairs:
-        return None
-    accepted_suffixes = sorted(
-        {s for v, s in pairs if accepted_by_pair.get((lemma, v), False)}
-    )
-    if len(accepted_suffixes) == 1:
-        return accepted_suffixes[0]
-    if len(accepted_suffixes) > 1:
-        # Genuinely ambiguous: a noun has accepted verbs with both -i
-        # and -a. Empirically empty in our data; if it ever fires we
-        # default to -i (the palatalizing form, the marked choice that
-        # Steriade's claim is about). The script's diagnostic block
-        # will not flag this directly, but the run will.
-        return "-i"
+        return []
+    by_suffix: dict[str, list[str]] = {}
+    for v, s in pairs:
+        if accepted_by_pair.get((lemma, v), False):
+            by_suffix.setdefault(s, []).append(v)
+    if by_suffix:
+        return [(s, tuple(vs)) for s, vs in sorted(by_suffix.items())]
     if lemma in user_keep:
-        return pairs[0][1]
-    return None
+        first_v, first_s = pairs[0]
+        return [(first_s, (first_v,))]
+    return []
 
 
 def _load_records(
     accepted_by_pair: dict[tuple[str, str], bool],
     user_keep: set[str],
 ) -> tuple[list[NounRecord], dict[str, float]]:
-    """Read the lexicon CSV and return:
-    - the NounRecord list passing the row filters
-    - a {lemma → frequency} dict for ALL nouns (needed for top-N ranking
-      independently of whether the noun is in the contingency table)
-
-    Filters applied here (the trust boundary):
-      pos == "N"
-      stem_final in TARGET_STEMS
-      mutation field is non-empty
-      opportunity in {i, e, uri}
-      derived_verbs non-empty
-      exception_reason not starting with "nde:"
-      ``deriv_suffix`` resolves via :func:`_resolve_deriv_suffix` —
-      handles multi-token suffix strings by picking the accepted-verb
-      suffix; returns ``None`` (row dropped) if no accepted verb has a
-      valid suffix.
-    """
+    """Read the lexicon CSV and return the list of NounRecords that
+    pass the row-side filters, plus a {lemma → frequency} map."""
     records: list[NounRecord] = []
     seen: set[str] = set()
     frequency_by_lemma: dict[str, float] = {}
@@ -339,39 +498,40 @@ def _load_records(
                 for s in (row.get("deriv_suffixes") or "").split("|")
                 if s.strip()
             ]
-            deriv_suffix = _resolve_deriv_suffix(
+            resolutions = _resolve_records(
                 lemma, verbs, suffixes, accepted_by_pair, user_keep
             )
-            if deriv_suffix is None:
+            if not resolutions:
                 continue
             seen.add(lemma)
-            records.append(
-                NounRecord(
-                    lemma=lemma,
-                    derived_verbs=tuple(verbs),
-                    stem_final=stem_final,
-                    opportunity=opp,
-                    deriv_suffix=deriv_suffix,
-                    mutation=row["mutation"].strip().upper() == "TRUE",
-                    frequency=freq,
-                )
+            ipa_row_class = _classify_ipa_row(
+                row.get("ipa_normalized_lemma", ""),
+                row.get("ipa_normalized_pl", ""),
+                stem_final,
             )
+            mutation = row["mutation"].strip().upper() == "TRUE"
+            for deriv_suffix, resolved_verbs in resolutions:
+                records.append(
+                    NounRecord(
+                        lemma=lemma,
+                        derived_verbs=resolved_verbs,
+                        stem_final=stem_final,
+                        opportunity=opp,
+                        deriv_suffix=deriv_suffix,
+                        mutation=mutation,
+                        frequency=freq,
+                        ipa_row_class=ipa_row_class,
+                    )
+                )
     return records, frequency_by_lemma
 
 
 # ---------------------------------------------------------------------------
-# Etymology audit
+# Etymology + paradigm audits
 # ---------------------------------------------------------------------------
 
 
 def _load_verb_verdicts() -> dict[str, str]:
-    """Read the per-verb conjugation verdict CSV into ``{verb: verdict}``.
-
-    Verdict values follow :mod:`scripts.audit_verb_alternation`:
-    ``ALTERNATES``, ``TRIGGER-ABSENT``, ``NO-PARADIGM``. The CSV is the
-    canonical source; the legacy ``analysis/verb_alternation_audit.txt``
-    is a human-readable mirror only.
-    """
     out: dict[str, str] = {}
     with VERDICT_CSV_PATH.open(encoding="utf-8") as f:
         for row in csv.DictReader(f):
@@ -385,20 +545,6 @@ def _load_verb_verdicts() -> dict[str, str]:
 def _load_etymology_decisions() -> (
     tuple[dict[tuple[str, str], bool], set[str]]
 ):
-    """Read the structured etymology CSV into:
-
-    - ``accepted_by_pair``: ``{(noun, verb): True/False}`` from explicit
-      audit rows. ``True`` iff the audit categorized the pair as A, B,
-      or D (the ACCEPT set). Pairs absent from this map are
-      ``unclassified`` — the script will flag them rather than
-      silently treat them as rejected.
-    - ``user_keep``: set of nouns the explicit user-override list keeps
-      regardless of any individual verb's audit result.
-
-    The CSV is the canonical pipeline artifact; this function is the
-    single read path. See :mod:`romanian_palatalization.dex_etymology`
-    for the underlying category definitions.
-    """
     accepted: dict[tuple[str, str], bool] = {}
     user_keep: set[str] = set()
     with ETYMOLOGY_CSV_PATH.open(encoding="utf-8") as f:
@@ -412,8 +558,6 @@ def _load_etymology_decisions() -> (
                 continue
             if noun and verb:
                 accepted[(noun, verb)] = is_acc
-    # Merge in the hard-coded fallback so a missing CSV doesn't silently
-    # drop the back-formation overrides.
     user_keep |= set(USER_KEEP)
     return accepted, user_keep
 
@@ -422,15 +566,17 @@ def _accepted_verbs(
     record: NounRecord,
     accepted_by_pair: dict[tuple[str, str], bool],
     verdicts: dict[str, str],
-    exclude_trigger_absent: bool,
+    col_coding: ColCoding,
     unclassified_pairs: set[tuple[str, str]],
 ) -> list[str]:
-    """Return the verbs in ``record.derived_verbs`` that pass the
-    etymology audit (and, in BOTH-AXES-EXCLUDED mode, are NOT
-    trigger-absent in conjugation).
+    """Return the verbs on this noun that count as evidence under the
+    column coding.
 
-    Pairs missing from ``accepted_by_pair`` are added to
-    ``unclassified_pairs`` so the caller can warn about coverage gaps.
+    Under SUFFIX-ONLY, all etymology-accepted verbs pass through.
+    Under ALTERNATES-ONLY, ``-i`` verbs whose paradigm verdict isn't
+    ``ALTERNATES`` are dropped (their morphology bleeds the trigger,
+    or there's no paradigm data — either way, no phonological
+    evidence). ``-a`` verbs are always kept.
     """
     out: list[str] = []
     for verb in record.derived_verbs:
@@ -440,14 +586,17 @@ def _accepted_verbs(
             continue
         if not accepted_by_pair[key]:
             continue
-        if exclude_trigger_absent and verdicts.get(verb) == TRIGGER_ABSENT:
-            continue
+        if col_coding is ColCoding.ALTERNATES_ONLY:
+            # -a verbs: automatic. -i verbs: only if verdict ALTERNATES.
+            if record.deriv_suffix == "-i":
+                if verdicts.get(verb) != ALTERNATES:
+                    continue
         out.append(verb)
     return out
 
 
 # ---------------------------------------------------------------------------
-# Table building
+# Panel building
 # ---------------------------------------------------------------------------
 
 
@@ -459,24 +608,16 @@ def _build_panels(
     accepted_by_pair: dict[tuple[str, str], bool],
     user_keep: set[str],
     verdicts: dict[str, str],
-    exclude_trigger_absent: bool,
+    row_coding: RowCoding,
+    col_coding: ColCoding,
     unclassified_pairs: set[tuple[str, str]],
     scope: _ScopeFilter,
 ) -> tuple[dict[StemClass | str, PanelStats], int]:
-    """Build dorsal, coronal, and pooled panels for the records that
-    pass ``scope`` and the etymology audit.
+    """Build dorsal / coronal / pooled panels under a specific coding.
 
-    ``exclude_trigger_absent`` selects between codings:
-      - ``False`` (STERIADE-STRICT): column counts every accepted verb,
-        regardless of whether its conjugation paradigm bleeds the
-        trigger.
-      - ``True`` (BOTH-AXES-EXCLUDED): column drops verbs whose
-        conjugation verdict is ``TRIGGER-ABSENT``.
-
-    Returns the three panels keyed by ``StemClass`` plus a sentinel
-    "pooled" string, and the count of kept records.
+    Returns the three panels + the count of kept records.
     """
-    cells: dict[StemClass | str, Counter[tuple[PluralAlt, Verbalizer]]] = {
+    cells: dict[StemClass | str, Counter[tuple[bool, str]]] = {
         StemClass.DORSAL: Counter(),
         StemClass.CORONAL: Counter(),
         "pooled": Counter(),
@@ -485,8 +626,10 @@ def _build_panels(
     for record in records:
         if not scope(record):
             continue
+        row_alt = record.plural_alt(row_coding)
+        if row_alt is None:
+            continue  # UNCLEAR IPA
         if record.lemma in user_keep:
-            # User-keep nouns count even without an accepted verb.
             keep = True
         else:
             keep = bool(
@@ -494,29 +637,31 @@ def _build_panels(
                     record,
                     accepted_by_pair,
                     verdicts,
-                    exclude_trigger_absent,
+                    col_coding,
                     unclassified_pairs,
                 )
             )
         if not keep:
             continue
         n_kept += 1
-        key = (record.plural_alt, record.verbalizer)
+        key = (row_alt, record.deriv_suffix)
         cells[record.stem_class][key] += 1
         cells["pooled"][key] += 1
 
-    def pack(c: Counter[tuple[PluralAlt, Verbalizer]]) -> PanelStats:
+    def pack(c: Counter[tuple[bool, str]]) -> PanelStats:
         return PanelStats(
-            alt_i=c[(PluralAlt.ALTERNATES, Verbalizer.FRONT_I)],
-            alt_a=c[(PluralAlt.ALTERNATES, Verbalizer.BACK_A)],
-            nonalt_i=c[(PluralAlt.NON_ALTERNATING, Verbalizer.FRONT_I)],
-            nonalt_a=c[(PluralAlt.NON_ALTERNATING, Verbalizer.BACK_A)],
+            alt_i=c[(True, "-i")],
+            alt_a=c[(True, "-a")],
+            nonalt_i=c[(False, "-i")],
+            nonalt_a=c[(False, "-a")],
         )
 
-    return (
-        {k: pack(v) for k, v in cells.items()},
-        n_kept,
-    )
+    return ({k: pack(v) for k, v in cells.items()}, n_kept)
+
+
+# ---------------------------------------------------------------------------
+# Diagnostics
+# ---------------------------------------------------------------------------
 
 
 def _contamination_diagnostic(
@@ -525,14 +670,15 @@ def _contamination_diagnostic(
     user_keep: set[str],
     verdicts: dict[str, str],
 ) -> str:
-    """Quantify the trigger-absent share of each stratum's ``-i`` column.
+    """Under the SUFFIX-ONLY column coding, what share of the ``-i``
+    column has a trigger-absent paradigm verdict?
 
-    Surfaces the methodological contamination that motivates the
-    BOTH-AXES-EXCLUDED panel. Per-stratum breakdown of the (alt-pl,
-    nonalt-pl) × (ALTERNATES, TRIGGER-ABSENT, NO-PARADIGM) joint table
-    restricted to ``-i`` verbalizers.
+    High shares mean the SUFFIX-ONLY panel is measurably contaminated
+    by morphological-block cases where the -i suffix was selected but
+    palatalisation never applied. This is what motivates promoting
+    the ALTERNATES-ONLY column to primary.
     """
-    lines = []
+    lines: list[str] = []
     stem_groups: list[tuple[str, frozenset[str]]] = [
         ("dorsal", DORSAL_STEMS),
         ("coronal", CORONAL_STEMS),
@@ -545,14 +691,12 @@ def _contamination_diagnostic(
                 continue
             if rec.deriv_suffix != "-i":
                 continue
-            # Use all accepted verbs (Steriade-strict semantics) so the
-            # diagnostic reflects what the strict panel actually sees.
             for verb in _accepted_verbs(
                 rec,
                 accepted_by_pair,
                 verdicts,
-                exclude_trigger_absent=False,
-                unclassified_pairs=unclassified_throwaway,
+                ColCoding.SUFFIX_ONLY,
+                unclassified_throwaway,
             ) or ([] if rec.lemma not in user_keep else [""]):
                 verdict = (
                     verdicts.get(verb, "UNKNOWN") if verb else "USER_KEEP"
@@ -572,22 +716,186 @@ def _contamination_diagnostic(
     return "\n".join(lines)
 
 
+def _ipa_row_diagnostic(records: list[NounRecord]) -> str:
+    """Show the three-state IPA-row breakdown, especially the LEX
+    (already-palatal-in-singular) column that's silently pooled with
+    ALT.
+
+    Deduped by lemma so that ambiguous nouns (two records under the
+    multi-suffix fix) count once toward the row-state distribution.
+    """
+    lines: list[str] = []
+    lines.append("\n  Distribution of IPA-row states (deduped by lemma):")
+    seen: set[str] = set()
+    tab: Counter[tuple[str, IPARowClass]] = Counter()
+    for rec in records:
+        if rec.lemma in seen:
+            continue
+        seen.add(rec.lemma)
+        tab[(rec.stem_final, rec.ipa_row_class)] += 1
+
+    lines.append(
+        f"    {'sf':3s}  {'ALT':>5s}  {'LEX':>5s}  {'NONALT':>6s}  "
+        f"{'UNCLEAR':>7s}"
+    )
+    for sf in sorted(TARGET_STEMS):
+        alt = tab.get((sf, IPARowClass.ALT), 0)
+        lex = tab.get((sf, IPARowClass.LEX), 0)
+        non = tab.get((sf, IPARowClass.NONALT), 0)
+        unc = tab.get((sf, IPARowClass.UNCLEAR), 0)
+        lines.append(f"    {sf:3s}  {alt:5d}  {lex:5d}  {non:6d}  {unc:7d}")
+
+    # Lex breakdown: are the LEX rows selecting -i or -a? Under both
+    # theories they should behave like ALT (K/T͡ʃ class). If they don't,
+    # something's wrong.
+    lex_verbalizer: Counter[str] = Counter()
+    for rec in records:
+        if rec.ipa_row_class is IPARowClass.LEX:
+            lex_verbalizer[rec.deriv_suffix] += 1
+    if lex_verbalizer:
+        lines.append(
+            "\n  LEX rows (base already palatal in singular) — "
+            "verbalizer choice:"
+        )
+        for suf, n in sorted(lex_verbalizer.items()):
+            lines.append(f"    {suf:3s}: {n}")
+    return "\n".join(lines)
+
+
+def _ui_sidebar(
+    accepted_by_pair: dict[tuple[str, str], bool],
+    user_keep: set[str],
+) -> str:
+    """Report ``-ui`` verbs that the main panels drop.
+
+    Steriade treats ``-ui`` separately: like ``-i`` it ends in a front
+    vocoid but unlike ``-i`` it does not palatalise the base. If the
+    inflection-dependence hypothesis is right, ``-ui`` verbs should
+    pattern with ``-a`` (nonalt bases), not with ``-i`` (alt bases).
+    """
+    lines: list[str] = []
+    lines.append(
+        "\n  ``-ui`` verbs on target-stem nouns (etymology-audited, "
+        "deduped by lemma):"
+    )
+    lines.append(
+        "  Prediction under Steriade: if -ui doesn't palatalise, it "
+        "should pattern like -a — i.e. attach to nonalt (K/K) bases."
+    )
+    counts: Counter[tuple[str, bool]] = Counter()
+    total = 0
+    kept_lemmas: set[str] = set()
+    with CSV_PATH.open(encoding="utf-8") as f:
+        for row in csv.DictReader(f):
+            if row["pos"] != "N":
+                continue
+            sf = row["stem_final"]
+            if sf not in TARGET_STEMS:
+                continue
+            if row["mutation"].strip() == "":
+                continue
+            opp = row["opportunity"].strip()
+            if opp not in PLURAL_FRONT_OPPS and opp != "uri":
+                continue
+            if (row.get("exception_reason") or "").startswith("nde:"):
+                continue
+            derived_field = (row.get("derived_verbs") or "").strip()
+            if not derived_field:
+                continue
+            lemma = row["lemma"]
+            if lemma in kept_lemmas:
+                continue
+            verbs = [v.strip() for v in derived_field.split("|") if v.strip()]
+            suffixes = [
+                s.strip()
+                for s in (row.get("deriv_suffixes") or "").split("|")
+                if s.strip()
+            ]
+            ui_verbs = [v for v, s in zip(verbs, suffixes) if s == "-ui"]
+            if not ui_verbs:
+                continue
+            # Etymology gate: at least one accepted -ui pair, or lemma
+            # is USER_KEEP.
+            accepted = any(
+                accepted_by_pair.get((lemma, v), False) for v in ui_verbs
+            )
+            if not accepted and lemma not in user_keep:
+                continue
+            kept_lemmas.add(lemma)
+            total += 1
+            mutation = row["mutation"].strip().upper() == "TRUE"
+            counts[(sf, mutation)] += 1
+
+    if total == 0:
+        lines.append("    (no audited -ui pairs)")
+        return "\n".join(lines)
+    lines.append(
+        f"\n    {'sf':3s}  {'alt-pl':>7s}  {'nonalt-pl':>10s}  {'n':>4s}"
+    )
+    for sf in sorted(TARGET_STEMS):
+        a = counts.get((sf, True), 0)
+        n = counts.get((sf, False), 0)
+        if a + n == 0:
+            continue
+        lines.append(f"    {sf:3s}  {a:7d}  {n:10d}  {a + n:4d}")
+    lines.append(f"    {'':3s}  {'':7s}  {'':10s}  {total:4d}  (total)")
+    return "\n".join(lines)
+
+
 # ---------------------------------------------------------------------------
-# Entry point
+# Report
 # ---------------------------------------------------------------------------
 
 
-def _render_coding_panel(
+PANEL_MATRIX: Final[tuple[tuple[str, RowCoding, ColCoding, str], ...]] = (
+    (
+        "PRIMARY",
+        RowCoding.IPA,
+        ColCoding.ALTERNATES_ONLY,
+        "Row: sg-vs-pl IPA (3-state, pooled). "
+        "Col: -i verbs must be ALTERNATES; -a always kept.",
+    ),
+    (
+        "MUTATION-ALT",
+        RowCoding.MUTATION,
+        ColCoding.ALTERNATES_ONLY,
+        "Row: mutation flag (orth sg-vs-pl). "
+        "Col: -i verbs must be ALTERNATES; -a always kept.",
+    ),
+    (
+        "IPA-SUFFIX",
+        RowCoding.IPA,
+        ColCoding.SUFFIX_ONLY,
+        "Row: sg-vs-pl IPA. Col: -i vs -a suffix, no paradigm filter.",
+    ),
+    (
+        "LITERAL-STERIADE",
+        RowCoding.MUTATION,
+        ColCoding.SUFFIX_ONLY,
+        "Row: mutation flag. Col: -i vs -a suffix. "
+        "Literal Steriade coding — no ALTERNATES filter applied.",
+    ),
+)
+
+
+def _render_panel(
+    name: str,
+    row_coding: RowCoding,
+    col_coding: ColCoding,
+    caption: str,
     records: list[NounRecord],
     accepted_by_pair: dict[tuple[str, str], bool],
     user_keep: set[str],
     verdicts: dict[str, str],
-    exclude_trigger_absent: bool,
     frequency_by_lemma: dict[str, float],
     unclassified_pairs: set[tuple[str, str]],
 ) -> str:
-    """Render the TOP-1000 and FULL DEX subpanels for one coding."""
     lines: list[str] = []
+    lines.append("\n" + "=" * 78)
+    lines.append(f"{name}")
+    lines.append(caption)
+    lines.append("=" * 78)
+
     ranked = sorted(frequency_by_lemma.items(), key=lambda kv: -kv[1])
     top_lemmas: frozenset[str] = frozenset(
         lemma for lemma, _ in ranked[:TOP_N_FREQUENCY]
@@ -602,15 +910,16 @@ def _render_coding_panel(
             accepted_by_pair,
             user_keep,
             verdicts,
-            exclude_trigger_absent,
+            row_coding,
+            col_coding,
             unclassified_pairs,
             scope,
         )
         lines.append(f"\n{label}  (n_kept = {n_kept})")
-        for name in (StemClass.DORSAL, StemClass.CORONAL, "pooled"):
-            stats = panels[name]
-            display = name.value if isinstance(name, StemClass) else name
-            lines.append(stats.format_line(display))
+        for stem in (StemClass.DORSAL, StemClass.CORONAL, "pooled"):
+            stats = panels[stem]
+            disp = stem.value if isinstance(stem, StemClass) else stem
+            lines.append(stats.format_line(disp))
     return "\n".join(lines)
 
 
@@ -622,13 +931,6 @@ def _render_report(
     unclassified_pairs: set[tuple[str, str]],
     frequency_by_lemma: dict[str, float],
 ) -> str:
-    """Render the full contingency-table report.
-
-    Two codings (STERIADE-STRICT and BOTH-AXES-EXCLUDED), each with
-    TOP-{TOP_N_FREQUENCY} and FULL DEX subpanels, plus a contamination
-    diagnostic that quantifies the trigger-absent share of the ``-i``
-    column under the strict coding.
-    """
     lines: list[str] = []
     lines.append(
         f"Loaded {len(records)} (lemma, dvs, ...) tuples "
@@ -640,52 +942,47 @@ def _render_report(
         f"{len(verdicts)} verb verdicts."
     )
 
+    # IPA-row diagnostic — show the LEX split so it can't hide
     lines.append("\n" + "=" * 78)
-    lines.append("STERIADE-STRICT  (column INCLUDES trigger-absent verbs)")
-    lines.append(
-        "Tests Steriade's literal lexeme-level affix-avoidance claim."
-    )
+    lines.append("IPA-ROW DIAGNOSTIC: three-state sg-vs-pl breakdown")
     lines.append("=" * 78)
-    lines.append(
-        _render_coding_panel(
-            records,
-            accepted_by_pair,
-            user_keep,
-            verdicts,
-            exclude_trigger_absent=False,
-            frequency_by_lemma=frequency_by_lemma,
-            unclassified_pairs=unclassified_pairs,
-        )
-    )
+    lines.append(_ipa_row_diagnostic(records))
 
-    lines.append("\n" + "=" * 78)
-    lines.append("BOTH-AXES-EXCLUDED  (column EXCLUDES TRIGGER-ABSENT verbs)")
-    lines.append(
-        "Robustness check: symmetric construct, sacrifices coronal "
-        "stratum power."
-    )
-    lines.append("=" * 78)
-    lines.append(
-        _render_coding_panel(
-            records,
-            accepted_by_pair,
-            user_keep,
-            verdicts,
-            exclude_trigger_absent=True,
-            frequency_by_lemma=frequency_by_lemma,
-            unclassified_pairs=unclassified_pairs,
+    # Four panels, PRIMARY first
+    for name, row_coding, col_coding, caption in PANEL_MATRIX:
+        lines.append(
+            _render_panel(
+                name,
+                row_coding,
+                col_coding,
+                caption,
+                records,
+                accepted_by_pair,
+                user_keep,
+                verdicts,
+                frequency_by_lemma,
+                unclassified_pairs,
+            )
         )
-    )
 
+    # Contamination diagnostic under SUFFIX-ONLY column coding
     lines.append("\n" + "=" * 78)
     lines.append("CONTAMINATION DIAGNOSTIC: trigger-absent share of -i column")
-    lines.append("(under STERIADE-STRICT coding)")
+    lines.append(
+        "(under SUFFIX-ONLY column coding; motivates ALTERNATES-ONLY)"
+    )
     lines.append("=" * 78)
     lines.append(
         _contamination_diagnostic(
             records, accepted_by_pair, user_keep, verdicts
         )
     )
+
+    # -ui sidebar — Steriade treats -ui separately from -i/-a
+    lines.append("\n" + "=" * 78)
+    lines.append("SIDEBAR: -ui verbs (excluded from the main panels)")
+    lines.append("=" * 78)
+    lines.append(_ui_sidebar(accepted_by_pair, user_keep))
     return "\n".join(lines) + "\n"
 
 
@@ -704,16 +1001,10 @@ def main() -> None:
         frequency_by_lemma,
     )
     print(report, end="")
-
-    # Persist the report so future runs can be compared without re-
-    # running the script (e.g., when the user edits derived verbs).
     OUTPUT_PATH.write_text(report, encoding="utf-8")
     print(f"\nReport persisted to {OUTPUT_PATH}")
 
     if unclassified_pairs:
-        # Coverage gap: pairs in the lexicon that are missing from
-        # the etymology CSV. Print a concise summary so the user knows
-        # the etymology audit needs a refresh on these.
         n = len(unclassified_pairs)
         sample = sorted(unclassified_pairs)[:10]
         print(
@@ -723,11 +1014,6 @@ def main() -> None:
         print("First 10 unclassified pairs:")
         for noun, verb in sample:
             print(f"  {noun}  →  {verb}")
-        print(
-            "To refresh, re-run the supplement step or add the missing "
-            "rows to the etymology CSV with category in {A, B, D} "
-            "(accepted) or {C, E, F} (rejected)."
-        )
 
 
 if __name__ == "__main__":
