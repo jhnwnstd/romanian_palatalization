@@ -1,7 +1,7 @@
 Analysis: romanian-palatalization
 Target-stem rows validated: 11,641
 BOOLEAN mutation match: 11,363/11,641  (97.61%)
-SURFACE-IPA match: 10,913/11,641  (93.75%)
+SURFACE-IPA match: 10,917/11,641  (93.78%)
 
 ========================================================================
 Per (stem_final × opportunity)  bool match / mismatch / rate
@@ -38,7 +38,7 @@ Cluster-specific verification
 Refined mismatch breakdown (NORM_* = data-side transcription noise; RULE_FAILURE = residual)
 ========================================================================
 
-  [RULE_FAILURE]  n = 665
+  [RULE_FAILURE]  n = 661
     absolventă         → absolvente          (t, opp=e)  rules→F, data→T
       predicted='apsolvente'           attested='absolvente'           d=0.2
     accent             → accente             (t, opp=e)  rules→F, data→T
@@ -51,7 +51,7 @@ Refined mismatch breakdown (NORM_* = data-side transcription noise; RULE_FAILURE
       predicted='akoperəmɨnte'         attested='akoperəminte'         d=0.2
     acostament         → acostamente         (t, opp=e)  rules→F, data→T
       predicted='əkustəmene'           attested='akostamente'          d=2.3
-    ... and 659 more
+    ... and 655 more
 
   [ICA_SUPPLETION]  n = 85
     alunică            → alunele             (c, opp=e)  rules→T, data→F
@@ -118,8 +118,8 @@ Refined mismatch breakdown (NORM_* = data-side transcription noise; RULE_FAILURE
 Distance-to-working histogram
 ========================================================================
   0.0 (data-side noise)               n=   82  (  9.8%)  ex: babușcă
-  0.0–0.5 (very close)                n=  405  ( 48.2%)  ex: absolventă
-  0.5–1.0 (one feature off)           n=  207  ( 24.6%)  ex: acostat
+  0.0–0.5 (very close)                n=  405  ( 48.4%)  ex: absolventă
+  0.5–1.0 (one feature off)           n=  203  ( 24.3%)  ex: acostat
   1.0–2.0 (a few features off)        n=   45  (  5.4%)  ex: colos
-  2.0–4.0 (structural gap)            n=  100  ( 11.9%)  ex: compartiment
+  2.0–4.0 (structural gap)            n=  100  ( 12.0%)  ex: compartiment
   >4.0 (far)                          n=    1  (  0.1%)  ex: dilimache

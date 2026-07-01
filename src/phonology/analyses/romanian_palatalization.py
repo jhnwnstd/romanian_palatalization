@@ -259,9 +259,19 @@ POSTALVEOLAR_PLACE: Final[NaturalClass] = natural_class(
 )
 
 # [+Syllabic, +Front] — front-vowel condition for dorsal palatalization's
-# broad-terminator SEARCH.
+# broad-terminator SEARCH. Matches /i/ and /e/ (dorsals palatalize
+# before both -i and -e per the productivity table).
 FRONT_VOWEL: Final[NaturalClass] = natural_class(
     Syllabic="+",
+    Front="+",
+)
+
+# [+High, +Front] — the /i/-only trigger for assibilation. Distinct
+# from FRONT_VOWEL because assibilation MUST NOT fire before /e/
+# (which is +Syll +Front but -High): coronal stops palatalize before
+# -i but not before -e. See latex.tex:356-373 = e:assib.
+HIGH_FRONT_VOWEL: Final[NaturalClass] = natural_class(
+    High="+",
     Front="+",
 )
 
@@ -396,6 +406,12 @@ stop values, giving /ʃt/ for both /st-i/ and /sk-e/.
 
 ASSIBILATION: Final[UnificationRule] = UnificationRule(
     name="assibilation",
+    # Paper: ``[+Coronal, +Anterior]``. -Sonorant added as an
+    # implementation guard so /r/ and /l/ (both +Cor +Ant in Romanian)
+    # don't get their open Strident filled by this rule — the paper's
+    # abstract statement leaves that under-determined, but the intent
+    # is coronal STOPS. Not a divergence from the analysis, just an
+    # explicit statement of the segments it's meant to touch.
     target={
         "CORONAL": "+",
         "Anterior": "+",
@@ -404,16 +420,20 @@ ASSIBILATION: Final[UnificationRule] = UnificationRule(
     supply={"Strident": "+"},
     search=Search(
         direction=Direction.RIGHT,
-        terminator=_POSTALVEOLAR_PLACE,
-        condition=_POSTALVEOLAR_PLACE,
+        # Paper (latex.tex:366-374): ``__ [+High, +Front]``. Narrow
+        # terminator on the /i/-only trigger, so /e/ (+Syll +Front but
+        # -High) doesn't fire the rule. Non-members (any consonant
+        # between the target and /i/) are transparent.
+        terminator=HIGH_FRONT_VOWEL.spec,
+        condition=HIGH_FRONT_VOWEL.spec,
     ),
 )
-"""Assibilation (latex.tex:341-357 = e:assib).
+"""Assibilation (latex.tex:356-373 = e:assib).
 
-Supplies +Strident to anterior coronal stops before a postalveolar
-trigger. Aligned with S-pal on the trigger class for consistency
-with the revised analysis (one place class covers both rules per
-latex.tex:535).
+Supplies +Strident to anterior coronal stops before the /i/ vowel.
+Underspec /T/, /D/ take the value; prespec /t/, /d/ (-Strident from
+patch) resist by unification failure. A stop the bleed has already
+cleared to -Anterior also fails the target check.
 """
 
 
