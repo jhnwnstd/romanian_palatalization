@@ -1,24 +1,24 @@
 Target-stem rows validated: 11,641
-BOOLEAN mutation  match: 11,354/11,641  (97.53%)
-SURFACE-IPA match: 9,793/11,641  (84.13%)
+BOOLEAN mutation match: 11,363/11,641  (97.61%)
+SURFACE-IPA match: 10,913/11,641  (93.75%)
 
 ========================================================================
-Per (stem_final × opportunity)  bool_match / mismatch / rate
+Per (stem_final × opportunity)  bool match / mismatch / rate
 ========================================================================
   ('c', 'e'   ) ?     854 /    142    85.74%
   ('c', 'i'   )      1184 /     53    95.72%
   ('c', 'uri' )       319 /     15    95.51%
   ('d', 'e'   )       610 /      3    99.51%
-  ('d', 'i'   )       259 /      4    98.48%
+  ('d', 'i'   )       260 /      3    98.86%
   ('d', 'uri' )       147 /      3    98.00%
   ('g', 'e'   )       273 /      0   100.00%
   ('g', 'i'   )       378 /      2    99.47%
   ('g', 'uri' )       188 /      7    96.41%
   ('s', 'e'   )       505 /      4    99.21%
-  ('s', 'i'   )       980 /      4    99.59%
+  ('s', 'i'   )       981 /      3    99.70%
   ('s', 'uri' )       305 /      3    99.03%
   ('t', 'e'   )      2107 /     15    99.29%
-  ('t', 'i'   )      1521 /     16    98.96%
+  ('t', 'i'   )      1528 /      9    99.41%
   ('t', 'uri' )       668 /      5    99.26%
   ('z', 'e'   )       863 /      1    99.88%
   ('z', 'i'   ) ?     116 /     10    92.06%
@@ -34,69 +34,90 @@ Cluster-specific verification
   st(ă)+i    825 /     0   100.00%
 
 ========================================================================
-Mismatch breakdown by residual category
+Refined mismatch breakdown (NORM_* = data-side transcription noise; RULE_FAILURE = residual)
 ========================================================================
 
-  [IPA_SEGMENT_MISMATCH]  n = 1680
-    drăgaică           → drăgaice            (c, opp=e)  rules→T, data→F
-      predicted='drəɡajt͡ʃe'         attested='drəɡait͡ʃe'
-    abilitate          → abilități           (t, opp=i)  rules→T, data→F
-      predicted='abilitat͡sj'        attested='abilitət͡si'
-    abnormitate        → abnormități         (t, opp=i)  rules→T, data→F
-      predicted='abnormitat͡sj'      attested='abnormitət͡si'
-    abrudeancă         → abrudence           (c, opp=e)  rules→T, data→F
-      predicted='abrudeant͡ʃe'       attested='abrudent͡ʃe'
+  [RULE_FAILURE]  n = 665
     absolventă         → absolvente          (t, opp=e)  rules→F, data→T
-      predicted='apsolvente'         attested='absolvente'
+      predicted='apsolvente'           attested='absolvente'           d=0.2
     accent             → accente             (t, opp=e)  rules→F, data→T
-      predicted='aksənte'            attested='akt͡ʃente'
-    ... and 1674 more
+      predicted='aksənte'              attested='akt͡ʃente'            d=0.8
+    acetat             → acetați             (t, opp=i)  rules→T, data→F
+      predicted='əsətat͡sj'            attested='at͡ʃetat͡si'          d=1.2
+    acoperemânt        → acopereminte        (t, opp=e)  rules→F, data→T
+      predicted='akoperemɨnte'         attested='akopereminte'         d=0.2
+    acoperământ        → acoperăminte        (t, opp=e)  rules→F, data→T
+      predicted='akoperəmɨnte'         attested='akoperəminte'         d=0.2
+    acostament         → acostamente         (t, opp=e)  rules→F, data→T
+      predicted='əkustəmene'           attested='akostamente'          d=2.3
+    ... and 659 more
 
-  [UNKNOWN]  n = 132
-    afluent            → afluenți            (t, opp=i)  rules→F, data→T
-      predicted='əfluenj'            attested='afluent͡si'
-    alpenștoc          → alpenștocuri        (c, opp=uri)  rules→T, data→F
-      predicted='alpenʃtokurj'       attested='alpenʃtokuri'
-    amant              → amanți              (t, opp=i)  rules→F, data→T
-      predicted='əmanj'              attested='amant͡si'
-    arbuz              → arbuji              (z, opp=i)  rules→F, data→T
-      predicted='arbuzj'             attested='arbuʒi'
-    ascendent          → ascendenți          (t, opp=i)  rules→F, data→T
-      predicted='əsəndenj'           attested='ast͡ʃendent͡si'
-    atlant             → atlanți             (t, opp=i)  rules→F, data→T
-      predicted='əllanj'             attested='atlant͡si'
-    ... and 126 more
-
-  [ICA_SUPPLETION]  n = 103
+  [ICA_SUPPLETION]  n = 85
     alunică            → alunele             (c, opp=e)  rules→T, data→F
-      predicted='alunit͡ʃe'          attested='alunele'
+      predicted='alunit͡ʃe'            attested='alunele'              d=3.8
+    bogățică           → bogățele            (c, opp=e)  rules→T, data→F
+      predicted='boɡət͡sit͡ʃe'         attested='boɡət͡sele'           d=3.8
+    broșurică          → broșurele           (c, opp=e)  rules→T, data→F
+      predicted='broʃurit͡ʃe'          attested='broʃurele'            d=3.8
+    bătrânică          → bătrânele           (c, opp=e)  rules→T, data→F
+      predicted='bətrɨnit͡ʃe'          attested='bətrɨnele'            d=3.8
+    cetinică           → cetinele            (c, opp=e)  rules→T, data→F
+      predicted='t͡ʃetinit͡ʃe'         attested='t͡ʃetinele'           d=3.8
+    cicărică           → cicărele            (c, opp=e)  rules→T, data→F
+      predicted='t͡ʃikərit͡ʃe'         attested='t͡ʃikərele'           d=3.8
+    ... and 79 more
+
+  [NORM_TRAILING_GLIDE]  n = 82
+    alpenștoc          → alpenștocuri        (c, opp=uri)  rules→T, data→F
+      predicted='alpenʃtokurj'         attested='alpenʃtokuri'         d=0.3
+    așternut           → așternuturi         (t, opp=uri)  rules→T, data→F
+      predicted='aʃternuturj'          attested='aʃternuturi'          d=0.3
+    bașcă              → băști               (c, opp=i)  rules→T, data→F
+      predicted='baʃtj'                attested='bəʃti'                d=0.3
+    boșcă              → boști               (c, opp=i)  rules→T, data→F
+      predicted='boʃtj'                attested='boʃti'                d=0.3
+    bumașcă            → bumăști             (c, opp=i)  rules→T, data→F
+      predicted='bumaʃtj'              attested='buməʃti'              d=0.3
+    băbușcă            → băbuști             (c, opp=i)  rules→T, data→F
+      predicted='bəbuʃtj'              attested='bəbuʃti'              d=0.3
+    ... and 76 more
+
+  [UR_BUILD_FAILED]  n = 25
     argințică          → argințele           (c, opp=e)  rules→T, data→F
     bavețică           → bavețele            (c, opp=e)  rules→T, data→F
-    bogățică           → bogățele            (c, opp=e)  rules→T, data→F
-      predicted='boɡət͡sit͡ʃe'       attested='boɡət͡sele'
-    bonețică           → bonețele            (c, opp=e)  rules→T, data→F
-    broșurică          → broșurele           (c, opp=e)  rules→T, data→F
-      predicted='broʃurit͡ʃe'        attested='broʃurele'
-    ... and 97 more
-
-  [SHCA_CLUSTER_DATA]  n = 49
-    bașcă              → băști               (c, opp=i)  rules→T, data→F
-      predicted='baʃtj'              attested='bəʃti'
     biciușcă           → biciuști            (c, opp=i)  rules→T, data→F
-    boșcă              → boști               (c, opp=i)  rules→T, data→F
-      predicted='boʃtj'              attested='boʃti'
-    bumașcă            → bumăști             (c, opp=i)  rules→T, data→F
-      predicted='bumaʃtj'            attested='buməʃti'
-    băbușcă            → băbuști             (c, opp=i)  rules→T, data→F
-      predicted='bəbuʃtj'            attested='bəbuʃti'
-    caleașcă           → calești             (c, opp=i)  rules→T, data→F
-      predicted='kaleaʃtj'           attested='kaleʃti'
-    ... and 43 more
+    bonețică           → bonețele            (c, opp=e)  rules→T, data→F
+    bucățică           → bucățele            (c, opp=e)  rules→T, data→F
+    cernușcă           → cernuști            (c, opp=i)  rules→T, data→F
+    ... and 19 more
 
-  [SHT_LOANWORD]  n = 3
-    crenvirșt          → crenvirști          (t, opp=i)  rules→T, data→F
-      predicted='krenvirʃtj'         attested='krenvirʃti'
-    crenvurșt          → crenvurști          (t, opp=i)  rules→T, data→F
-      predicted='krenvurʃtj'         attested='krenvurʃti'
-    lebărvurșt         → lebărvurști         (t, opp=i)  rules→T, data→F
-      predicted='lebərvurʃtj'        attested='lebərvurʃti'
+  [NORM_EA_MONOPHTHONG]  n = 4
+    câșlăreasă         → câșlărese           (s, opp=e)  rules→T, data→F
+      predicted='kɨʃlərease'           attested='kɨʃlərese'            d=0.3
+    hoștează           → hoșteze             (z, opp=e)  rules→T, data→F
+      predicted='hoʃteaze'             attested='hoʃteze'              d=0.3
+    meștereasă         → meșterese           (s, opp=e)  rules→T, data→F
+      predicted='meʃterease'           attested='meʃterese'            d=0.3
+    șleahtă            → șlehte              (t, opp=e)  rules→T, data→F
+      predicted='ʃleahte'              attested='ʃlehte'               d=0.3
+
+  [NORM_MEDIAL_GLIDE]  n = 3
+    hăitușcă           → hăituște            (c, opp=e)  rules→T, data→F
+      predicted='həjtuʃte'             attested='həituʃte'             d=0.3
+    mierlușcă          → mierluște           (c, opp=e)  rules→T, data→F
+      predicted='mjerluʃte'            attested='mierluʃte'            d=0.3
+    muierușcă          → muieruște           (c, opp=e)  rules→T, data→F
+      predicted='mujeruʃte'            attested='muieruʃte'            d=0.3
+
+  [SHCA_CLUSTER_DATA]  n = 1
+    corodașcă          → corodắști           (c, opp=i)  rules→T, data→F
+      predicted='korodaʃtj'            attested='korodắʃti'            d=0.7
+
+========================================================================
+Distance-to-working histogram
+========================================================================
+  0.0–0.5 (very close)                n=  486  ( 57.9%)  ex: absolventă
+  0.5–1.0 (one feature off)           n=  208  ( 24.8%)  ex: acostat
+  1.0–2.0 (a few features off)        n=   44  (  5.2%)  ex: colos
+  2.0–4.0 (structural gap)            n=  101  ( 12.0%)  ex: compartiment
+  >4.0 (far)                          n=    1  (  0.1%)  ex: dilimache

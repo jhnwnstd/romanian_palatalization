@@ -96,6 +96,27 @@ class Segment:
                 return None
         return replace(self, features=new_feats)
 
+    def unify_verbose(
+        self, supply: FeatureMap,
+    ) -> tuple["Segment | None", tuple[str, str, str] | None]:
+        """Like :meth:`unify` but also returns diagnostic info.
+
+        On conflict returns ``(None, (feat, wanted, got))`` naming the
+        first supply value that contradicted an explicit segment value.
+        On success returns ``(new_segment, None)``. Used by
+        :mod:`phonology.diagnostics.explain` to explain rule failures.
+        """
+        new_feats = dict(self.features)
+        for feat, value in supply.items():
+            if value == UNSPEC:
+                continue
+            current = new_feats.get(feat, UNSPEC)
+            if current == UNSPEC:
+                new_feats[feat] = value
+            elif current != value:
+                return None, (feat, value, current)
+        return replace(self, features=new_feats), None
+
     def delete(self, names: frozenset[str]) -> Segment:
         """Return a copy with every named feature reset to ``"0"``.
 
@@ -133,7 +154,15 @@ def tokenize_ipa(ipa: str) -> tuple[str, ...]:
     (which ``normalize_ipa`` should already have stripped) are dropped
     defensively.
     """
-    skip = {" ", "\t", ".", "ˈ", "ˌ", "'", "`"}
+    # Marks we treat as segment-neutral: stress and syllable dots, and
+    # the length mark ː that some Wiktionary transcriptions include but
+    # our inventory does not distinguish.
+    skip = {" ", "\t", ".", "ˈ", "ˌ", "'", "`", "ː"}
+    # Common IPA characters that lax transcriptions use for phonemes
+    # our inventory writes with a different symbol. Mapping to the
+    # inventory's canonical form lets those transcriptions still
+    # tokenise instead of falling through to "unknown segment".
+    fold = {"ɛ": "e", "ɔ": "o", "g": "ɡ"}
     out: list[str] = []
     i = 0
     n = len(ipa)
@@ -142,6 +171,8 @@ def tokenize_ipa(ipa: str) -> tuple[str, ...]:
         if ch in skip:
             i += 1
             continue
+        if ch in fold:
+            ch = fold[ch]
         # A tie bar joins this base with the next base into one token.
         if i + 1 < n and ipa[i + 1] == _TIE_BAR and i + 2 < n:
             out.append(ipa[i] + _TIE_BAR + ipa[i + 2])

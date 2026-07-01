@@ -124,22 +124,33 @@ UNDERSPEC: Final[tuple[UnderspecifiedSegment, ...]] = (
     UnderspecifiedSegment(
         label="K",
         base="k",
-        clear=frozenset({"CORONAL", "DORSAL"}),
+        # Closure of every feature dorsal-palatalization writes: if the
+        # base /k/ ever gains a concrete Anterior/Distributed/Strident
+        # value in the JSON (currently all 0), the analysis would
+        # silently break because unification would hit a contrary
+        # explicit value. Clearing the full set makes /K/ auditably
+        # inalterable-free w.r.t. every dorsal-pal supply feature.
+        # Continuant is *not* cleared: it stays -Continuant (from /k/)
+        # so the palatalised result is the affricate /t͡ʃ/, not /ʃ/.
+        clear=frozenset(
+            {"CORONAL", "DORSAL", "Anterior", "Distributed", "Strident"}
+        ),
         reason=(
-            "/K/ is the palatalisable velar. CORONAL/DORSAL are "
-            "cleared so dorsal palatalization can write the postalv "
-            "place bundle. Continuant is *not* cleared: it stays "
-            "-Continuant (from /k/) so the palatalized result is the "
-            "affricate /t͡ʃ/ rather than the fricative /ʃ/."
+            "/K/ is the palatalisable velar. Clear set = closure of "
+            "dorsal-pal's supply features (minus Continuant, which "
+            "must stay -Cont to produce the affricate, not the "
+            "fricative)."
         ),
     ),
     UnderspecifiedSegment(
         label="G",
         base="ɡ",
-        clear=frozenset({"CORONAL", "DORSAL"}),
+        clear=frozenset(
+            {"CORONAL", "DORSAL", "Anterior", "Distributed", "Strident"}
+        ),
         reason=(
-            "Voiced counterpart of /K/. Same clear set; voice is "
-            "inherited from /ɡ/."
+            "Voiced counterpart of /K/. Same closure clear set; "
+            "voice is inherited from /ɡ/."
         ),
     ),
     UnderspecifiedSegment(

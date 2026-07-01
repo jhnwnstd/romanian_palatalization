@@ -39,6 +39,28 @@ class Direction(StrEnum):
     RIGHT = "R"
 
 
+class SearchOutcome(StrEnum):
+    """Why a :meth:`Search.locate` call returned the value it did.
+
+    Used by :mod:`phonology.diagnostics.explain` to narrate rule
+    behaviour. Not needed for the fast :meth:`locate` path.
+    """
+
+    LICENSED = "LICENSED"                # trigger found and condition holds
+    BROAD_TERMINATOR_BLOCK = "BROAD_TERMINATOR_BLOCK"    # first seg failed condition
+    NARROW_SCAN_EXHAUSTED = "NARROW_SCAN_EXHAUSTED"      # scanned to word edge
+    EMPTY_SCAN = "EMPTY_SCAN"            # target at edge; no segments to look at
+
+
+@dataclass(frozen=True, slots=True)
+class LocateReport:
+    """Detailed outcome of a :meth:`Search.locate_verbose` call."""
+
+    trigger_index: int | None
+    outcome: SearchOutcome
+    inspected_index: int | None = None    # segment the scan halted on
+
+
 @dataclass(frozen=True, slots=True)
 class Search:
     """Locate a trigger segment for a rule with target at ``anchor``.
@@ -65,5 +87,33 @@ class Search:
             i += step
         return None
 
+    def locate_verbose(self, word: Word, anchor: int) -> LocateReport:
+        """Same as :meth:`locate` but returns a :class:`LocateReport`
+        naming the outcome and (when relevant) the segment that
+        halted the scan.
 
-__all__: Final[tuple[str, ...]] = ("Direction", "Search")
+        Explain-mode uses this to say why a rule didn't fire —
+        distinguishing "broad terminator halted on non-matching X"
+        from "narrow terminator scanned to word edge without finding
+        anything".
+        """
+        step = 1 if self.direction is Direction.RIGHT else -1
+        i = anchor + step
+        n = len(word)
+        if not (0 <= i < n):
+            return LocateReport(None, SearchOutcome.EMPTY_SCAN)
+        while 0 <= i < n:
+            seg = word[i]
+            if seg.matches(self.terminator):
+                if seg.matches(self.condition):
+                    return LocateReport(i, SearchOutcome.LICENSED, i)
+                return LocateReport(
+                    None, SearchOutcome.BROAD_TERMINATOR_BLOCK, i,
+                )
+            i += step
+        return LocateReport(None, SearchOutcome.NARROW_SCAN_EXHAUSTED)
+
+
+__all__: Final[tuple[str, ...]] = (
+    "Direction", "LocateReport", "Search", "SearchOutcome",
+)

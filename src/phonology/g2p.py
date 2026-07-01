@@ -107,6 +107,48 @@ def first_variant(ipa: str) -> str:
     return ipa.strip()
 
 
+def pick_variant(ipa: str, stem_final: str | None = None) -> str:
+    """Pick the best variant from a pipe-separated IPA field.
+
+    Wiktionary IPA fields often list several variants, and the first
+    one is not always the most complete. For example
+    ``"amant"`` records ``"əman | əmant | amant | ..."`` — the leading
+    ``əman`` has dropped the final ``t``. Picking the first variant
+    blindly produces a UR without the stem-final obstruent, which then
+    derives a wrong SR.
+
+    Heuristic (in order):
+
+    1. If ``stem_final`` names a canonical IPA symbol and at least one
+       variant contains that symbol (case-insensitive, with fold-ins),
+       pick the first such variant.
+    2. Otherwise, pick the longest variant on the assumption that
+       longer transcriptions are less abbreviated.
+    3. Empty input → empty string.
+
+    ``fr:...``, ``tr:...`` etc. (foreign-language codes) are skipped.
+    """
+    if not ipa:
+        return ""
+    parts = [p.strip() for p in ipa.split(" | ") if p.strip()]
+    # Drop foreign-language annotations like ``fr:absorbant`` — they
+    # start with a short lowercase language code followed by a colon.
+    parts = [
+        p for p in parts
+        if not (len(p) >= 3 and p[2] == ":" and p[:2].isalpha()
+                and p[:2].islower())
+    ]
+    if not parts:
+        return ""
+    if stem_final:
+        target = _ORTH_TO_IPA.get(stem_final)
+        if target is not None:
+            for p in parts:
+                if target in p or (target == "ɡ" and "g" in p):
+                    return p
+    return max(parts, key=len)
+
+
 def build_ur(
     lemma_ipa: str,
     opportunity: str,
@@ -122,7 +164,7 @@ def build_ur(
     """
     if not lemma_ipa or opportunity not in SUFFIX_TOKENS:
         return None
-    tokens = list(tokenize_ipa(first_variant(lemma_ipa)))
+    tokens = list(tokenize_ipa(pick_variant(lemma_ipa, stem_final)))
     if not tokens:
         return None
 
@@ -218,4 +260,5 @@ __all__: Final[tuple[str, ...]] = (
     "SUFFIX_TOKENS",
     "build_ur",
     "first_variant",
+    "pick_variant",
 )
