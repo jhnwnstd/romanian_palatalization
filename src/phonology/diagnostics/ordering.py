@@ -33,12 +33,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 from itertools import permutations
-from typing import TYPE_CHECKING, Callable, Final, Sequence
+from typing import TYPE_CHECKING, Final, Iterator, Sequence
 
 from ..inventory import FeatureInventory
 from ..pipeline import RulePipeline
-from ..rules import Rule
-from ..segments import Segment, Word, segments_to_ipa
+from ..rules import ResolverFn, Rule
+from ..segments import Word, segments_to_ipa
 from .compare import compare_ipa
 
 if TYPE_CHECKING:
@@ -57,9 +57,9 @@ class OrderingStrategy(StrEnum):
 class OrderingCandidate:
     """One ordering + the SR it produced."""
 
-    permutation: tuple[int, ...]     # index-into-original-rules order
-    rule_names: tuple[str, ...]      # names in the produced order
-    sr: str                          # rendered IPA
+    permutation: tuple[int, ...]  # index-into-original-rules order
+    rule_names: tuple[str, ...]  # names in the produced order
+    sr: str  # rendered IPA
     matched: bool
     edit_distance: int
 
@@ -81,19 +81,19 @@ def _permutations_for(
     n: int,
     movable_indices: Sequence[int] | None,
     limit: int | None,
-):
+) -> Iterator[tuple[int, ...]]:
     """Yield permutation-index tuples according to the strategy."""
-    identity = tuple(range(n))
+    identity: tuple[int, ...] = tuple(range(n))
     yield identity  # always try baseline first
     if strategy is OrderingStrategy.DECLARED:
         return
-    seen = {identity}
+    seen: set[tuple[int, ...]] = {identity}
     count = 1
     if strategy is OrderingStrategy.ADJACENT_SWAP:
         for i in range(n - 1):
-            perm = list(identity)
-            perm[i], perm[i + 1] = perm[i + 1], perm[i]
-            t = tuple(perm)
+            swap = list(identity)
+            swap[i], swap[i + 1] = swap[i + 1], swap[i]
+            t = tuple(swap)
             if t in seen:
                 continue
             seen.add(t)
@@ -105,9 +105,9 @@ def _permutations_for(
     if strategy is OrderingStrategy.PAIRWISE_SWAP:
         for i in range(n):
             for j in range(i + 1, n):
-                perm = list(identity)
-                perm[i], perm[j] = perm[j], perm[i]
-                t = tuple(perm)
+                swap = list(identity)
+                swap[i], swap[j] = swap[j], swap[i]
+                t = tuple(swap)
                 if t in seen:
                     continue
                 seen.add(t)
@@ -121,10 +121,10 @@ def _permutations_for(
             return
         movable = tuple(movable_indices)
         for perm_of_movable in permutations(movable):
-            perm = list(identity)
+            swap = list(identity)
             for original, target in zip(movable, perm_of_movable):
-                perm[original] = target
-            t = tuple(perm)
+                swap[original] = target
+            t = tuple(swap)
             if t in seen:
                 continue
             seen.add(t)
@@ -134,11 +134,11 @@ def _permutations_for(
                 return
         return
     if strategy is OrderingStrategy.FULL:
-        for perm in permutations(range(n)):
-            if perm in seen:
+        for full_perm in permutations(range(n)):
+            if full_perm in seen:
                 continue
-            seen.add(perm)
-            yield perm
+            seen.add(full_perm)
+            yield full_perm
             count += 1
             if limit is not None and count >= limit:
                 return
@@ -149,7 +149,7 @@ def find_valid_orderings(
     rules: Sequence[Rule],
     ur: Word,
     expected_field: str | Sequence[str],
-    resolve: Callable[[str], Segment],
+    resolve: ResolverFn,
     inventory: FeatureInventory,
     strategy: OrderingStrategy = OrderingStrategy.ADJACENT_SWAP,
     movable_indices: Sequence[int] | None = None,
@@ -166,10 +166,7 @@ def find_valid_orderings(
     """
     rules_tuple = tuple(rules)
     n = len(rules_tuple)
-    if (
-        strategy is OrderingStrategy.MOVABLE_PERM
-        and not movable_indices
-    ):
+    if strategy is OrderingStrategy.MOVABLE_PERM and not movable_indices:
         raise ValueError(
             "OrderingStrategy.MOVABLE_PERM requires a non-empty "
             "movable_indices argument (or use ADJACENT_SWAP / "
@@ -197,8 +194,11 @@ def find_valid_orderings(
             rule_names=tuple(r.name for r in permuted),
             sr=sr,
             matched=cmp.matched,
-            edit_distance=int(cmp.edit_distance)
-                if cmp.edit_distance != float("inf") else 10**9,
+            edit_distance=(
+                int(cmp.edit_distance)
+                if cmp.edit_distance != float("inf")
+                else 10**9
+            ),
         )
         if perm == tuple(range(n)):
             baseline_sr = sr
@@ -258,9 +258,13 @@ def format_result(result: OrderingSearchResult) -> str:
         f"{'✓' if result.baseline_matched else '✗'}"
     )
     if result.baseline_matched:
-        lines.append("  baseline ordering already succeeds — no re-order needed")
+        lines.append(
+            "  baseline ordering already succeeds — no re-order needed"
+        )
         return "\n".join(lines)
-    lines.append(f"  {len(result.successful)} alternative ordering(s) succeeded:")
+    lines.append(
+        f"  {len(result.successful)} alternative ordering(s) succeeded:"
+    )
     for cand in result.successful[:6]:
         lines.append(f"    {' → '.join(cand.rule_names)}")
     if len(result.successful) > 6:
