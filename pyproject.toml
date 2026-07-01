@@ -79,7 +79,10 @@ max-line-length = 79
 # B950 (Bugbear) handles excessive lines in a Black-compatible way;
 # disable E501 so we don't double-count overruns and leave room for
 # Black's intentional one-character overflow at line boundaries.
-extend-ignore = ["E203", "W503", "E501"]
+# E704 conflicts with Black's single-line "def foo(...) -> T: ..."
+# formatting of ellipsis-only Protocol / stub method bodies; the
+# Black-formatted layout is what we want, so silence the check.
+extend-ignore = ["E203", "W503", "E501", "E704"]
 extend-select = ["B", "B950", "C4"]
 select = ["E", "F", "W"]
 

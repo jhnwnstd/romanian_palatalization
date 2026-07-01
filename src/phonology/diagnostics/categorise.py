@@ -82,12 +82,16 @@ class _RowLike(Protocol):
 
     @property
     def lemma(self) -> str: ...
+
     @property
     def plural(self) -> str: ...
+
     @property
     def stem_final(self) -> str: ...
+
     @property
     def opportunity(self) -> str: ...
+
     @property
     def mutation(self) -> bool: ...
 

@@ -314,8 +314,8 @@ def run_validation(
         total=total,
         boolean_matches=bool_m,
         ipa_matches=ipa_m,
-        by_cell={k: v for k, v in per_cell.items()},
-        by_cluster={k: v for k, v in per_cluster.items()},
+        by_cell=dict(per_cell),
+        by_cluster=dict(per_cluster),
         by_category={k: tuple(v) for k, v in by_cat.items()},
     )
 

@@ -355,7 +355,7 @@ def format_trace(trace: RuleTrace) -> str:
                 f"idx{m.index}(/{m.label}/)" for m in matched[:6]
             )
             if len(matched) > 6:
-                summary += f", +{len(matched)-6} more"
+                summary += f", +{len(matched) - 6} more"
         body.append(summary)
     if trace.search_outcome is not None:
         so = trace.search_outcome
