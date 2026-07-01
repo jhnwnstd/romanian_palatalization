@@ -35,12 +35,12 @@ class Normalisation(StrEnum):
     """
 
     NONE = "NONE"
-    TRAILING_GLIDE = "TRAILING_GLIDE"      # j/ʲ ↔ i at right edge
+    TRAILING_GLIDE = "TRAILING_GLIDE"  # j/ʲ ↔ i at right edge
     UNSTRESSED_SCHWA = "UNSTRESSED_SCHWA"  # a ↔ ə internal
-    MEDIAL_GLIDE = "MEDIAL_GLIDE"          # j ↔ i between vowels
-    EA_MONOPHTHONG = "EA_MONOPHTHONG"      # ea ↔ e before palatal
-    OA_MONOPHTHONG = "OA_MONOPHTHONG"      # oa ↔ o before palatal
-    STRIP_STRESS = "STRIP_STRESS"          # ˈ ˌ ' ` and ː removed
+    MEDIAL_GLIDE = "MEDIAL_GLIDE"  # j ↔ i between vowels
+    EA_MONOPHTHONG = "EA_MONOPHTHONG"  # ea ↔ e before palatal
+    OA_MONOPHTHONG = "OA_MONOPHTHONG"  # oa ↔ o before palatal
+    STRIP_STRESS = "STRIP_STRESS"  # ˈ ˌ ' ` and ː removed
 
 
 class CompareStatus(StrEnum):
@@ -48,8 +48,8 @@ class CompareStatus(StrEnum):
 
     MATCH = "MATCH"
     MISMATCH = "MISMATCH"
-    EMPTY_ATTESTED = "EMPTY_ATTESTED"      # no variants supplied
-    EMPTY_PREDICTED = "EMPTY_PREDICTED"    # nothing to score
+    EMPTY_ATTESTED = "EMPTY_ATTESTED"  # no variants supplied
+    EMPTY_PREDICTED = "EMPTY_PREDICTED"  # nothing to score
 
 
 @dataclass(frozen=True, slots=True)
@@ -92,7 +92,7 @@ def _normalise_trailing_glide(s: str) -> str:
     """
     while s and s[-1] in ("j", "ʲ"):
         s = s[:-1] + "i"
-        break   # only touch the final segment
+        break  # only touch the final segment
     return s
 
 
@@ -133,7 +133,9 @@ def _normalise_medial_glide(pred: str, attested: str) -> str:
     return "".join(out)
 
 
-def _fold_diphthong_bulk(pred: str, attested: str, diphthong: str, mono: str) -> str:
+def _fold_diphthong_bulk(
+    pred: str, attested: str, diphthong: str, mono: str
+) -> str:
     """Collapse every ``diphthong`` in ``pred`` to ``mono`` if that
     equals ``attested``. Handles the single-occurrence and multi-
     occurrence cases uniformly (the old per-position loop only tried
@@ -148,8 +150,8 @@ def _fold_diphthong_bulk(pred: str, attested: str, diphthong: str, mono: str) ->
     # Also try single-position substitutions in case the caller
     # actually wants to collapse only one of several occurrences.
     for i in range(len(pred) - len(diphthong) + 1):
-        if pred[i:i + len(diphthong)] == diphthong:
-            candidate = pred[:i] + mono + pred[i + len(diphthong):]
+        if pred[i : i + len(diphthong)] == diphthong:
+            candidate = pred[:i] + mono + pred[i + len(diphthong) :]
             if candidate == attested:
                 return candidate
     return pred
@@ -239,12 +241,11 @@ def split_variants(attested_field: str) -> tuple[str, ...]:
 # (pred, attested) and returns a possibly-transformed pred. Entries are
 # applied in order; the first arrangement that makes pred == attested
 # wins.
-_NORMALISERS: Final[tuple[
-    tuple[Normalisation, Callable[[str, str], str]], ...
-]] = (
+_NORMALISERS: Final[
+    tuple[tuple[Normalisation, Callable[[str, str], str]], ...]
+] = (
     (Normalisation.STRIP_STRESS, lambda p, a: _strip_marks(p)),
-    (Normalisation.TRAILING_GLIDE,
-        lambda p, a: _normalise_trailing_glide(p)),
+    (Normalisation.TRAILING_GLIDE, lambda p, a: _normalise_trailing_glide(p)),
     (Normalisation.UNSTRESSED_SCHWA, _normalise_unstressed_a),
     (Normalisation.MEDIAL_GLIDE, _normalise_medial_glide),
     (Normalisation.EA_MONOPHTHONG, _normalise_ea_monophthong),
@@ -279,8 +280,10 @@ def compare_ipa(
     """
     if not predicted:
         return CompareResult(
-            matched=False, status=CompareStatus.EMPTY_PREDICTED,
-            attested_variant="", edit_distance=math.inf,
+            matched=False,
+            status=CompareStatus.EMPTY_PREDICTED,
+            attested_variant="",
+            edit_distance=math.inf,
         )
 
     if isinstance(attested, str):
@@ -289,24 +292,30 @@ def compare_ipa(
         variants = tuple(v for v in attested if v)
     if not variants:
         return CompareResult(
-            matched=False, status=CompareStatus.EMPTY_ATTESTED,
-            attested_variant="", edit_distance=math.inf,
+            matched=False,
+            status=CompareStatus.EMPTY_ATTESTED,
+            attested_variant="",
+            edit_distance=math.inf,
         )
 
     # Fast path: exact byte-for-byte match against any variant.
     for v in variants:
         if predicted == v:
             return CompareResult(
-                matched=True, status=CompareStatus.MATCH,
-                attested_variant=v, edit_distance=0.0,
+                matched=True,
+                status=CompareStatus.MATCH,
+                attested_variant=v,
+                edit_distance=0.0,
             )
 
     if strict:
         best_variant = min(
-            variants, key=lambda v: _levenshtein(predicted, v),
+            variants,
+            key=lambda v: _levenshtein(predicted, v),
         )
         return CompareResult(
-            matched=False, status=CompareStatus.MISMATCH,
+            matched=False,
+            status=CompareStatus.MISMATCH,
             attested_variant=best_variant,
             edit_distance=float(_levenshtein(predicted, best_variant)),
         )
@@ -320,7 +329,8 @@ def compare_ipa(
         for label, fn in _NORMALISERS:
             if cur == v_stripped:
                 return CompareResult(
-                    matched=True, status=CompareStatus.MATCH,
+                    matched=True,
+                    status=CompareStatus.MATCH,
                     attested_variant=v,
                     normalisation_applied=tuple(applied),
                     edit_distance=0.0,
@@ -331,7 +341,8 @@ def compare_ipa(
                 cur = new
         if cur == v_stripped:
             return CompareResult(
-                matched=True, status=CompareStatus.MATCH,
+                matched=True,
+                status=CompareStatus.MATCH,
                 attested_variant=v,
                 normalisation_applied=tuple(applied),
                 edit_distance=0.0,
@@ -339,7 +350,8 @@ def compare_ipa(
 
     best_variant = min(variants, key=lambda v: _levenshtein(predicted, v))
     return CompareResult(
-        matched=False, status=CompareStatus.MISMATCH,
+        matched=False,
+        status=CompareStatus.MISMATCH,
         attested_variant=best_variant,
         edit_distance=float(_levenshtein(predicted, best_variant)),
     )

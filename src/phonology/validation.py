@@ -30,7 +30,7 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
-from typing import Final, Iterable, Iterator, Mapping, Sequence
+from typing import Final, Iterable, Mapping, Sequence
 
 from .analyses.romanian_palatalization import AnalysisProfile
 from .diagnostics.categorise import (
@@ -43,7 +43,8 @@ from .diagnostics.compare import (
     compare_ipa,
     split_variants,
 )
-from .diagnostics.distance import DistanceScore, score as distance_score
+from .diagnostics.distance import DistanceScore
+from .diagnostics.distance import score as distance_score
 from .diagnostics.explain import Explanation, explain_derivation
 from .diagnostics.ordering import (
     OrderingSearchResult,
@@ -59,7 +60,6 @@ from .g2p import build_ur
 from .lexicon import ClusterTag, LexRow, iter_lexicon_rows
 from .pipeline import Derivation, RulePipeline
 from .segments import Word, segments_to_ipa
-
 
 # ---------------------------------------------------------------------------
 # Result types
@@ -87,15 +87,15 @@ class RowResult:
     """Everything the validator learned about one row."""
 
     row: LexRow
-    ur: Word | None                        # None when build_ur failed
+    ur: Word | None  # None when build_ur failed
     derivation: Derivation | None
-    predicted_sr: str                      # rendered IPA; "" if UR failed
-    attested_first: str                    # first non-foreign variant
-    boolean_predicted: bool                # rules predict alternation
-    boolean_match: bool                    # prediction == row.mutation
-    ipa_match: bool                        # SR matches any attested variant
+    predicted_sr: str  # rendered IPA; "" if UR failed
+    attested_first: str  # first non-foreign variant
+    boolean_predicted: bool  # rules predict alternation
+    boolean_match: bool  # prediction == row.mutation
+    ipa_match: bool  # SR matches any attested variant
     categorisation: Categorisation
-    distance: DistanceScore | None         # None when derivation is None
+    distance: DistanceScore | None  # None when derivation is None
 
 
 @dataclass(frozen=True, slots=True)
@@ -107,7 +107,7 @@ class TraceResult:
     explanation: Explanation | None = None
     ordering: OrderingSearchResult | None = None
     perturbation: PerturbationReport | None = None
-    found: bool = True                     # False if the lemma isn't in the lexicon
+    found: bool = True  # False if the lemma isn't in the lexicon
 
 
 @dataclass(frozen=True, slots=True)
@@ -134,9 +134,7 @@ class ValidationReport:
 # ---------------------------------------------------------------------------
 
 
-_CLUSTER_KEYS: Final[
-    Mapping[tuple[ClusterTag, str], str]
-] = {
+_CLUSTER_KEYS: Final[Mapping[tuple[ClusterTag, str], str]] = {
     (ClusterTag.SC, "e"): "sc(ă)+e",
     (ClusterTag.SC, "i"): "sc(ă)+i",
     (ClusterTag.CT, "e"): "ct(ă)+e",
@@ -155,7 +153,8 @@ def _cluster_key(row: LexRow) -> str | None:
 
 
 def _boolean_mutation(
-    deriv: Derivation, palatalization_names: frozenset[str],
+    deriv: Derivation,
+    palatalization_names: frozenset[str],
 ) -> bool:
     """True iff any palatalization rule fired in the derivation."""
     return any(
@@ -182,8 +181,9 @@ def evaluate_row(
     already loaded on the profile.
     """
     inv = profile.inventory
-    ur = build_ur(row.ipa_lemma, row.opportunity, inv,
-                  stem_final=row.stem_final)
+    ur = build_ur(
+        row.ipa_lemma, row.opportunity, inv, stem_final=row.stem_final
+    )
 
     variants = split_variants(row.ipa_pl)
     attested_first = variants[0] if variants else ""
@@ -193,14 +193,21 @@ def evaluate_row(
         predicted = profile.fallback_predict(row)
         boolean_match = predicted == row.mutation
         cat = refine_category(
-            row, "", row.ipa_pl, predicted, ur_built=False,
+            row,
+            "",
+            row.ipa_pl,
+            predicted,
+            ur_built=False,
         )
         return RowResult(
-            row=row, ur=None, derivation=None,
-            predicted_sr="", attested_first=attested_first,
+            row=row,
+            ur=None,
+            derivation=None,
+            predicted_sr="",
+            attested_first=attested_first,
             boolean_predicted=predicted,
             boolean_match=boolean_match,
-            ipa_match=boolean_match,       # can't compare IPA — accept boolean
+            ipa_match=boolean_match,  # can't compare IPA — accept boolean
             categorisation=cat,
             distance=None,
         )
@@ -213,7 +220,8 @@ def evaluate_row(
     inv_base = inv.base_segments()
     predicted_sr = segments_to_ipa(deriv.sr, inv_base)
     boolean_predicted = _boolean_mutation(
-        deriv, profile.palatalization_rule_names,
+        deriv,
+        profile.palatalization_rule_names,
     )
     boolean_match = boolean_predicted == row.mutation
 
@@ -222,13 +230,16 @@ def evaluate_row(
     else:
         cmp = compare_ipa(predicted_sr, row.ipa_pl)
     if cmp.status is CompareStatus.EMPTY_ATTESTED:
-        ipa_match = boolean_match       # no data to compare against
+        ipa_match = boolean_match  # no data to compare against
     else:
         ipa_match = cmp.matched
 
     cat = refine_category(
-        row, predicted_sr, row.ipa_pl,
-        boolean_predicted, ur_built=True,
+        row,
+        predicted_sr,
+        row.ipa_pl,
+        boolean_predicted,
+        ur_built=True,
     )
     dist = distance_score(
         predicted_sr=predicted_sr,
@@ -239,8 +250,11 @@ def evaluate_row(
         palatalization_rules=profile.palatalization_rule_names,
     )
     return RowResult(
-        row=row, ur=ur, derivation=deriv,
-        predicted_sr=predicted_sr, attested_first=attested_first,
+        row=row,
+        ur=ur,
+        derivation=deriv,
+        predicted_sr=predicted_sr,
+        attested_first=attested_first,
         boolean_predicted=boolean_predicted,
         boolean_match=boolean_match,
         ipa_match=ipa_match,
@@ -339,12 +353,13 @@ def trace_lemmas(
     )
 
     for row in iter_lexicon_rows(
-        csv_path, target_stems=profile.target_stems,
+        csv_path,
+        target_stems=profile.target_stems,
     ):
         if row.lemma not in wanted_set:
             continue
         if row.lemma in found:
-            continue      # first hit wins
+            continue  # first hit wins
         res = evaluate_row(row, profile, match_mode=match_mode)
         exp = None
         if include_explanation and res.ur is not None:
@@ -360,43 +375,60 @@ def trace_lemmas(
         pert = None
         if include_perturbation is not None and res.ur is not None:
             pert = search_perturbations_for(
-                profile=profile, row=row,
+                profile=profile,
+                row=row,
                 kinds=tuple(include_perturbation),
                 limit=perturbation_limit,
             )
         found[row.lemma] = TraceResult(
-            row=row, result=res,
-            explanation=exp, ordering=ord_res, perturbation=pert,
+            row=row,
+            result=res,
+            explanation=exp,
+            ordering=ord_res,
+            perturbation=pert,
             found=True,
         )
         if len(found) == len(wanted_set):
             break
 
-    return tuple(
-        found.get(lem, _missing_trace(lem)) for lem in wanted
-    )
+    return tuple(found.get(lem, _missing_trace(lem)) for lem in wanted)
 
 
 def _missing_trace(lemma: str) -> TraceResult:
     """Placeholder for a lemma the lexicon iterator didn't yield."""
     empty_row = LexRow(
-        lemma=lemma, plural="", pos="", stem_final="",
-        opportunity="", mutation=False,
-        ipa_lemma="", ipa_pl="", exception_reason="",
+        lemma=lemma,
+        plural="",
+        pos="",
+        stem_final="",
+        opportunity="",
+        mutation=False,
+        ipa_lemma="",
+        ipa_pl="",
+        exception_reason="",
         cluster=ClusterTag.NONE,
     )
     empty_res = RowResult(
-        row=empty_row, ur=None, derivation=None,
-        predicted_sr="", attested_first="",
-        boolean_predicted=False, boolean_match=False,
+        row=empty_row,
+        ur=None,
+        derivation=None,
+        predicted_sr="",
+        attested_first="",
+        boolean_predicted=False,
+        boolean_match=False,
         ipa_match=False,
         categorisation=Categorisation(
-            RefinedCategory.UR_BUILD_FAILED, (), 999, "",
+            RefinedCategory.UR_BUILD_FAILED,
+            (),
+            999,
+            "",
         ),
         distance=None,
     )
     return TraceResult(
-        row=empty_row, result=empty_res, found=False,
+        row=empty_row,
+        result=empty_res,
+        found=False,
     )
 
 
@@ -432,7 +464,9 @@ def render_report(
     lines.append("")
 
     lines.append("=" * 72)
-    lines.append("Per (stem_final × opportunity)  bool match / mismatch / rate")
+    lines.append(
+        "Per (stem_final × opportunity)  bool match / mismatch / rate"
+    )
     lines.append("=" * 72)
     for key in sorted(report.by_cell.keys()):
         sf, opp = key
@@ -470,7 +504,8 @@ def render_report(
         for res in items[:max_examples_per_category]:
             r = res.row
             verdict = (
-                "rules→T, data→F" if res.boolean_predicted
+                "rules→T, data→F"
+                if res.boolean_predicted
                 else "rules→F, data→T"
             )
             lines.append(
@@ -498,14 +533,22 @@ def render_report(
 def render_distance_summary(report: ValidationReport) -> str:
     """Histogram of total distance across mismatches."""
     mismatches = [
-        r for r in report.results
+        r
+        for r in report.results
         if not (r.boolean_match and r.ipa_match) and r.distance is not None
     ]
     if not mismatches:
         return "No mismatches to score."
     buckets: dict[str, int] = defaultdict(int)
     examples: dict[str, str] = {}
-    for res in sorted(mismatches, key=lambda r: r.distance.total):
+
+    def _dist_key(r: RowResult) -> float:
+        # ``mismatches`` was filtered on ``r.distance is not None``,
+        # but mypy can't carry that narrowing through the lambda.
+        return r.distance.total if r.distance is not None else 0.0
+
+    for res in sorted(mismatches, key=_dist_key):
+        assert res.distance is not None
         d = res.distance.total
         if d == 0:
             key = "0.0 (data-side noise)"
@@ -541,15 +584,13 @@ def render_distance_summary(report: ValidationReport) -> str:
             continue
         share = 100 * n / total
         ex = examples.get(key, "-")
-        lines.append(
-            f"  {key:34s}  n={n:5d}  ({share:5.1f}%)  ex: {ex}"
-        )
+        lines.append(f"  {key:34s}  n={n:5d}  ({share:5.1f}%)  ex: {ex}")
     return "\n".join(lines)
 
 
 def render_trace(
     trace: TraceResult,
-    inv_base: Mapping,
+    inv_base: Mapping[str, Mapping[str, str]],
 ) -> str:
     """Render a :class:`TraceResult` as a multi-line string.
 
@@ -563,7 +604,7 @@ def render_trace(
     if result.ur is None or result.derivation is None:
         return (
             f"{result.row.lemma}: could not build UR from IPA "
-            f"{result.row.row.ipa_lemma!r}\n"
+            f"{result.row.ipa_lemma!r}\n"
         )
 
     lines: list[str] = []
@@ -596,7 +637,8 @@ def render_trace(
     matched = result.boolean_match and result.ipa_match
     verdict = "✓" if matched else "✗"
     tag = (
-        "" if matched
+        ""
+        if matched
         else f"   category={result.categorisation.category.value}"
     )
     lines.append(
@@ -606,18 +648,21 @@ def render_trace(
 
     if trace.explanation is not None:
         from .diagnostics.explain import format_explanation
+
         lines.append("")
         lines.append("--- per-rule explanation ---")
         lines.append(format_explanation(trace.explanation))
 
     if trace.ordering is not None:
         from .diagnostics.ordering import format_result as _fmt_ord
+
         lines.append("")
         lines.append("--- ordering search ---")
         lines.append(_fmt_ord(trace.ordering))
 
     if trace.perturbation is not None:
         from .diagnostics.perturb import format_report as _fmt_pert
+
         lines.append("")
         lines.append("--- perturbation search ---")
         lines.append(_fmt_pert(trace.perturbation))
@@ -646,39 +691,51 @@ def write_mismatch_csv(
     n = 0
     with path.open("w", encoding="utf-8", newline="") as f:
         w = csv.writer(f)
-        w.writerow([
-            "lemma", "plural", "stem_final", "opportunity",
-            "ur", "predicted_sr", "attested_sr",
-            "category", "normalisations",
-            "ipa_edit", "feature_edit", "rule_edit", "total_distance",
-            "cluster",
-        ])
+        w.writerow(
+            [
+                "lemma",
+                "plural",
+                "stem_final",
+                "opportunity",
+                "ur",
+                "predicted_sr",
+                "attested_sr",
+                "category",
+                "normalisations",
+                "ipa_edit",
+                "feature_edit",
+                "rule_edit",
+                "total_distance",
+                "cluster",
+            ]
+        )
         for res in report.results:
             if not include_matches and res.boolean_match and res.ipa_match:
                 continue
             ur_repr = (
-                "".join(s.label for s in res.ur)
-                if res.ur is not None else ""
+                "".join(s.label for s in res.ur) if res.ur is not None else ""
             )
             d = res.distance
-            w.writerow([
-                res.row.lemma,
-                res.row.plural,
-                res.row.stem_final,
-                res.row.opportunity,
-                ur_repr,
-                res.predicted_sr,
-                res.attested_first,
-                res.categorisation.category.value,
-                ",".join(
-                    n.value for n in res.categorisation.normalisations
-                ),
-                d.ipa_edit if d else "",
-                d.feature_edit if d else "",
-                d.rule_edit if d else "",
-                d.total if d else "",
-                _cluster_key(res.row) or "",
-            ])
+            w.writerow(
+                [
+                    res.row.lemma,
+                    res.row.plural,
+                    res.row.stem_final,
+                    res.row.opportunity,
+                    ur_repr,
+                    res.predicted_sr,
+                    res.attested_first,
+                    res.categorisation.category.value,
+                    ",".join(
+                        n.value for n in res.categorisation.normalisations
+                    ),
+                    d.ipa_edit if d else "",
+                    d.feature_edit if d else "",
+                    d.rule_edit if d else "",
+                    d.total if d else "",
+                    _cluster_key(res.row) or "",
+                ]
+            )
             n += 1
     return n
 

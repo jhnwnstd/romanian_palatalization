@@ -33,7 +33,7 @@ from dataclasses import dataclass, field
 from typing import Final, Protocol
 
 from .search import Search
-from .segments import FeatureMap, Segment, UNSPEC, Word
+from .segments import FeatureMap, Segment, Word
 
 
 @dataclass(frozen=True, slots=True)
@@ -217,7 +217,9 @@ class GlideFormationRule:
         unified = new_last.unify(self.glide_supply)
         if unified is None:
             return ApplyResult(word=word)
-        unified = unified.with_label(self.glide_label).with_provenance(self.name)
+        unified = unified.with_label(self.glide_label).with_provenance(
+            self.name
+        )
         new = list(word)
         new[last_idx] = unified
         return ApplyResult(

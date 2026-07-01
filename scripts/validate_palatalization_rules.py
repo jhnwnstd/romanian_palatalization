@@ -30,14 +30,15 @@ from pathlib import Path
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_PROJECT_ROOT / "src"))
 
-from phonology.analyses.romanian_palatalization import build_profile  # noqa: E402
+from phonology.analyses.romanian_palatalization import (  # noqa: E402
+    build_profile,
+)
 from phonology.lexicon import iter_lexicon_rows  # noqa: E402
 from phonology.validation import (  # noqa: E402
     render_report,
     run_validation,
     write_mismatch_csv,
 )
-
 
 CSV_PATH = _PROJECT_ROOT / "data" / "romanian_lexicon_with_freq.csv"
 REPORT_PATH = _PROJECT_ROOT / "analysis" / "palatalization_rule_validation.txt"

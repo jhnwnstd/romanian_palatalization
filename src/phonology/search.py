@@ -46,10 +46,12 @@ class SearchOutcome(StrEnum):
     behaviour. Not needed for the fast :meth:`locate` path.
     """
 
-    LICENSED = "LICENSED"                # trigger found and condition holds
-    BROAD_TERMINATOR_BLOCK = "BROAD_TERMINATOR_BLOCK"    # first seg failed condition
-    NARROW_SCAN_EXHAUSTED = "NARROW_SCAN_EXHAUSTED"      # scanned to word edge
-    EMPTY_SCAN = "EMPTY_SCAN"            # target at edge; no segments to look at
+    LICENSED = "LICENSED"  # trigger found and condition holds
+    BROAD_TERMINATOR_BLOCK = (
+        "BROAD_TERMINATOR_BLOCK"  # first seg failed condition
+    )
+    NARROW_SCAN_EXHAUSTED = "NARROW_SCAN_EXHAUSTED"  # scanned to word edge
+    EMPTY_SCAN = "EMPTY_SCAN"  # target at edge; no segments to look at
 
 
 @dataclass(frozen=True, slots=True)
@@ -58,7 +60,7 @@ class LocateReport:
 
     trigger_index: int | None
     outcome: SearchOutcome
-    inspected_index: int | None = None    # segment the scan halted on
+    inspected_index: int | None = None  # segment the scan halted on
 
 
 @dataclass(frozen=True, slots=True)
@@ -71,8 +73,8 @@ class Search:
     """
 
     direction: Direction
-    terminator: FeatureMap        # ``{}`` for broad next-segment
-    condition: FeatureMap         # what the terminator must satisfy
+    terminator: FeatureMap  # ``{}`` for broad next-segment
+    condition: FeatureMap  # what the terminator must satisfy
 
     def locate(self, word: Word, anchor: int) -> int | None:
         step = 1 if self.direction is Direction.RIGHT else -1
@@ -83,7 +85,7 @@ class Search:
             if seg.matches(self.terminator):
                 if seg.matches(self.condition):
                     return i
-                return None     # broad-terminator block
+                return None  # broad-terminator block
             i += step
         return None
 
@@ -108,12 +110,17 @@ class Search:
                 if seg.matches(self.condition):
                     return LocateReport(i, SearchOutcome.LICENSED, i)
                 return LocateReport(
-                    None, SearchOutcome.BROAD_TERMINATOR_BLOCK, i,
+                    None,
+                    SearchOutcome.BROAD_TERMINATOR_BLOCK,
+                    i,
                 )
             i += step
         return LocateReport(None, SearchOutcome.NARROW_SCAN_EXHAUSTED)
 
 
 __all__: Final[tuple[str, ...]] = (
-    "Direction", "LocateReport", "Search", "SearchOutcome",
+    "Direction",
+    "LocateReport",
+    "Search",
+    "SearchOutcome",
 )

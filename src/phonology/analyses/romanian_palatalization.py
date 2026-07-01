@@ -42,7 +42,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 from types import MappingProxyType
-from typing import Callable, Final, Mapping
+from typing import Callable, Final, Mapping, cast
 
 from ..inventory import FeatureInventory, FeaturePatch, UnderspecifiedSegment
 from ..lexicon import ClusterTag, LexRow
@@ -233,27 +233,33 @@ def load_inventory() -> FeatureInventory:
 # Dorsal palatalization and dorsal default-fill target this class.
 # Wrapped read-only so the shared reference across two rule targets
 # can't be corrupted by any downstream mutation.
-_OBSTRUENT: Final[Mapping[str, str]] = _frozen({
-    "Syllabic": "-",
-    "Consonantal": "+",
-    "Sonorant": "-",
-    "Approximant": "-",
-    "Nasal": "-",
-})
+_OBSTRUENT: Final[Mapping[str, str]] = _frozen(
+    {
+        "Syllabic": "-",
+        "Consonantal": "+",
+        "Sonorant": "-",
+        "Approximant": "-",
+        "Nasal": "-",
+    }
+)
 
 # The postalveolar place class — what /i/ and /j/ are (after patch),
 # and what the derived [tʃ]/[dʒ] are. Used as both terminator and
 # condition for S-pal, assibilation, and the bleed condition.
-_POSTALVEOLAR_PLACE: Final[Mapping[str, str]] = _frozen({
-    "CORONAL": "+",
-    "Anterior": "-",
-    "Distributed": "+",
-})
+_POSTALVEOLAR_PLACE: Final[Mapping[str, str]] = _frozen(
+    {
+        "CORONAL": "+",
+        "Anterior": "-",
+        "Distributed": "+",
+    }
+)
 
-_FRONT_VOWEL: Final[Mapping[str, str]] = _frozen({
-    "Syllabic": "+",
-    "Front": "+",
-})
+_FRONT_VOWEL: Final[Mapping[str, str]] = _frozen(
+    {
+        "Syllabic": "+",
+        "Front": "+",
+    }
+)
 
 
 # ---------------------------------------------------------------------------
@@ -272,7 +278,7 @@ DORSAL_PAL: Final[UnificationRule] = UnificationRule(
     },
     search=Search(
         direction=Direction.RIGHT,
-        terminator={},                # broad next-segment terminator
+        terminator={},  # broad next-segment terminator
         condition=_FRONT_VOWEL,
     ),
 )
@@ -331,12 +337,14 @@ Non-members are transparent, so /S/ in 'prost' palatalizes across /T/.
 """
 
 
-_POSTALVEOLAR_CONSONANT: Final[Mapping[str, str]] = _frozen({
-    "CORONAL": "+",
-    "Anterior": "-",
-    "Distributed": "+",
-    "Consonantal": "+",
-})
+_POSTALVEOLAR_CONSONANT: Final[Mapping[str, str]] = _frozen(
+    {
+        "CORONAL": "+",
+        "Anterior": "-",
+        "Distributed": "+",
+        "Consonantal": "+",
+    }
+)
 
 
 BLEED: Final[DeletionRule] = DeletionRule(
@@ -348,7 +356,7 @@ BLEED: Final[DeletionRule] = DeletionRule(
     clear=frozenset({"Anterior", "Distributed", "Strident"}),
     search=Search(
         direction=Direction.LEFT,
-        terminator={},                # broad: immediately preceding
+        terminator={},  # broad: immediately preceding
         # +Consonantal so a lexical glide /j/ (also postalveolar under
         # our patch) does NOT trigger bleed on a following consonant.
         # Bleed fires only on a genuinely consonantal postalveolar,
@@ -455,16 +463,19 @@ already-patched postalveolar place, and -Syllabic replaces +Syllabic.
 # Pipelines
 # ---------------------------------------------------------------------------
 
-RULES_FROM_PAPER: Final[tuple[Rule, ...]] = (
-    DORSAL_PAL,
-    DORSAL_DEFAULT,
-    S_PAL,
-    BLEED,
-    ASSIBILATION,
-    CORONAL_DEFAULT_STRIDENT,
-    CORONAL_DEFAULT_PLACE,
-    CORONAL_DEFAULT_CONT,
-    GLIDE_FORMATION,
+RULES_FROM_PAPER: Final[tuple[Rule, ...]] = cast(
+    "tuple[Rule, ...]",
+    (
+        DORSAL_PAL,
+        DORSAL_DEFAULT,
+        S_PAL,
+        BLEED,
+        ASSIBILATION,
+        CORONAL_DEFAULT_STRIDENT,
+        CORONAL_DEFAULT_PLACE,
+        CORONAL_DEFAULT_CONT,
+        GLIDE_FORMATION,
+    ),
 )
 """Paper's revised analysis: place-class S-pal and feature-deleting
 bleed. Mirrors the derivation tables at latex.tex:472-492 and
@@ -476,8 +487,9 @@ latex.tex:584-596 column-for-column."""
 # — all of which fire even in inalterable cases). Derived from the
 # rule tuple itself so a rule rename can't leave stale copies in
 # diagnostics/distance.py or the driver.
-PALATALIZATION_RULES: Final[tuple[Rule, ...]] = (
-    DORSAL_PAL, S_PAL, ASSIBILATION, BLEED,
+PALATALIZATION_RULES: Final[tuple[Rule, ...]] = cast(
+    "tuple[Rule, ...]",
+    (DORSAL_PAL, S_PAL, ASSIBILATION, BLEED),
 )
 PALATALIZATION_RULE_NAMES: Final[frozenset[str]] = frozenset(
     r.name for r in PALATALIZATION_RULES

@@ -27,20 +27,16 @@ deliberate v1 scope choice; extensions can add more kinds later.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, replace as dc_replace
+from dataclasses import dataclass
+from dataclasses import replace as dc_replace
 from enum import StrEnum
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable, Final, Sequence
+from typing import TYPE_CHECKING, Callable, Final, Iterator, Sequence
 
 from ..inventory import FeatureInventory, FeaturePatch, UnderspecifiedSegment
 from ..pipeline import RulePipeline
-from ..rules import (
-    DeletionRule,
-    GlideFormationRule,
-    Rule,
-    UnificationRule,
-)
-from ..segments import Segment, segments_to_ipa, Word
+from ..rules import Rule, UnificationRule
+from ..segments import Word, segments_to_ipa
 from .compare import compare_ipa
 
 if TYPE_CHECKING:
@@ -60,10 +56,10 @@ class Perturbation:
     """One single-feature edit."""
 
     kind: PerturbationKind
-    target: str                     # patch segment / underspec label / rule name
-    feature: str                    # which feature is being edited
-    old_value: str                  # or "" for CLEAR_ADD
-    new_value: str                  # or "" for CLEAR_REMOVE
+    target: str  # patch segment / underspec label / rule name
+    feature: str  # which feature is being edited
+    old_value: str  # or "" for CLEAR_ADD
+    new_value: str  # or "" for CLEAR_REMOVE
 
     def describe(self) -> str:
         if self.kind is PerturbationKind.PATCH_VALUE:
@@ -72,13 +68,9 @@ class Perturbation:
                 f"{self.old_value!r} → {self.new_value!r}"
             )
         if self.kind is PerturbationKind.CLEAR_ADD:
-            return (
-                f"underspec {self.target!r} clear += {{{self.feature}}}"
-            )
+            return f"underspec {self.target!r} clear += {{{self.feature}}}"
         if self.kind is PerturbationKind.CLEAR_REMOVE:
-            return (
-                f"underspec {self.target!r} clear -= {{{self.feature}}}"
-            )
+            return f"underspec {self.target!r} clear -= {{{self.feature}}}"
         return (
             f"rule {self.target!r} supply {self.feature}: "
             f"{self.old_value!r} → {self.new_value!r}"
@@ -104,7 +96,7 @@ class PerturbationReport:
     baseline_distance: int
     tried: int
     successful: tuple[PerturbationResult, ...]
-    near_misses: tuple[PerturbationResult, ...]   # closer than baseline
+    near_misses: tuple[PerturbationResult, ...]  # closer than baseline
 
 
 _FLIP_VALUE = {"+": "-", "-": "+", "0": "+"}
@@ -116,7 +108,7 @@ def _enumerate_perturbations(
     rules: Sequence[Rule],
     inventory: FeatureInventory,
     kinds: Sequence[PerturbationKind],
-):
+) -> "Iterator[Perturbation]":
     """Yield candidate :class:`Perturbation` objects."""
     all_features = tuple(inventory.features)
     if PerturbationKind.PATCH_VALUE in kinds:
@@ -126,7 +118,10 @@ def _enumerate_perturbations(
                 if new != val:
                     yield Perturbation(
                         PerturbationKind.PATCH_VALUE,
-                        patch.segment, feat, val, new,
+                        patch.segment,
+                        feat,
+                        val,
+                        new,
                     )
     if PerturbationKind.CLEAR_ADD in kinds:
         for u in underspec:
@@ -135,14 +130,20 @@ def _enumerate_perturbations(
                     continue
                 yield Perturbation(
                     PerturbationKind.CLEAR_ADD,
-                    u.label, feat, "", "",
+                    u.label,
+                    feat,
+                    "",
+                    "",
                 )
     if PerturbationKind.CLEAR_REMOVE in kinds:
         for u in underspec:
             for feat in sorted(u.clear):
                 yield Perturbation(
                     PerturbationKind.CLEAR_REMOVE,
-                    u.label, feat, "", "",
+                    u.label,
+                    feat,
+                    "",
+                    "",
                 )
     if PerturbationKind.RULE_SUPPLY in kinds:
         for r in rules:
@@ -153,7 +154,10 @@ def _enumerate_perturbations(
                 if new != val:
                     yield Perturbation(
                         PerturbationKind.RULE_SUPPLY,
-                        r.name, feat, val, new,
+                        r.name,
+                        feat,
+                        val,
+                        new,
                     )
 
 
@@ -237,14 +241,21 @@ def search_perturbations(
         ur = ur_builder(inv)
         if ur is None:
             return "", False, 999
-        pipe = RulePipeline(rules=r, resolve=lambda l: inv.segment(l))
+        pipe = RulePipeline(
+            rules=r,
+            resolve=lambda label: inv.segment(label),
+        )
         try:
             deriv = pipe.derive(ur)
         except Exception:
             return "", False, 999
         sr = segments_to_ipa(deriv.sr, inv.base_segments())
         cmp = compare_ipa(sr, expected_field)
-        dist = int(cmp.edit_distance) if cmp.edit_distance != float("inf") else 999
+        dist = (
+            int(cmp.edit_distance)
+            if cmp.edit_distance != float("inf")
+            else 999
+        )
         return sr, cmp.matched, dist
 
     baseline_sr, baseline_matched, baseline_dist = _run(
@@ -255,12 +266,21 @@ def search_perturbations(
     tried = 0
 
     for perturbation in _enumerate_perturbations(
-        patches, underspec, rules, FeatureInventory.load(
-            inventory_json, patches, underspec,
-        ), kinds,
+        patches,
+        underspec,
+        rules,
+        FeatureInventory.load(
+            inventory_json,
+            patches,
+            underspec,
+        ),
+        kinds,
     ):
         new_p, new_u, new_r = _apply_perturbation(
-            perturbation, patches, underspec, rules,
+            perturbation,
+            patches,
+            underspec,
+            rules,
         )
         sr, matched, dist = _run(new_p, new_u, new_r)
         result = PerturbationResult(
@@ -304,9 +324,7 @@ def format_report(report: PerturbationReport) -> str:
         for r in report.successful[:10]:
             lines.append(f"     ✓ {r.perturbation.describe()}")
         if len(report.successful) > 10:
-            lines.append(
-                f"     ... and {len(report.successful) - 10} more"
-            )
+            lines.append(f"     ... and {len(report.successful) - 10} more")
     else:
         lines.append("  no single-feature perturbation succeeds")
         if report.near_misses:
@@ -336,9 +354,11 @@ def search_perturbations_for(
     """
     from ..g2p import build_ur
 
-    def builder(inv):
+    def builder(inv: FeatureInventory) -> Word | None:
         return build_ur(
-            row.ipa_lemma, row.opportunity, inv,
+            row.ipa_lemma,
+            row.opportunity,
+            inv,
             stem_final=row.stem_final,
         )
 

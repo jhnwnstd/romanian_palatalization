@@ -28,13 +28,12 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import Final, Iterable
+from typing import Final, Iterable, Mapping
 
 from ..inventory import FeatureInventory
 from ..pipeline import Derivation
 from ..segments import Segment, Word, tokenize_ipa
 from .compare import CompareStatus, compare_ipa, split_variants
-
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -54,7 +53,7 @@ class DistanceWeights:
     feature: float = 0.5
     rule: float = 0.3
     ipa: float = 0.2
-    ipa_clamp: int = 20                    # cap raw IPA distance's contribution
+    ipa_clamp: int = 20  # cap raw IPA distance's contribution
 
 
 DEFAULT_WEIGHTS: Final[DistanceWeights] = DistanceWeights()
@@ -95,7 +94,7 @@ def _last_stem_consonant(word: Word) -> Segment | None:
 def _attested_last_consonant_features(
     attested_ipa: str,
     inventory: FeatureInventory,
-):
+) -> Mapping[str, str] | None:
     """Return the feature map of the last +Consonantal inventory
     segment in the first attested variant, or None if none is
     findable in the inventory.
@@ -127,7 +126,8 @@ def feature_edit_distance(
     score as comparable.
     """
     attested_feats = _attested_last_consonant_features(
-        attested_ipa, inventory,
+        attested_ipa,
+        inventory,
     )
     if attested_feats is None:
         return UNKNOWN_DISTANCE
@@ -154,7 +154,8 @@ def rule_firing_distance(
     module holds no hard-coded copy that could drift on a rename.
     """
     fired = {
-        s.rule for s in derivation.steps
+        s.rule
+        for s in derivation.steps
         if s.fired and s.rule in palatalization_rules
     }
     expected = set(expected_fired) & palatalization_rules
@@ -191,7 +192,9 @@ def score(
         if last is not None and attested_field:
             feat = feature_edit_distance(last, attested_field, inventory)
         rule = rule_firing_distance(
-            derivation, expected_fired, palatalization_rules,
+            derivation,
+            expected_fired,
+            palatalization_rules,
         )
 
     if math.isinf(ipa) or math.isinf(feat):
@@ -204,7 +207,10 @@ def score(
             3,
         )
     return DistanceScore(
-        ipa_edit=ipa, feature_edit=feat, rule_edit=rule, total=total,
+        ipa_edit=ipa,
+        feature_edit=feat,
+        rule_edit=rule,
+        total=total,
     )
 
 

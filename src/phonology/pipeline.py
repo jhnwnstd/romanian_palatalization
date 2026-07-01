@@ -71,18 +71,22 @@ class RulePipeline:
         current: Word = ur
         for rule in self.rules:
             result = self._apply_one(rule, current)
-            steps.append(Step(
-                rule=rule.name,
-                word=result.word,
-                fired=bool(result.edits),
-            ))
+            steps.append(
+                Step(
+                    rule=rule.name,
+                    word=result.word,
+                    fired=bool(result.edits),
+                )
+            )
             current = result.word
         return Derivation(ur=ur, steps=tuple(steps), sr=current)
 
     def _apply_one(self, rule: Rule, word: Word) -> ApplyResult:
         if isinstance(rule, AllomorphSelection):
             return rule.apply_to(word, self.resolve)
-        if isinstance(rule, (UnificationRule, DeletionRule, GlideFormationRule)):
+        if isinstance(
+            rule, (UnificationRule, DeletionRule, GlideFormationRule)
+        ):
             return rule.apply(word)
         # Fall back to the duck-typed Protocol for future rule kinds.
         return rule.apply(word)

@@ -49,9 +49,20 @@ from .segments import Segment, Word, tokenize_ipa
 # trailing consonant cluster.
 _NON_CONSONANTAL: Final[frozenset[str]] = frozenset(
     {
-        "a", "e", "i", "o", "u", "ə", "ɨ",
-        "j", "w",
-        "o̯", "e̯", "u̯", "i̯", "a̯",
+        "a",
+        "e",
+        "i",
+        "o",
+        "u",
+        "ə",
+        "ɨ",
+        "j",
+        "w",
+        "o̯",
+        "e̯",
+        "u̯",
+        "i̯",
+        "a̯",
     }
 )
 
@@ -74,9 +85,7 @@ _UNDERSPEC_FOR_SURFACE: Final[Mapping[str, str]] = {
 # single-consonant case; cluster cases underspec both members
 # regardless of the suffix vowel.
 _DORSAL_SURFACE: Final[frozenset[str]] = frozenset({"k", "ɡ"})
-_CORONAL_SURFACE: Final[frozenset[str]] = frozenset(
-    {"t", "d", "s"}
-)
+_CORONAL_SURFACE: Final[frozenset[str]] = frozenset({"t", "d", "s"})
 
 # How each opportunity value spells out as a suffix segment list.
 SUFFIX_TOKENS: Final[Mapping[str, tuple[str, ...]]] = {
@@ -177,8 +186,7 @@ def build_ur(
                     break
                 trailing.append(i)
             trailing_candidates = [
-                i for i in trailing
-                if tokens[i] in _UNDERSPEC_FOR_SURFACE
+                i for i in trailing if tokens[i] in _UNDERSPEC_FOR_SURFACE
             ]
             if len(trailing_candidates) == 1:
                 tokens[trailing_candidates[0]] = canonical

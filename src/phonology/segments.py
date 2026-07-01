@@ -36,8 +36,8 @@ FeatureMap = Mapping[str, FeatureValue]
 UNSPEC: Final[FeatureValue] = "0"
 
 # IPA punctuation we tokenize as part of a segment, not as boundaries.
-_TIE_BAR: Final[str] = "͡"          # combining double inverted breve
-_INVERTED_BREVE_BELOW: Final[str] = "̯"   # diphthong tie under o, e, etc.
+_TIE_BAR: Final[str] = "͡"  # combining double inverted breve
+_INVERTED_BREVE_BELOW: Final[str] = "̯"  # diphthong tie under o, e, etc.
 _PALATALIZATION: Final[str] = "ʲ"
 
 
@@ -97,7 +97,8 @@ class Segment:
         return replace(self, features=new_feats)
 
     def unify_verbose(
-        self, supply: FeatureMap,
+        self,
+        supply: FeatureMap,
     ) -> tuple["Segment | None", tuple[str, str, str] | None]:
         """Like :meth:`unify` but also returns diagnostic info.
 
@@ -126,8 +127,9 @@ class Segment:
         """
         if not names:
             return self
-        new_feats = {k: (UNSPEC if k in names else v)
-                     for k, v in self.features.items()}
+        new_feats = {
+            k: (UNSPEC if k in names else v) for k, v in self.features.items()
+        }
         for n in names:
             new_feats.setdefault(n, UNSPEC)
         return replace(self, features=new_feats)

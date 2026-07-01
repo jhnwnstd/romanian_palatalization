@@ -42,12 +42,12 @@ class RefinedCategory(StrEnum):
     """
 
     # Data-side transcription noise (rules RIGHT):
-    NORM_TRAILING_GLIDE = "NORM_TRAILING_GLIDE"      # j/ʲ vs i
+    NORM_TRAILING_GLIDE = "NORM_TRAILING_GLIDE"  # j/ʲ vs i
     NORM_UNSTRESSED_SCHWA = "NORM_UNSTRESSED_SCHWA"  # a vs ə
-    NORM_MEDIAL_GLIDE = "NORM_MEDIAL_GLIDE"          # medial j vs i
-    NORM_EA_MONOPHTHONG = "NORM_EA_MONOPHTHONG"      # ea vs e
-    NORM_OA_MONOPHTHONG = "NORM_OA_MONOPHTHONG"      # oa vs o
-    NORM_STRIP_MARKS = "NORM_STRIP_MARKS"            # stress/length marks
+    NORM_MEDIAL_GLIDE = "NORM_MEDIAL_GLIDE"  # medial j vs i
+    NORM_EA_MONOPHTHONG = "NORM_EA_MONOPHTHONG"  # ea vs e
+    NORM_OA_MONOPHTHONG = "NORM_OA_MONOPHTHONG"  # oa vs o
+    NORM_STRIP_MARKS = "NORM_STRIP_MARKS"  # stress/length marks
 
     # Known lexical exception classes (rules can't handle):
     EZ_ETHNONYM = "EZ_ETHNONYM"
@@ -73,12 +73,23 @@ _NORM_TO_CATEGORY: Final[dict[Normalisation, RefinedCategory]] = {
 
 
 class _RowLike(Protocol):
-    """Minimal shape the categoriser needs from a lexicon row."""
-    lemma: str
-    plural: str
-    stem_final: str
-    opportunity: str
-    mutation: bool
+    """Minimal shape the categoriser needs from a lexicon row.
+
+    Uses ``@property`` for each field so frozen dataclasses (whose
+    attributes are effectively read-only) match the Protocol —
+    mypy rejects settable-attribute Protocols against frozen dcs.
+    """
+
+    @property
+    def lemma(self) -> str: ...
+    @property
+    def plural(self) -> str: ...
+    @property
+    def stem_final(self) -> str: ...
+    @property
+    def opportunity(self) -> str: ...
+    @property
+    def mutation(self) -> bool: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -87,7 +98,7 @@ class Categorisation:
 
     category: RefinedCategory
     normalisations: tuple[Normalisation, ...]
-    edit_distance: int
+    edit_distance: float
     attested_variant: str
 
 
@@ -104,9 +115,7 @@ def refine_category(
     we don't re-derive here; we just categorise.
     """
     if not ur_built:
-        return Categorisation(
-            RefinedCategory.UR_BUILD_FAILED, (), 999, ""
-        )
+        return Categorisation(RefinedCategory.UR_BUILD_FAILED, (), 999.0, "")
 
     cmp: CompareResult = compare(predicted_sr, attested_field)
     if cmp.matched and cmp.normalisation_applied:
@@ -114,17 +123,23 @@ def refine_category(
         # transcription differs.
         primary_norm = cmp.normalisation_applied[0]
         cat = _NORM_TO_CATEGORY.get(
-            primary_norm, RefinedCategory.RULE_FAILURE,
+            primary_norm,
+            RefinedCategory.RULE_FAILURE,
         )
         return Categorisation(
-            cat, cmp.normalisation_applied, 0, cmp.attested_variant,
+            cat,
+            cmp.normalisation_applied,
+            0.0,
+            cmp.attested_variant,
         )
     if cmp.matched:
         # No normalisation needed — the caller shouldn't be calling
         # us on this row, but categorise defensively.
         return Categorisation(
-            RefinedCategory.RULE_FAILURE, (),
-            cmp.edit_distance, cmp.attested_variant,
+            RefinedCategory.RULE_FAILURE,
+            (),
+            cmp.edit_distance,
+            cmp.attested_variant,
         )
 
     # Not matched under any normalisation — apply lexical-exception
@@ -132,46 +147,64 @@ def refine_category(
     lem = row.lemma.lower()
     sf = row.stem_final
     if (
-        boolean_predicted and not row.mutation
-        and sf == "z" and row.opportunity == "i"
+        boolean_predicted
+        and not row.mutation
+        and sf == "z"
+        and row.opportunity == "i"
         and (lem.endswith("ez") or lem.endswith("eză"))
     ):
         return Categorisation(
-            RefinedCategory.EZ_ETHNONYM, (),
-            cmp.edit_distance, cmp.attested_variant,
+            RefinedCategory.EZ_ETHNONYM,
+            (),
+            cmp.edit_distance,
+            cmp.attested_variant,
         )
     if (
-        boolean_predicted and not row.mutation
-        and sf == "c" and row.opportunity == "e"
+        boolean_predicted
+        and not row.mutation
+        and sf == "c"
+        and row.opportunity == "e"
         and lem.endswith("ică")
         and row.plural.lower().endswith("ele")
     ):
         return Categorisation(
-            RefinedCategory.ICA_SUPPLETION, (),
-            cmp.edit_distance, cmp.attested_variant,
+            RefinedCategory.ICA_SUPPLETION,
+            (),
+            cmp.edit_distance,
+            cmp.attested_variant,
         )
     if (
-        boolean_predicted and not row.mutation
-        and sf == "c" and row.opportunity == "i"
+        boolean_predicted
+        and not row.mutation
+        and sf == "c"
+        and row.opportunity == "i"
         and lem.endswith(("șcă", "şcă"))
     ):
         return Categorisation(
-            RefinedCategory.SHCA_CLUSTER_DATA, (),
-            cmp.edit_distance, cmp.attested_variant,
+            RefinedCategory.SHCA_CLUSTER_DATA,
+            (),
+            cmp.edit_distance,
+            cmp.attested_variant,
         )
     if (
-        boolean_predicted and not row.mutation
-        and sf == "t" and row.opportunity == "i"
+        boolean_predicted
+        and not row.mutation
+        and sf == "t"
+        and row.opportunity == "i"
         and lem.endswith(("șt", "şt"))
     ):
         return Categorisation(
-            RefinedCategory.SHT_LOANWORD, (),
-            cmp.edit_distance, cmp.attested_variant,
+            RefinedCategory.SHT_LOANWORD,
+            (),
+            cmp.edit_distance,
+            cmp.attested_variant,
         )
 
     return Categorisation(
-        RefinedCategory.RULE_FAILURE, (),
-        cmp.edit_distance, cmp.attested_variant,
+        RefinedCategory.RULE_FAILURE,
+        (),
+        cmp.edit_distance,
+        cmp.attested_variant,
     )
 
 

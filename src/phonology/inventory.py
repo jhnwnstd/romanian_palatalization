@@ -29,7 +29,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Final, Mapping, Sequence
 
-from .segments import FeatureMap, FeatureValue, Segment, UNSPEC
+from .segments import UNSPEC, FeatureMap, FeatureValue, Segment
 
 
 @dataclass(frozen=True, slots=True)

@@ -36,10 +36,10 @@ class ClusterTag(StrEnum):
     """
 
     NONE = "NONE"
-    CT = "CT"        # -ct, -ctă  (Latinate cluster, dorsal blocked)
-    SC = "SC"        # -sc, -scă  (palatalises via /sk/ → [ʃt])
-    SHCA = "SHCA"    # -șcă, -şcă (already-palatalized /ʃ/ in the sg)
-    ST = "ST"        # -st, -stă, -ște, -şte (S-pal + bleed)
+    CT = "CT"  # -ct, -ctă  (Latinate cluster, dorsal blocked)
+    SC = "SC"  # -sc, -scă  (palatalises via /sk/ → [ʃt])
+    SHCA = "SHCA"  # -șcă, -şcă (already-palatalized /ʃ/ in the sg)
+    ST = "ST"  # -st, -stă, -ște, -şte (S-pal + bleed)
 
 
 def _tag_cluster(lemma: str) -> ClusterTag:

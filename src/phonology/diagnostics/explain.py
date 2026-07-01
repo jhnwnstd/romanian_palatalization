@@ -67,7 +67,7 @@ class RuleTrace:
     search_trigger_index: int | None = None
     search_halted_at: int | None = None
     # For unification conflicts:
-    unify_conflict: tuple[str, str, str] | None = None   # (feat, want, got)
+    unify_conflict: tuple[str, str, str] | None = None  # (feat, want, got)
     # For AllomorphSelection:
     allomorph_chosen: str | None = None
     allomorph_elsewhere: bool = False
@@ -195,7 +195,7 @@ def _explain_unification(
         search_outcome = SearchOutcome.LICENSED
         search_target = i
         search_trigger = report.trigger_index
-        break   # first-match-wins per UnificationRule._apply_search
+        break  # first-match-wins per UnificationRule._apply_search
 
     trace = RuleTrace(
         rule_name=rule.name,
@@ -269,9 +269,7 @@ def _explain_glide(
                 f"last segment is /{last.label}/, not /{rule.target_label}/"
             )
         elif len(word) < 2:
-            notes.append(
-                f"word has only /{last.label}/; no preceding segment"
-            )
+            notes.append(f"word has only /{last.label}/; no preceding segment")
         else:
             prev = word[-2]
             if not prev.matches(rule.requires_preceding):
@@ -285,11 +283,14 @@ def _explain_glide(
                 )
                 fired = True
     result = rule.apply(word)
-    return RuleTrace(
-        rule_name=rule.name,
-        fired=fired,
-        notes=tuple(notes),
-    ), result.word
+    return (
+        RuleTrace(
+            rule_name=rule.name,
+            fired=fired,
+            notes=tuple(notes),
+        ),
+        result.word,
+    )
 
 
 def _explain_allomorph(
@@ -322,13 +323,16 @@ def _explain_allomorph(
         else:
             notes.append("no clause matched — allomorph selection failed")
     result = rule.apply_to(word, pipeline.resolve)
-    return RuleTrace(
-        rule_name=rule.name,
-        fired=bool(result.edits),
-        allomorph_chosen=chosen,
-        allomorph_elsewhere=elsewhere,
-        notes=tuple(notes),
-    ), result.word
+    return (
+        RuleTrace(
+            rule_name=rule.name,
+            fired=bool(result.edits),
+            allomorph_chosen=chosen,
+            allomorph_elsewhere=elsewhere,
+            notes=tuple(notes),
+        ),
+        result.word,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -338,9 +342,7 @@ def _explain_allomorph(
 
 def format_trace(trace: RuleTrace) -> str:
     """One-block plain-text rendering of a RuleTrace."""
-    header = (
-        f"[{trace.rule_name}]  {'fired' if trace.fired else 'no-op'}"
-    )
+    header = f"[{trace.rule_name}]  {'fired' if trace.fired else 'no-op'}"
     body: list[str] = [header]
     matched = [m for m in trace.target_matches if m.matched_target]
     if trace.target_matches:
@@ -349,10 +351,8 @@ def format_trace(trace: RuleTrace) -> str:
             f"{len(trace.target_matches)} segments"
         )
         if matched:
-            summary += (
-                ": " + ", ".join(
-                    f"idx{m.index}(/{m.label}/)" for m in matched[:6]
-                )
+            summary += ": " + ", ".join(
+                f"idx{m.index}(/{m.label}/)" for m in matched[:6]
             )
             if len(matched) > 6:
                 summary += f", +{len(matched)-6} more"
@@ -371,8 +371,8 @@ def format_trace(trace: RuleTrace) -> str:
             )
         elif so is SearchOutcome.NARROW_SCAN_EXHAUSTED:
             body.append(
-                f"  search: EXHAUSTED — narrow scan reached word edge "
-                f"without finding a match"
+                "  search: EXHAUSTED — narrow scan reached word edge "
+                "without finding a match"
             )
         elif so is SearchOutcome.EMPTY_SCAN:
             body.append("  search: EMPTY — target at word edge")
@@ -391,9 +391,7 @@ def format_trace(trace: RuleTrace) -> str:
 
 
 def format_explanation(explanation: Explanation) -> str:
-    return "\n\n".join(
-        format_trace(t) for t in explanation.rule_traces
-    )
+    return "\n\n".join(format_trace(t) for t in explanation.rule_traces)
 
 
 __all__: Final[tuple[str, ...]] = (
