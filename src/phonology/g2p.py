@@ -110,38 +110,73 @@ _ORTH_TO_IPA: Final[Mapping[str, str]] = {
 }
 
 
-def pick_variant(ipa: str, stem_final: str | None = None) -> str:
+def _levenshtein(a: str, b: str) -> int:
+    """Iterative Levenshtein distance."""
+    if a == b:
+        return 0
+    if not a:
+        return len(b)
+    if not b:
+        return len(a)
+    prev = list(range(len(b) + 1))
+    for i, ca in enumerate(a, 1):
+        curr = [i] + [0] * len(b)
+        for j, cb in enumerate(b, 1):
+            cost = 0 if ca == cb else 1
+            curr[j] = min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost)
+        prev = curr
+    return prev[-1]
+
+
+def pick_variant(
+    ipa: str,
+    stem_final: str | None = None,
+    hint: str | None = None,
+) -> str:
     """Pick the best variant from a pipe-separated IPA field.
 
-    Wiktionary IPA fields often list several variants, and the first
-    one is not always the most complete. For example
-    ``"amant"`` records ``"əman | əmant | amant | ..."`` — the leading
-    ``əman`` has dropped the final ``t``. Picking the first variant
-    blindly produces a UR without the stem-final obstruent, which then
-    derives a wrong SR.
+    Wiktionary IPA fields often list several variants that differ on
+    both real dialectal facts (schwa-reduction vs. citation-form
+    vowels) and on transcription convention (whether internal
+    orthographic ``c`` before front vowels is written as ``t͡ʃ`` or
+    left as ``s``/``t͡s`` per a non-Romanian transcriber). The first
+    variant is not always the most useful for our validator, which
+    compares against G2P-derived plural IPA.
 
-    Heuristic (in order):
+    Selection strategy (in order):
 
-    1. If ``stem_final`` names a canonical IPA symbol and at least one
-       variant contains that symbol, pick the first such variant.
-    2. Otherwise, pick the longest variant on the assumption that
-       longer transcriptions are less abbreviated.
-    3. Empty input / all-foreign input → empty string.
+    1. Drop foreign-language annotations via
+       :func:`~phonology.diagnostics.compare.split_variants`.
+    2. If ``stem_final`` is given, restrict candidates to variants
+       containing the orthographic stem-final's canonical IPA symbol.
+       This eliminates truncated variants like ``əman`` (missing the
+       final /t/ of "amant").
+    3. If ``hint`` is given (typically ``to_ipa(lemma)``), pick the
+       candidate with the smallest edit distance to the hint. This
+       prefers variants that agree with our G2P convention on
+       internal palatalization (``t͡ʃ`` for ``c`` before front vowels)
+       and on segment inventory, which matches what our plural-IPA
+       comparison expects.
+    4. If no hint is given, pick the longest candidate (a proxy for
+       "least abbreviated").
 
-    Uses the shared :func:`~phonology.diagnostics.compare.split_variants`
-    so the foreign-language filter matches the compare stack byte-for-
-    byte — one predicate, one implementation.
+    Empty / all-foreign input returns the empty string.
     """
     parts = split_variants(ipa)
     if not parts:
         return ""
+    candidates: tuple[str, ...] = parts
     if stem_final:
         target = _ORTH_TO_IPA.get(stem_final)
         if target is not None:
-            for p in parts:
-                if target in p or (target == "ɡ" and "g" in p):
-                    return p
-    return max(parts, key=len)
+            filtered = tuple(
+                p for p in parts if target in p or (target == "ɡ" and "g" in p)
+            )
+            if filtered:
+                candidates = filtered
+    if hint:
+        return min(candidates, key=lambda p: _levenshtein(p, hint))
+    return max(candidates, key=len)
 
 
 def build_ur(
@@ -149,6 +184,7 @@ def build_ur(
     opportunity: str,
     inventory: FeatureInventory,
     stem_final: str | None = None,
+    lemma: str | None = None,
 ) -> Word | None:
     """Build the underlying-representation Word for one lexicon row.
 
@@ -156,10 +192,24 @@ def build_ur(
     both the inventory and the underspec table, or the opportunity is
     not one of ``i``/``e``/``uri``. The caller should filter such rows
     out of the validation set rather than treat ``None`` as a failure.
+
+    When ``lemma`` (the orthographic form) is supplied, ``pick_variant``
+    receives ``to_ipa(lemma)`` as a similarity hint so it can prefer
+    Wiktionary variants that agree with our G2P convention on
+    internal-palatalization spellings — matching how the plural IPA
+    (typically G2P-derived) will look for comparison.
     """
     if not lemma_ipa or opportunity not in SUFFIX_TOKENS:
         return None
-    tokens = list(tokenize_ipa(pick_variant(lemma_ipa, stem_final)))
+    hint: str | None = None
+    if lemma:
+        # Late import to avoid a heavy load path at module import
+        # time; ``romanian_processor_lib`` pulls in the full processor
+        # stack.
+        from romanian_processor_lib import to_ipa
+
+        hint = to_ipa(lemma)
+    tokens = list(tokenize_ipa(pick_variant(lemma_ipa, stem_final, hint=hint)))
     if not tokens:
         return None
 

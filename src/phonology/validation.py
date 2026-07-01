@@ -182,7 +182,11 @@ def evaluate_row(
     """
     inv = profile.inventory
     ur = build_ur(
-        row.ipa_lemma, row.opportunity, inv, stem_final=row.stem_final
+        row.ipa_lemma,
+        row.opportunity,
+        inv,
+        stem_final=row.stem_final,
+        lemma=row.lemma,
     )
 
     variants = split_variants(row.ipa_pl)

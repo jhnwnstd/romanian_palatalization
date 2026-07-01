@@ -1055,6 +1055,21 @@ IPA_RULES = [
 ]
 
 
+# Consonant geminate collapse. Romanian phonology has no productive
+# geminate consonants — doubled letters in orthography (typically in
+# loanwords: "addenda", "allemandă", "kilowatt", "mozzarella") are
+# pronounced with a single consonant. Independent verification: for
+# every doubled-consonant lemma in this lexicon where Wiktionary
+# provides a raw phonetic transcription, the transcription uses a
+# single consonant. Applied AFTER IPA_RULES so it collapses the IPA
+# consonants (post-substitution), not the orthographic doubles that
+# some rules depend on (e.g. no rule looks for "cc"; each "c" is
+# handled by the individual [cC] rules and correctly maps "accent"
+# to "aktʃent" via one c → k and the next c → tʃ). Vowels are
+# NEVER collapsed — legitimate long/double vowels in loans exist.
+_GEMINATE_COLLAPSE = re.compile(r"([bdfɡhklmnpqrstvzʃʒ])\1")
+
+
 def to_ipa(word: str) -> str:
     """Broad Romanian G2P conversion."""
     if not isinstance(word, str) or not word:
@@ -1062,6 +1077,8 @@ def to_ipa(word: str) -> str:
     w = _normalize_unicode_g2p(word).lower()
     for pat, repl in IPA_RULES:
         w = re.sub(pat, repl, w)
+    # Collapse doubled consonants; see _GEMINATE_COLLAPSE for rationale.
+    w = _GEMINATE_COLLAPSE.sub(r"\1", w)
     return w
 
 

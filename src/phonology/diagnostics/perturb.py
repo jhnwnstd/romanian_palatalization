@@ -360,6 +360,7 @@ def search_perturbations_for(
             row.opportunity,
             inv,
             stem_final=row.stem_final,
+            lemma=row.lemma,
         )
 
     return search_perturbations(

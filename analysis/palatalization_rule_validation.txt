@@ -1,7 +1,7 @@
 Analysis: romanian-palatalization
 Target-stem rows validated: 11,641
-BOOLEAN mutation match: 11,363/11,641  (97.61%)
-SURFACE-IPA match: 10,917/11,641  (93.78%)
+BOOLEAN mutation match: 11,368/11,641  (97.65%)
+SURFACE-IPA match: 10,941/11,641  (93.99%)
 
 ========================================================================
 Per (stem_final × opportunity)  bool match / mismatch / rate
@@ -15,11 +15,11 @@ Per (stem_final × opportunity)  bool match / mismatch / rate
   ('g', 'e'   )       273 /      0   100.00%
   ('g', 'i'   )       378 /      2    99.47%
   ('g', 'uri' )       188 /      7    96.41%
-  ('s', 'e'   )       505 /      4    99.21%
-  ('s', 'i'   )       981 /      3    99.70%
+  ('s', 'e'   )       506 /      3    99.41%
+  ('s', 'i'   )       982 /      2    99.80%
   ('s', 'uri' )       305 /      3    99.03%
   ('t', 'e'   )      2107 /     15    99.29%
-  ('t', 'i'   )      1528 /      9    99.41%
+  ('t', 'i'   )      1531 /      6    99.61%
   ('t', 'uri' )       668 /      5    99.26%
   ('z', 'e'   )       863 /      1    99.88%
   ('z', 'i'   ) ?     116 /     10    92.06%
@@ -38,20 +38,20 @@ Cluster-specific verification
 Refined mismatch breakdown (NORM_* = data-side transcription noise; RULE_FAILURE = residual)
 ========================================================================
 
-  [RULE_FAILURE]  n = 661
+  [RULE_FAILURE]  n = 638
+    absolvent          → absolvenți          (t, opp=i)  rules→T, data→F
+      predicted='apsolvent͡sj'         attested='absolvent͡si'         d=0.4
     absolventă         → absolvente          (t, opp=e)  rules→F, data→T
       predicted='apsolvente'           attested='absolvente'           d=0.2
+    abstinent          → abstinenți          (t, opp=i)  rules→T, data→F
+      predicted='apstinent͡sj'         attested='abstinent͡si'         d=0.4
     accent             → accente             (t, opp=e)  rules→F, data→T
-      predicted='aksənte'              attested='akt͡ʃente'            d=0.8
+      predicted='aksente'              attested='akt͡ʃente'            d=0.6
     acetat             → acetați             (t, opp=i)  rules→T, data→F
-      predicted='əsətat͡sj'            attested='at͡ʃetat͡si'          d=1.2
+      predicted='asetat͡sj'            attested='at͡ʃetat͡si'          d=0.8
     acoperemânt        → acopereminte        (t, opp=e)  rules→F, data→T
       predicted='akoperemɨnte'         attested='akopereminte'         d=0.2
-    acoperământ        → acoperăminte        (t, opp=e)  rules→F, data→T
-      predicted='akoperəmɨnte'         attested='akoperəminte'         d=0.2
-    acostament         → acostamente         (t, opp=e)  rules→F, data→T
-      predicted='əkustəmene'           attested='akostamente'          d=2.3
-    ... and 655 more
+    ... and 632 more
 
   [ICA_SUPPLETION]  n = 85
     alunică            → alunele             (c, opp=e)  rules→T, data→F
@@ -83,14 +83,14 @@ Refined mismatch breakdown (NORM_* = data-side transcription noise; RULE_FAILURE
       predicted='bəbuʃtj'              attested='bəbuʃti'              d=0.0
     ... and 76 more
 
-  [UR_BUILD_FAILED]  n = 25
+  [UR_BUILD_FAILED]  n = 24
     argințică          → argințele           (c, opp=e)  rules→T, data→F
     bavețică           → bavețele            (c, opp=e)  rules→T, data→F
     biciușcă           → biciuști            (c, opp=i)  rules→T, data→F
     bonețică           → bonețele            (c, opp=e)  rules→T, data→F
     bucățică           → bucățele            (c, opp=e)  rules→T, data→F
     cernușcă           → cernuști            (c, opp=i)  rules→T, data→F
-    ... and 19 more
+    ... and 18 more
 
   [NORM_EA_MONOPHTHONG]  n = 4
     câșlăreasă         → câșlărese           (s, opp=e)  rules→T, data→F
@@ -117,9 +117,9 @@ Refined mismatch breakdown (NORM_* = data-side transcription noise; RULE_FAILURE
 ========================================================================
 Distance-to-working histogram
 ========================================================================
-  0.0 (data-side noise)               n=   82  (  9.8%)  ex: babușcă
-  0.0–0.5 (very close)                n=  405  ( 48.4%)  ex: absolventă
-  0.5–1.0 (one feature off)           n=  203  ( 24.3%)  ex: acostat
-  1.0–2.0 (a few features off)        n=   45  (  5.4%)  ex: colos
-  2.0–4.0 (structural gap)            n=  100  ( 12.0%)  ex: compartiment
+  0.0 (data-side noise)               n=   82  ( 10.1%)  ex: babușcă
+  0.0–0.5 (very close)                n=  413  ( 50.8%)  ex: absolventă
+  0.5–1.0 (one feature off)           n=  178  ( 21.9%)  ex: accent
+  1.0–2.0 (a few features off)        n=   43  (  5.3%)  ex: baratcă
+  2.0–4.0 (structural gap)            n=   96  ( 11.8%)  ex: povescă
   >4.0 (far)                          n=    1  (  0.1%)  ex: dilimache
