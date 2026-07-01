@@ -1,30 +1,36 @@
-"""Rule kinds: unification, deletion, glide formation, allomorph spell-out.
+"""Rule kinds — the Ω of Logical Phonology, plus positional & morph.
 
-Every rule has a ``name`` and an ``apply(word) -> ApplyResult`` method.
-``ApplyResult`` carries the new word plus an edit log so traces can
-record which segments changed at which index. Rules that don't fire
-return the input unchanged with an empty edit log.
+Every rule is a *total function* on words: it returns an
+:class:`ApplyResult` even when nothing matches. Composition of rules
+in an ordered pipeline yields the phonology of a language.
 
-The split into four classes mirrors the paper:
+The rule kinds correspond to LP's operator inventory (see
+:mod:`phonology.lp` for the primitives themselves):
 
-  - :class:`UnificationRule` is the workhorse. Most rules in the paper
-    are feature-filling — they unify a feature bundle into a target
-    segment when the search finds a licensing trigger.
-  - :class:`DeletionRule` is the one feature-changing rule (the bleed).
-    Modelling it as its own class makes the "this derivation used the
-    only feature-changing rule" question one ``isinstance`` away.
-  - :class:`GlideFormationRule` is positional rather than feature-
-    based: it fires on a literal /i/ at the right edge, after a
-    consonant. Encoding it as its own class avoids contorting the
-    Unification machinery with word-position knobs that no other rule
-    needs.
-  - :class:`AllomorphSelection` is the morphological spell-out. Given a
-    morpheme placeholder at the right edge, it appends the chosen
-    allomorph based on a Pāṇinian list of (condition, segments) pairs.
+  - :class:`UnificationRule` — the ``⊔`` operator applied at every
+    licensed target. Feature-filling: writes only where consistent,
+    silently identity on conflicts. This is the LP inalterability
+    mechanism: prespecified segments resist by failed unification.
+  - :class:`DeletionRule` — the ``\\`` operator (feature subtraction)
+    applied at every licensed target. Strips named features at
+    whatever value they bear (LP: ``A \\ {+F, -F}``). Feature-
+    changing: creates derived underspecification for the default
+    fill-in to resolve.
+  - :class:`SegmentDeletionRule` — the ``↦ ε`` operator on whole
+    segments. Removes matched segments from the word. Included for
+    LP completeness; the Romanian analysis doesn't use it.
+  - :class:`GlideFormationRule` — a composed ``\\`` + ``⊔`` at a
+    positional (word-final) target. Modelled as its own class
+    because its licensing is positional, not feature-based.
+  - :class:`AllomorphSelection` — morphological spell-out. Fills a
+    morpheme placeholder with the phonological exponent chosen by
+    a Pāṇinian list of (condition, segments) clauses.
 
-Search is always parameterised separately and passed in. Rules don't
-know how to find their triggers; they only know what to do once a
-trigger is found.
+**LP totality**. Within a single rule, all licensed positions are
+computed simultaneously from the input word, so nothing feeds or
+bleeds within one rule application (see LP notes §9). Rule
+ordering between distinct rules IS extrinsic and does real work —
+that's what the :class:`~phonology.pipeline.RulePipeline` handles.
 """
 
 from __future__ import annotations
@@ -70,18 +76,24 @@ class Rule(Protocol):
 
 @dataclass(frozen=True, slots=True)
 class UnificationRule:
-    """Unify ``supply`` into the first target whose search succeeds.
+    """LP ``⊔`` applied at every licensed target position.
 
-    Iteration order is left-to-right over the word. For each segment
-    matching ``target``, run the search; if the search returns an
-    index (trigger licensed), unify ``supply`` into the segment. The
-    rule applies at most once per word — multi-target firing is not
-    a paper-side commitment we want to bake in. If your rule should
-    cascade, run it twice in the pipeline.
+    Every segment matching ``target`` runs its own SEARCH from the
+    ORIGINAL input word; if the search returns a licensed trigger,
+    ``supply`` unifies into that segment. All firings are computed
+    from the input state and applied in one pass — this is LP
+    totality: within one rule, nothing feeds or bleeds. Feeding /
+    bleeding between distinct rules is what the pipeline's ordered
+    composition handles.
 
     ``search=None`` is an environment-free default-fill rule: unify
-    ``supply`` into *every* segment that matches ``target`` (the
+    ``supply`` into every segment that matches ``target`` (the
     coronal default fill-in is three such rules).
+
+    Prespecified segments are inalterable by unification failure:
+    if a supply value contradicts an existing explicit value, unify
+    returns None and the rule is identity on that position — LP's
+    central "the operation, not the target, does the sorting".
     """
 
     name: str
@@ -90,61 +102,55 @@ class UnificationRule:
     search: Search | None = None
 
     def apply(self, word: Word) -> ApplyResult:
-        if self.search is None:
-            return self._apply_default(word)
-        return self._apply_search(word)
+        return self._apply_simultaneous(word)
 
-    def _apply_search(self, word: Word) -> ApplyResult:
-        for i, seg in enumerate(word):
-            if not seg.matches(self.target):
-                continue
-            assert self.search is not None
-            trigger = self.search.locate(word, i)
-            if trigger is None:
-                continue
-            unified = seg.unify(self.supply)
-            if unified is None:
-                continue
-            if unified.features == seg.features:
-                # All supply features were already present; unification
-                # is a no-op. Don't record a spurious edit — the rule
-                # didn't change anything, so it didn't "fire".
-                continue
-            unified = unified.with_provenance(self.name)
-            new = list(word)
-            new[i] = unified
-            return ApplyResult(
-                word=tuple(new),
-                edits=(Edit(self.name, i, seg, unified),),
-            )
-        return ApplyResult(word=word)
+    def _apply_simultaneous(self, word: Word) -> ApplyResult:
+        """All licensed targets fire in parallel from the input state.
 
-    def _apply_default(self, word: Word) -> ApplyResult:
+        The "computed from the input" invariant matters when a rule
+        has multiple candidates in a word: each target's search sees
+        the ORIGINAL word, not a partially-updated one, so the rule
+        is a well-defined total function on words rather than an
+        order-dependent left-fold.
+        """
         new = list(word)
         edits: list[Edit] = []
         for i, seg in enumerate(word):
             if not seg.matches(self.target):
                 continue
+            if self.search is not None:
+                # SEARCH against the ORIGINAL word so early firings
+                # don't affect later ones' triggers.
+                if self.search.locate(word, i) is None:
+                    continue
             unified = seg.unify(self.supply)
-            if unified is None or unified is seg:
+            if unified is None:
                 continue
             if unified.features == seg.features:
+                # Vacuous: every supply feature was already present.
+                # Not a genuine firing — no edit, no provenance stamp.
                 continue
             unified = unified.with_provenance(self.name)
             new[i] = unified
             edits.append(Edit(self.name, i, seg, unified))
+        if not edits:
+            return ApplyResult(word=word)
         return ApplyResult(word=tuple(new), edits=tuple(edits))
 
 
 @dataclass(frozen=True, slots=True)
 class DeletionRule:
-    """Clear named features on every licensed target.
+    """LP ``\\`` applied at every licensed target position.
 
-    Like :class:`UnificationRule`, iteration is left-to-right and the
-    rule fires at most once per word. The clear set is applied
-    wholesale: every named feature is reset to ``"0"`` whether it was
-    explicit or already unspecified. Default-fill rules later in the
-    pipeline supply the unmarked values.
+    Every segment matching ``target`` runs its own SEARCH from the
+    ORIGINAL input word; each licensed target has the named features
+    subtracted (stripped at whatever value they bear). All firings
+    computed simultaneously from the input — LP totality.
+
+    Feature-changing rules are ``\\`` then ``⊔`` at the pipeline
+    level: this rule creates derived underspecification, a later
+    default-fill rule supplies the unmarked values. LP predicts
+    "no bypassing" and "no polarity rules" from this decomposition.
     """
 
     name: str
@@ -153,6 +159,8 @@ class DeletionRule:
     search: Search
 
     def apply(self, word: Word) -> ApplyResult:
+        new = list(word)
+        edits: list[Edit] = []
         for i, seg in enumerate(word):
             if not seg.matches(self.target):
                 continue
@@ -162,13 +170,54 @@ class DeletionRule:
             if cleared.features == seg.features:
                 continue
             cleared = cleared.with_provenance(self.name)
-            new = list(word)
             new[i] = cleared
-            return ApplyResult(
-                word=tuple(new),
-                edits=(Edit(self.name, i, seg, cleared),),
-            )
-        return ApplyResult(word=word)
+            edits.append(Edit(self.name, i, seg, cleared))
+        if not edits:
+            return ApplyResult(word=word)
+        return ApplyResult(word=tuple(new), edits=tuple(edits))
+
+
+@dataclass(frozen=True, slots=True)
+class SegmentDeletionRule:
+    """LP ``↦ ε`` on whole segments — removes matched segments from
+    the word.
+
+    LP predicts "Delete the Rich": if some but not all X delete in
+    a context, the ones that delete are MORE specified than those
+    that stay (because only a more-specified class can be carved
+    out — see LP notes §7).
+
+    Not used by the Romanian analysis, but included so the framework
+    is LP-complete: a caller can implement any analysis translated
+    into LP primitives without needing to extend the framework.
+    """
+
+    name: str
+    target: FeatureMap
+    search: Search | None = None
+
+    def apply(self, word: Word) -> ApplyResult:
+        # Mark each licensed target; then filter the word in one pass
+        # so all deletions are simultaneous.
+        to_delete: set[int] = set()
+        edits: list[Edit] = []
+        for i, seg in enumerate(word):
+            if not seg.matches(self.target):
+                continue
+            if self.search is not None:
+                if self.search.locate(word, i) is None:
+                    continue
+            to_delete.add(i)
+        if not to_delete:
+            return ApplyResult(word=word)
+        new_word = tuple(
+            seg for i, seg in enumerate(word) if i not in to_delete
+        )
+        for i in sorted(to_delete):
+            # ``after`` is not meaningful for a deletion; reuse
+            # ``before`` for the edit log so traces remain typed.
+            edits.append(Edit(self.name, i, word[i], word[i]))
+        return ApplyResult(word=new_word, edits=tuple(edits))
 
 
 @dataclass(frozen=True, slots=True)
@@ -330,6 +379,7 @@ __all__: Final[tuple[str, ...]] = (
     "GlideFormationRule",
     "ResolverFn",
     "Rule",
+    "SegmentDeletionRule",
     "UnificationRule",
     "is_placeholder",
     "placeholder",

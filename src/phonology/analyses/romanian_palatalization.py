@@ -46,6 +46,7 @@ from typing import Callable, Final, Mapping, cast
 
 from ..inventory import FeatureInventory, FeaturePatch, UnderspecifiedSegment
 from ..lexicon import ClusterTag, LexRow
+from ..lp import NaturalClass, natural_class
 from ..rules import (
     DeletionRule,
     GlideFormationRule,
@@ -53,6 +54,7 @@ from ..rules import (
     UnificationRule,
 )
 from ..search import Direction, Search
+from ..segments import Segment
 
 
 def _frozen(d: dict[str, str]) -> Mapping[str, str]:
@@ -226,40 +228,70 @@ def load_inventory() -> FeatureInventory:
 
 
 # ---------------------------------------------------------------------------
-# Feature-pattern shorthands used by multiple rules
+# Natural classes (LP [ ]) used by multiple rules
 # ---------------------------------------------------------------------------
+#
+# Each of these is a natural class: a specification C, and its
+# extension N(C) is every segment whose valued-feature set is a
+# superset of C. Rules pattern-match on these; the ``.spec`` dict is
+# passed to the rule constructors as the target / terminator /
+# condition, all of which are natural classes in the paper's ``[ ]``
+# notation.
 
-# The class of all (non-glide, non-vowel, non-sonorant) obstruents.
-# Dorsal palatalization and dorsal default-fill target this class.
-# Wrapped read-only so the shared reference across two rule targets
-# can't be corrupted by any downstream mutation.
-_OBSTRUENT: Final[Mapping[str, str]] = _frozen(
-    {
-        "Syllabic": "-",
-        "Consonantal": "+",
-        "Sonorant": "-",
-        "Approximant": "-",
-        "Nasal": "-",
-    }
+# [-Syllabic, +Consonantal, -Sonorant, -Approximant, -Nasal] — the
+# obstruent class targeted by dorsal palatalization and its default.
+OBSTRUENT_CLASS: Final[NaturalClass] = natural_class(
+    Syllabic="-",
+    Consonantal="+",
+    Sonorant="-",
+    Approximant="-",
+    Nasal="-",
 )
 
-# The postalveolar place class — what /i/ and /j/ are (after patch),
-# and what the derived [tʃ]/[dʒ] are. Used as both terminator and
-# condition for S-pal, assibilation, and the bleed condition.
-_POSTALVEOLAR_PLACE: Final[Mapping[str, str]] = _frozen(
-    {
+# [+Coronal, -Anterior, +Distributed] — the postalveolar place class.
+# /i/ and /j/ carry this place after patch; so does the derived [tʃ].
+# S-palatalization's terminator (narrow scan) and assibilation's
+# terminator both live here.
+POSTALVEOLAR_PLACE: Final[NaturalClass] = natural_class(
+    CORONAL="+",
+    Anterior="-",
+    Distributed="+",
+)
+
+# [+Syllabic, +Front] — front-vowel condition for dorsal palatalization's
+# broad-terminator SEARCH.
+FRONT_VOWEL: Final[NaturalClass] = natural_class(
+    Syllabic="+",
+    Front="+",
+)
+
+# The derived postalveolar consonant — the referent of the paper's
+# circle-notation ``[Ⓢ]`` in the bleed rule. Its bundle collects
+# everything /ʃ/-derived and /tʃ/-derived have in common, plus
+# +Consonantal to exclude the vowel /i/ and glide /j/ (which are
+# also postalveolar under our patch). NaturalClass.from_segment
+# gives us [Ⓢ] directly from this bundle, matching the paper's
+# ``[Ⓢ]`` notation.
+_DERIVED_POSTALVEOLAR: Final[Segment] = Segment(
+    label="Ⓢ",
+    features={
         "CORONAL": "+",
         "Anterior": "-",
         "Distributed": "+",
-    }
+        "Consonantal": "+",
+    },
+)
+CIRCLED_S: Final[NaturalClass] = NaturalClass.from_segment(
+    _DERIVED_POSTALVEOLAR,
 )
 
-_FRONT_VOWEL: Final[Mapping[str, str]] = _frozen(
-    {
-        "Syllabic": "+",
-        "Front": "+",
-    }
-)
+
+# Backward-compat aliases (the rule constructors below use these as
+# their .spec dicts; kept for internal use only).
+_OBSTRUENT: Final[Mapping[str, str]] = OBSTRUENT_CLASS.spec
+_POSTALVEOLAR_PLACE: Final[Mapping[str, str]] = POSTALVEOLAR_PLACE.spec
+_FRONT_VOWEL: Final[Mapping[str, str]] = FRONT_VOWEL.spec
+_POSTALVEOLAR_CONSONANT: Final[Mapping[str, str]] = CIRCLED_S.spec
 
 
 # ---------------------------------------------------------------------------
@@ -337,38 +369,27 @@ Non-members are transparent, so /S/ in 'prost' palatalizes across /T/.
 """
 
 
-_POSTALVEOLAR_CONSONANT: Final[Mapping[str, str]] = _frozen(
-    {
-        "CORONAL": "+",
-        "Anterior": "-",
-        "Distributed": "+",
-        "Consonantal": "+",
-    }
-)
-
-
 BLEED: Final[DeletionRule] = DeletionRule(
     name="bleed-rev",
-    target={
-        "CORONAL": "+",
-        "Consonantal": "+",
-    },
+    target=natural_class(CORONAL="+", Consonantal="+").spec,
     clear=frozenset({"Anterior", "Distributed", "Strident"}),
+    # Paper (latex.tex:568-586): environment ``[Ⓢ] __`` — the circle
+    # denotes the natural class of any segment subsuming the derived
+    # postalveolar's bundle. We build it here via
+    # ``NaturalClass.from_segment`` so the code reads the same as
+    # the paper's ``[Ⓢ]``. Broad terminator = strict left-adjacency
+    # (N(∅) as the terminator = adjacency; see LP notes §9).
     search=Search(
         direction=Direction.LEFT,
-        terminator={},  # broad: immediately preceding
-        # +Consonantal so a lexical glide /j/ (also postalveolar under
-        # our patch) does NOT trigger bleed on a following consonant.
-        # Bleed fires only on a genuinely consonantal postalveolar,
-        # i.e. one derived by dorsal-pal or S-pal.
-        condition=_POSTALVEOLAR_CONSONANT,
+        terminator=NaturalClass.universal().spec,
+        condition=CIRCLED_S.spec,
     ),
 )
-"""Bleed, revised (latex.tex:544-564 = e:bleed-rev).
+"""Bleed, revised (latex.tex:568-586 = e:bleed-rev).
 
-The only feature-changing rule in the coronal set. Deletes the place
-& Strident features from a consonantal coronal immediately after a
-postalveolar. Coronal default later refills with the unmarked plain-
+The one feature-changing rule in the coronal set (LP ``\\`` operator).
+Deletes place + Strident from a consonantal coronal immediately after
+the derived postalveolar. Coronal default refills the unmarked plain-
 stop values, giving /ʃt/ for both /st-i/ and /sk-e/.
 """
 

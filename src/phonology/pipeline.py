@@ -18,15 +18,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Final
 
-from .rules import (
-    AllomorphSelection,
-    ApplyResult,
-    DeletionRule,
-    GlideFormationRule,
-    ResolverFn,
-    Rule,
-    UnificationRule,
-)
+from .rules import AllomorphSelection, ApplyResult, ResolverFn, Rule
 from .segments import Word
 
 
@@ -84,11 +76,10 @@ class RulePipeline:
     def _apply_one(self, rule: Rule, word: Word) -> ApplyResult:
         if isinstance(rule, AllomorphSelection):
             return rule.apply_to(word, self.resolve)
-        if isinstance(
-            rule, (UnificationRule, DeletionRule, GlideFormationRule)
-        ):
-            return rule.apply(word)
-        # Fall back to the duck-typed Protocol for future rule kinds.
+        # UnificationRule, DeletionRule, GlideFormationRule,
+        # SegmentDeletionRule, plus any future Rule-Protocol
+        # implementers all take a bare `word` — dispatch through
+        # duck-typing keeps the pipeline agnostic to the rule kind.
         return rule.apply(word)
 
 
