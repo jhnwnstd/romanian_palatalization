@@ -39,6 +39,7 @@ from __future__ import annotations
 
 from typing import Final, Mapping
 
+from .diagnostics.compare import split_variants
 from .inventory import FeatureInventory
 from .segments import Segment, Word, tokenize_ipa
 
@@ -100,13 +101,6 @@ _ORTH_TO_IPA: Final[Mapping[str, str]] = {
 }
 
 
-def first_variant(ipa: str) -> str:
-    """Pick the first variant from a pipe-separated IPA field."""
-    if " | " in ipa:
-        return ipa.split(" | ", 1)[0].strip()
-    return ipa.strip()
-
-
 def pick_variant(ipa: str, stem_final: str | None = None) -> str:
     """Pick the best variant from a pipe-separated IPA field.
 
@@ -120,24 +114,16 @@ def pick_variant(ipa: str, stem_final: str | None = None) -> str:
     Heuristic (in order):
 
     1. If ``stem_final`` names a canonical IPA symbol and at least one
-       variant contains that symbol (case-insensitive, with fold-ins),
-       pick the first such variant.
+       variant contains that symbol, pick the first such variant.
     2. Otherwise, pick the longest variant on the assumption that
        longer transcriptions are less abbreviated.
-    3. Empty input → empty string.
+    3. Empty input / all-foreign input → empty string.
 
-    ``fr:...``, ``tr:...`` etc. (foreign-language codes) are skipped.
+    Uses the shared :func:`~phonology.diagnostics.compare.split_variants`
+    so the foreign-language filter matches the compare stack byte-for-
+    byte — one predicate, one implementation.
     """
-    if not ipa:
-        return ""
-    parts = [p.strip() for p in ipa.split(" | ") if p.strip()]
-    # Drop foreign-language annotations like ``fr:absorbant`` — they
-    # start with a short lowercase language code followed by a colon.
-    parts = [
-        p for p in parts
-        if not (len(p) >= 3 and p[2] == ":" and p[:2].isalpha()
-                and p[:2].islower())
-    ]
+    parts = split_variants(ipa)
     if not parts:
         return ""
     if stem_final:
@@ -259,6 +245,5 @@ def build_ur(
 __all__: Final[tuple[str, ...]] = (
     "SUFFIX_TOKENS",
     "build_ur",
-    "first_variant",
     "pick_variant",
 )

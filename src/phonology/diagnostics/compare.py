@@ -21,9 +21,10 @@ disagree — bugs like that are exactly what this module prevents.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Final
+from typing import Callable, Final, Sequence
 
 
 class Normalisation(StrEnum):
@@ -34,23 +35,39 @@ class Normalisation(StrEnum):
     """
 
     NONE = "NONE"
-    TRAILING_GLIDE = "TRAILING_GLIDE"     # j/ʲ ↔ i at right edge
+    TRAILING_GLIDE = "TRAILING_GLIDE"      # j/ʲ ↔ i at right edge
     UNSTRESSED_SCHWA = "UNSTRESSED_SCHWA"  # a ↔ ə internal
     MEDIAL_GLIDE = "MEDIAL_GLIDE"          # j ↔ i between vowels
     EA_MONOPHTHONG = "EA_MONOPHTHONG"      # ea ↔ e before palatal
     OA_MONOPHTHONG = "OA_MONOPHTHONG"      # oa ↔ o before palatal
-    STRIP_STRESS = "STRIP_STRESS"          # ˈ ˌ ' ` removed
-    STRIP_LENGTH = "STRIP_LENGTH"          # ː removed
+    STRIP_STRESS = "STRIP_STRESS"          # ˈ ˌ ' ` and ː removed
+
+
+class CompareStatus(StrEnum):
+    """Terminal state of a compare_ipa() call."""
+
+    MATCH = "MATCH"
+    MISMATCH = "MISMATCH"
+    EMPTY_ATTESTED = "EMPTY_ATTESTED"      # no variants supplied
+    EMPTY_PREDICTED = "EMPTY_PREDICTED"    # nothing to score
 
 
 @dataclass(frozen=True, slots=True)
 class CompareResult:
-    """Outcome of a predicted-vs-attested comparison."""
+    """Outcome of a predicted-vs-attested comparison.
+
+    ``edit_distance`` is ``math.inf`` when comparison couldn't happen
+    (empty predicted or empty attested set); consumers ranking by
+    distance MUST check ``status`` first rather than treating a raw
+    integer 0 as "close" — this was a silent-zero bug in an earlier
+    version of the function.
+    """
 
     matched: bool
-    attested_variant: str                    # which pipe-split variant matched (or "")
+    status: CompareStatus
+    attested_variant: str
     normalisation_applied: tuple[Normalisation, ...] = ()
-    edit_distance: int = 0                   # Levenshtein on the closest attested variant
+    edit_distance: float = 0.0
 
 
 # ---------------------------------------------------------------------------
@@ -116,35 +133,43 @@ def _normalise_medial_glide(pred: str, attested: str) -> str:
     return "".join(out)
 
 
+def _fold_diphthong_bulk(pred: str, attested: str, diphthong: str, mono: str) -> str:
+    """Collapse every ``diphthong`` in ``pred`` to ``mono`` if that
+    equals ``attested``. Handles the single-occurrence and multi-
+    occurrence cases uniformly (the old per-position loop only tried
+    one substitution at a time and failed on strings with two
+    ``ea``s).
+    """
+    if diphthong not in pred:
+        return pred
+    fully_collapsed = pred.replace(diphthong, mono)
+    if fully_collapsed == attested:
+        return fully_collapsed
+    # Also try single-position substitutions in case the caller
+    # actually wants to collapse only one of several occurrences.
+    for i in range(len(pred) - len(diphthong) + 1):
+        if pred[i:i + len(diphthong)] == diphthong:
+            candidate = pred[:i] + mono + pred[i + len(diphthong):]
+            if candidate == attested:
+                return candidate
+    return pred
+
+
 def _normalise_ea_monophthong(pred: str, attested: str) -> str:
     """Fold /ea/ in pred to /e/ where attested has /e/.
 
     Romanian monophthongises the ``ea`` diphthong to /e/ before
     palatal consonants (``-ancă → -ence``): pred keeps the diphthong
     from the lemma but attested has the monophthongised plural form.
+    Handles multiple ``ea`` occurrences via a bulk substitution
+    followed by per-position fallbacks.
     """
-    if "ea" not in pred:
-        return pred
-    # Alignment-free: try replacing each 'ea' occurrence in pred
-    # with 'e' one at a time and return whichever produces attested.
-    for i in range(len(pred) - 1):
-        if pred[i:i+2] == "ea":
-            candidate = pred[:i] + "e" + pred[i+2:]
-            if candidate == attested:
-                return candidate
-    return pred
+    return _fold_diphthong_bulk(pred, attested, "ea", "e")
 
 
 def _normalise_oa_monophthong(pred: str, attested: str) -> str:
     """Fold /oa/ in pred to /o/ where attested has /o/."""
-    if "oa" not in pred:
-        return pred
-    for i in range(len(pred) - 1):
-        if pred[i:i+2] == "oa":
-            candidate = pred[:i] + "o" + pred[i+2:]
-            if candidate == attested:
-                return candidate
-    return pred
+    return _fold_diphthong_bulk(pred, attested, "oa", "o")
 
 
 # ---------------------------------------------------------------------------
@@ -179,77 +204,126 @@ def _levenshtein(a: str, b: str) -> int:
 # ---------------------------------------------------------------------------
 
 
-def split_variants(attested_field: str) -> list[str]:
-    """Split a pipe-separated IPA field, filter out foreign-language
-    annotations, and return the cleaned variants."""
+def is_foreign_annotation(text: str) -> bool:
+    """True iff ``text`` starts with a 2-letter lowercase language
+    code and a colon (e.g. ``fr:absorbant``, ``tr:emme``).
+
+    Extracted so the driver, compare, and g2p share one predicate
+    instead of three lookalike ``p[2] == ':'`` checks that drifted.
+    """
+    return (
+        len(text) >= 3
+        and text[2] == ":"
+        and text[:2].isalpha()
+        and text[:2].islower()
+    )
+
+
+def split_variants(attested_field: str) -> tuple[str, ...]:
+    """Split a pipe-separated IPA field, drop foreign-language
+    annotations, and return the cleaned variants.
+
+    Returns a tuple (not a list) so callers can rely on immutability
+    when passing the result around. Empty input or all-foreign input
+    yields an empty tuple — callers should check length rather than
+    relying on ``[0]``.
+    """
     if not attested_field:
-        return []
-    parts = [p.strip() for p in attested_field.split(" | ") if p.strip()]
-    return [
-        p for p in parts
-        if not (len(p) >= 3 and p[2] == ":" and p[:2].isalpha()
-                and p[:2].islower())
-    ]
+        return ()
+    parts = (p.strip() for p in attested_field.split(" | "))
+    return tuple(p for p in parts if p and not is_foreign_annotation(p))
 
 
-def compare(predicted: str, attested_field: str) -> CompareResult:
-    """Compare ``predicted`` (single IPA string) to a pipe-separated
-    ``attested_field`` under successive normalisations.
+# The normaliser cascade — a module-level constant so we don't rebuild
+# the list per compare() call. Each entry is (label, fn) where fn takes
+# (pred, attested) and returns a possibly-transformed pred. Entries are
+# applied in order; the first arrangement that makes pred == attested
+# wins.
+_NORMALISERS: Final[tuple[
+    tuple[Normalisation, Callable[[str, str], str]], ...
+]] = (
+    (Normalisation.STRIP_STRESS, lambda p, a: _strip_marks(p)),
+    (Normalisation.TRAILING_GLIDE,
+        lambda p, a: _normalise_trailing_glide(p)),
+    (Normalisation.UNSTRESSED_SCHWA, _normalise_unstressed_a),
+    (Normalisation.MEDIAL_GLIDE, _normalise_medial_glide),
+    (Normalisation.EA_MONOPHTHONG, _normalise_ea_monophthong),
+    (Normalisation.OA_MONOPHTHONG, _normalise_oa_monophthong),
+)
+
+
+def compare_ipa(
+    predicted: str,
+    attested: str | Sequence[str],
+    *,
+    strict: bool = False,
+) -> CompareResult:
+    """Compare ``predicted`` to ``attested`` under successive
+    normalisations.
+
+    ``attested`` accepts either a raw pipe-separated IPA field (as
+    stored in the lexicon CSV) OR an already-split tuple/list of
+    individual variants. The former is convenient at the CSV boundary;
+    the latter is more ergonomic when the caller already has cleaned
+    variants.
 
     Returns the first successful match, the normalisations applied to
-    get there, and the minimum edit distance to any attested variant
-    (which lets the caller sort mismatches by closeness even when no
-    normalisation succeeds).
-    """
-    if not predicted or not attested_field:
-        return CompareResult(matched=False, attested_variant="")
+    get there, and (on a genuine mismatch) the minimum edit distance
+    to any attested variant. When ``attested`` is empty or all-foreign
+    the result's ``status`` is ``EMPTY_ATTESTED`` and ``edit_distance``
+    is ``inf`` so distance-ranking callers cannot silently treat "no
+    data" as "matches at distance 0".
 
-    variants = split_variants(attested_field)
+    Set ``strict=True`` to skip the normalisation cascade — only
+    byte-for-byte matches count.
+    """
+    if not predicted:
+        return CompareResult(
+            matched=False, status=CompareStatus.EMPTY_PREDICTED,
+            attested_variant="", edit_distance=math.inf,
+        )
+
+    if isinstance(attested, str):
+        variants = split_variants(attested)
+    else:
+        variants = tuple(v for v in attested if v)
     if not variants:
-        return CompareResult(matched=False, attested_variant="")
+        return CompareResult(
+            matched=False, status=CompareStatus.EMPTY_ATTESTED,
+            attested_variant="", edit_distance=math.inf,
+        )
 
     # Fast path: exact byte-for-byte match against any variant.
     for v in variants:
         if predicted == v:
             return CompareResult(
-                matched=True, attested_variant=v,
-                normalisation_applied=(),
-                edit_distance=0,
+                matched=True, status=CompareStatus.MATCH,
+                attested_variant=v, edit_distance=0.0,
             )
 
-    # Sequential normalisers. We try each layer against every variant
-    # and return the first hit; if nothing hits, we track the best
-    # (lowest-distance) approximation for the caller.
-    pred_stripped = _strip_marks(predicted)
-    best_distance = min(_levenshtein(predicted, v) for v in variants)
-    best_variant = min(variants, key=lambda v: _levenshtein(predicted, v))
+    if strict:
+        best_variant = min(
+            variants, key=lambda v: _levenshtein(predicted, v),
+        )
+        return CompareResult(
+            matched=False, status=CompareStatus.MISMATCH,
+            attested_variant=best_variant,
+            edit_distance=float(_levenshtein(predicted, best_variant)),
+        )
 
-    normalisers: list[tuple[Normalisation, callable]] = [
-        (Normalisation.STRIP_STRESS,
-            lambda p, a: _strip_marks(p)),
-        (Normalisation.TRAILING_GLIDE,
-            lambda p, a: _normalise_trailing_glide(p)),
-        (Normalisation.UNSTRESSED_SCHWA,
-            _normalise_unstressed_a),
-        (Normalisation.MEDIAL_GLIDE,
-            _normalise_medial_glide),
-        (Normalisation.EA_MONOPHTHONG,
-            _normalise_ea_monophthong),
-        (Normalisation.OA_MONOPHTHONG,
-            _normalise_oa_monophthong),
-    ]
+    pred_stripped = _strip_marks(predicted)
 
     for v in variants:
+        v_stripped = _strip_marks(v)
         applied: list[Normalisation] = []
         cur = pred_stripped
-        v_stripped = _strip_marks(v)
-        # Iteratively apply normalisers; stop early if we hit.
-        for label, fn in normalisers:
+        for label, fn in _NORMALISERS:
             if cur == v_stripped:
                 return CompareResult(
-                    matched=True, attested_variant=v,
+                    matched=True, status=CompareStatus.MATCH,
+                    attested_variant=v,
                     normalisation_applied=tuple(applied),
-                    edit_distance=0,
+                    edit_distance=0.0,
                 )
             new = fn(cur, v_stripped)
             if new != cur:
@@ -257,22 +331,34 @@ def compare(predicted: str, attested_field: str) -> CompareResult:
                 cur = new
         if cur == v_stripped:
             return CompareResult(
-                matched=True, attested_variant=v,
+                matched=True, status=CompareStatus.MATCH,
+                attested_variant=v,
                 normalisation_applied=tuple(applied),
-                edit_distance=0,
+                edit_distance=0.0,
             )
 
+    best_variant = min(variants, key=lambda v: _levenshtein(predicted, v))
     return CompareResult(
-        matched=False,
+        matched=False, status=CompareStatus.MISMATCH,
         attested_variant=best_variant,
-        normalisation_applied=(),
-        edit_distance=best_distance,
+        edit_distance=float(_levenshtein(predicted, best_variant)),
     )
+
+
+def compare(predicted: str, attested_field: str) -> CompareResult:
+    """Back-compat alias for the pipe-separated-string overload of
+    :func:`compare_ipa`. New callers should use ``compare_ipa`` and
+    pass either the raw field or a variant tuple as appropriate.
+    """
+    return compare_ipa(predicted, attested_field)
 
 
 __all__: Final[tuple[str, ...]] = (
     "CompareResult",
+    "CompareStatus",
     "Normalisation",
     "compare",
+    "compare_ipa",
+    "is_foreign_annotation",
     "split_variants",
 )

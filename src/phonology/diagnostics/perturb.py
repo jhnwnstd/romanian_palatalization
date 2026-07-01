@@ -30,7 +30,7 @@ from __future__ import annotations
 from dataclasses import dataclass, replace as dc_replace
 from enum import StrEnum
 from pathlib import Path
-from typing import Callable, Final, Sequence
+from typing import TYPE_CHECKING, Callable, Final, Sequence
 
 from ..inventory import FeatureInventory, FeaturePatch, UnderspecifiedSegment
 from ..pipeline import RulePipeline
@@ -41,7 +41,11 @@ from ..rules import (
     UnificationRule,
 )
 from ..segments import Segment, segments_to_ipa, Word
-from .compare import compare
+from .compare import compare_ipa
+
+if TYPE_CHECKING:
+    from ..analyses.romanian_palatalization import AnalysisProfile
+    from ..lexicon import LexRow
 
 
 class PerturbationKind(StrEnum):
@@ -239,8 +243,9 @@ def search_perturbations(
         except Exception:
             return "", False, 999
         sr = segments_to_ipa(deriv.sr, inv.base_segments())
-        cmp = compare(sr, expected_field)
-        return sr, cmp.matched, cmp.edit_distance
+        cmp = compare_ipa(sr, expected_field)
+        dist = int(cmp.edit_distance) if cmp.edit_distance != float("inf") else 999
+        return sr, cmp.matched, dist
 
     baseline_sr, baseline_matched, baseline_dist = _run(
         patches, underspec, rules
@@ -314,6 +319,41 @@ def format_report(report: PerturbationReport) -> str:
     return "\n".join(lines)
 
 
+def search_perturbations_for(
+    profile: "AnalysisProfile",
+    row: "LexRow",
+    *,
+    kinds: Sequence[PerturbationKind] = tuple(PerturbationKind),
+    limit: int | None = None,
+) -> PerturbationReport:
+    """Ergonomic wrapper: takes an :class:`AnalysisProfile` and a
+    :class:`LexRow`, unpacks the ur-builder closure and the baseline
+    (patches, underspec, rules) tuples for you.
+
+    Prefer this over :func:`search_perturbations` in new code —
+    the 7-kwarg surface of the low-level function is unfriendly to
+    interactive use.
+    """
+    from ..g2p import build_ur
+
+    def builder(inv):
+        return build_ur(
+            row.ipa_lemma, row.opportunity, inv,
+            stem_final=row.stem_final,
+        )
+
+    return search_perturbations(
+        ur_builder=builder,
+        expected_field=row.ipa_pl,
+        inventory_json=profile.inventory_json,
+        baseline_patches=profile.patches,
+        baseline_underspec=profile.underspec,
+        baseline_rules=profile.rules,
+        kinds=kinds,
+        limit=limit,
+    )
+
+
 __all__: Final[tuple[str, ...]] = (
     "Perturbation",
     "PerturbationKind",
@@ -321,4 +361,5 @@ __all__: Final[tuple[str, ...]] = (
     "PerturbationResult",
     "format_report",
     "search_perturbations",
+    "search_perturbations_for",
 )

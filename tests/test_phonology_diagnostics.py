@@ -17,6 +17,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 from phonology.analyses.romanian_palatalization import (
+    PALATALIZATION_RULE_NAMES,
     PATCHES,
     RULES_FROM_PAPER,
     UNDERSPEC,
@@ -114,12 +115,12 @@ class TestDistance:
             predicted_sr=pred, attested_field="muʃte",
             derivation=deriv, expected_fired=frozenset({"dorsal-pal"}),
             inventory=inventory,
+            palatalization_rules=PALATALIZATION_RULE_NAMES,
         )
         assert s.ipa_edit == 0
         assert s.total < 1.0
 
     def test_non_zero_on_mismatch(self, inventory, pipeline) -> None:
-        # Provide an ATTESTED that differs from the derived SR.
         ur = build_ur("muskə", "e", inventory, stem_final="s")
         deriv = pipeline.derive(ur)
         pred = segments_to_ipa(deriv.sr, inventory.base_segments())
@@ -127,6 +128,7 @@ class TestDistance:
             predicted_sr=pred, attested_field="xyz",
             derivation=deriv, expected_fired=frozenset(),
             inventory=inventory,
+            palatalization_rules=PALATALIZATION_RULE_NAMES,
         )
         assert s.ipa_edit > 0
         assert s.total > 0

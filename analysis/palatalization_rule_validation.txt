@@ -1,3 +1,4 @@
+Analysis: romanian-palatalization
 Target-stem rows validated: 11,641
 BOOLEAN mutation match: 11,363/11,641  (97.61%)
 SURFACE-IPA match: 10,913/11,641  (93.75%)
@@ -73,13 +74,13 @@ Refined mismatch breakdown (NORM_* = data-side transcription noise; RULE_FAILURE
     așternut           → așternuturi         (t, opp=uri)  rules→T, data→F
       predicted='aʃternuturj'          attested='aʃternuturi'          d=0.3
     bașcă              → băști               (c, opp=i)  rules→T, data→F
-      predicted='baʃtj'                attested='bəʃti'                d=0.3
+      predicted='baʃtj'                attested='bəʃti'                d=0.0
     boșcă              → boști               (c, opp=i)  rules→T, data→F
-      predicted='boʃtj'                attested='boʃti'                d=0.3
+      predicted='boʃtj'                attested='boʃti'                d=0.0
     bumașcă            → bumăști             (c, opp=i)  rules→T, data→F
-      predicted='bumaʃtj'              attested='buməʃti'              d=0.3
+      predicted='bumaʃtj'              attested='buməʃti'              d=0.0
     băbușcă            → băbuști             (c, opp=i)  rules→T, data→F
-      predicted='bəbuʃtj'              attested='bəbuʃti'              d=0.3
+      predicted='bəbuʃtj'              attested='bəbuʃti'              d=0.0
     ... and 76 more
 
   [UR_BUILD_FAILED]  n = 25
@@ -103,21 +104,22 @@ Refined mismatch breakdown (NORM_* = data-side transcription noise; RULE_FAILURE
 
   [NORM_MEDIAL_GLIDE]  n = 3
     hăitușcă           → hăituște            (c, opp=e)  rules→T, data→F
-      predicted='həjtuʃte'             attested='həituʃte'             d=0.3
+      predicted='həjtuʃte'             attested='həituʃte'             d=0.0
     mierlușcă          → mierluște           (c, opp=e)  rules→T, data→F
-      predicted='mjerluʃte'            attested='mierluʃte'            d=0.3
+      predicted='mjerluʃte'            attested='mierluʃte'            d=0.0
     muierușcă          → muieruște           (c, opp=e)  rules→T, data→F
-      predicted='mujeruʃte'            attested='muieruʃte'            d=0.3
+      predicted='mujeruʃte'            attested='muieruʃte'            d=0.0
 
   [SHCA_CLUSTER_DATA]  n = 1
     corodașcă          → corodắști           (c, opp=i)  rules→T, data→F
-      predicted='korodaʃtj'            attested='korodắʃti'            d=0.7
+      predicted='korodaʃtj'            attested='korodắʃti'            d=0.4
 
 ========================================================================
 Distance-to-working histogram
 ========================================================================
-  0.0–0.5 (very close)                n=  486  ( 57.9%)  ex: absolventă
-  0.5–1.0 (one feature off)           n=  208  ( 24.8%)  ex: acostat
-  1.0–2.0 (a few features off)        n=   44  (  5.2%)  ex: colos
-  2.0–4.0 (structural gap)            n=  101  ( 12.0%)  ex: compartiment
+  0.0 (data-side noise)               n=   82  (  9.8%)  ex: babușcă
+  0.0–0.5 (very close)                n=  405  ( 48.2%)  ex: absolventă
+  0.5–1.0 (one feature off)           n=  207  ( 24.6%)  ex: acostat
+  1.0–2.0 (a few features off)        n=   45  (  5.4%)  ex: colos
+  2.0–4.0 (structural gap)            n=  100  ( 11.9%)  ex: compartiment
   >4.0 (far)                          n=    1  (  0.1%)  ex: dilimache

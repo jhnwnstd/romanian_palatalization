@@ -69,7 +69,6 @@ _NORM_TO_CATEGORY: Final[dict[Normalisation, RefinedCategory]] = {
     Normalisation.EA_MONOPHTHONG: RefinedCategory.NORM_EA_MONOPHTHONG,
     Normalisation.OA_MONOPHTHONG: RefinedCategory.NORM_OA_MONOPHTHONG,
     Normalisation.STRIP_STRESS: RefinedCategory.NORM_STRIP_MARKS,
-    Normalisation.STRIP_LENGTH: RefinedCategory.NORM_STRIP_MARKS,
 }
 
 

@@ -39,11 +39,13 @@ spirantize the result — exactly the wrong outcome.
 
 from __future__ import annotations
 
-import importlib.resources as resources
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Final
+from types import MappingProxyType
+from typing import Callable, Final, Mapping
 
 from ..inventory import FeatureInventory, FeaturePatch, UnderspecifiedSegment
+from ..lexicon import ClusterTag, LexRow
 from ..rules import (
     DeletionRule,
     GlideFormationRule,
@@ -51,6 +53,13 @@ from ..rules import (
     UnificationRule,
 )
 from ..search import Direction, Search
+
+
+def _frozen(d: dict[str, str]) -> Mapping[str, str]:
+    """Wrap a feature-pattern dict as a read-only mapping so multiple
+    rules sharing the same shorthand can't be corrupted by any code
+    path that mutates the dict in place."""
+    return MappingProxyType(d)
 
 
 # ---------------------------------------------------------------------------
@@ -222,27 +231,29 @@ def load_inventory() -> FeatureInventory:
 
 # The class of all (non-glide, non-vowel, non-sonorant) obstruents.
 # Dorsal palatalization and dorsal default-fill target this class.
-_OBSTRUENT: Final[dict[str, str]] = {
+# Wrapped read-only so the shared reference across two rule targets
+# can't be corrupted by any downstream mutation.
+_OBSTRUENT: Final[Mapping[str, str]] = _frozen({
     "Syllabic": "-",
     "Consonantal": "+",
     "Sonorant": "-",
     "Approximant": "-",
     "Nasal": "-",
-}
+})
 
 # The postalveolar place class — what /i/ and /j/ are (after patch),
 # and what the derived [tʃ]/[dʒ] are. Used as both terminator and
 # condition for S-pal, assibilation, and the bleed condition.
-_POSTALVEOLAR_PLACE: Final[dict[str, str]] = {
+_POSTALVEOLAR_PLACE: Final[Mapping[str, str]] = _frozen({
     "CORONAL": "+",
     "Anterior": "-",
     "Distributed": "+",
-}
+})
 
-_FRONT_VOWEL: Final[dict[str, str]] = {
+_FRONT_VOWEL: Final[Mapping[str, str]] = _frozen({
     "Syllabic": "+",
     "Front": "+",
-}
+})
 
 
 # ---------------------------------------------------------------------------
@@ -320,12 +331,12 @@ Non-members are transparent, so /S/ in 'prost' palatalizes across /T/.
 """
 
 
-_POSTALVEOLAR_CONSONANT: Final[dict[str, str]] = {
+_POSTALVEOLAR_CONSONANT: Final[Mapping[str, str]] = _frozen({
     "CORONAL": "+",
     "Anterior": "-",
     "Distributed": "+",
     "Consonantal": "+",
-}
+})
 
 
 BLEED: Final[DeletionRule] = DeletionRule(
@@ -460,18 +471,170 @@ bleed. Mirrors the derivation tables at latex.tex:472-492 and
 latex.tex:584-596 column-for-column."""
 
 
+# The four rules whose firing indicates the STEM ALTERNATED (as
+# opposed to default fill-in, dorsal-default fill, or glide formation
+# — all of which fire even in inalterable cases). Derived from the
+# rule tuple itself so a rule rename can't leave stale copies in
+# diagnostics/distance.py or the driver.
+PALATALIZATION_RULES: Final[tuple[Rule, ...]] = (
+    DORSAL_PAL, S_PAL, ASSIBILATION, BLEED,
+)
+PALATALIZATION_RULE_NAMES: Final[frozenset[str]] = frozenset(
+    r.name for r in PALATALIZATION_RULES
+)
+
+
+# ---------------------------------------------------------------------------
+# Stem-final classification (shared by driver + contingency table)
+# ---------------------------------------------------------------------------
+
+DORSAL_STEMS: Final[frozenset[str]] = frozenset({"c", "g"})
+# /z/ excluded from CORONAL_STEMS: paper treats fully specified /z/
+# as inalterable (latex.tex:170), so it never triggers palatalization.
+# But /z/-final rows are still IN SCOPE for validation (they should
+# predict False and match the data's False), so TARGET_STEMS keeps
+# /z/ for the lexicon filter.
+CORONAL_STEMS: Final[frozenset[str]] = frozenset({"t", "d", "s"})
+TARGET_STEMS: Final[frozenset[str]] = (
+    DORSAL_STEMS | CORONAL_STEMS | frozenset({"z"})
+)
+
+
+# ---------------------------------------------------------------------------
+# Rule-firing oracle — one function, two views
+# ---------------------------------------------------------------------------
+
+
+def expected_firings(row: LexRow) -> frozenset[str]:
+    """Which palatalization rules SHOULD fire for this row under the
+    paper's productivity claims.
+
+    Single source of truth for the rule-firing oracle. The boolean
+    prediction is just ``bool(expected_firings(row))``, so we don't
+    keep two shadow tables of the same stem × opportunity × cluster
+    truth. Used by :func:`fallback_predict` and by the distance
+    metric's rule-firing component.
+    """
+    if row.opportunity in {"uri", "none"}:
+        return frozenset()
+    if row.cluster is ClusterTag.CT:
+        # ct+e: broad terminator halts on /T/, /K/ blocked.
+        # ct+i: /T/ still assibilates.
+        if row.opportunity == "i":
+            return frozenset({ASSIBILATION.name})
+        return frozenset()
+    if row.cluster is ClusterTag.SC:
+        # -sc(ă): /K/ palatalises, /S/ follows via derived postalv,
+        # bleed clears the affricate to plain /t/.
+        return frozenset({DORSAL_PAL.name, S_PAL.name, BLEED.name})
+    if row.cluster is ClusterTag.SHCA:
+        # -șcă already has surface /ʃ/; /K/ palatalises + bleed clears.
+        return frozenset({DORSAL_PAL.name, BLEED.name})
+    if row.cluster is ClusterTag.ST and row.opportunity == "i":
+        return frozenset({S_PAL.name, BLEED.name})
+    if row.stem_final in DORSAL_STEMS:
+        if row.opportunity in {"i", "e"}:
+            return frozenset({DORSAL_PAL.name})
+    if row.stem_final in CORONAL_STEMS and row.opportunity == "i":
+        if row.stem_final in {"t", "d"}:
+            return frozenset({ASSIBILATION.name})
+        return frozenset({S_PAL.name})
+    return frozenset()
+
+
+def fallback_predict(row: LexRow) -> bool:
+    """Boolean prediction when we can't run the pipeline (missing IPA).
+
+    Derived from :func:`expected_firings` so there's exactly one place
+    to update if the rule set changes.
+    """
+    return bool(expected_firings(row))
+
+
+# ---------------------------------------------------------------------------
+# AnalysisProfile — the "one object to pass around" bundle
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class AnalysisProfile:
+    """Everything an analysis run needs, bundled into one immutable
+    object so downstream API functions take a single argument.
+
+    Fields:
+
+      - ``name`` — human-readable analysis name.
+      - ``inventory`` — the constructed :class:`FeatureInventory`.
+      - ``patches`` / ``underspec`` — the source-of-truth tuples used
+        to build ``inventory`` (needed by the perturbation searcher
+        to reload the inventory with tweaks).
+      - ``rules`` — the ordered rule tuple.
+      - ``inventory_json`` — path to the JSON that ``patches`` were
+        applied on top of (used by perturb to reload).
+      - ``target_stems`` — orthographic stem-finals this analysis
+        wants to see; passed to :func:`iter_lexicon_rows`.
+      - ``palatalization_rule_names`` — which rule names count as
+        "mutation-producing"; passed to distance.score.
+      - ``expected_firings`` — the rule-firing oracle (per-row).
+      - ``fallback_predict`` — the boolean predictor for rows the
+        pipeline can't process.
+    """
+
+    name: str
+    inventory: FeatureInventory
+    patches: tuple[FeaturePatch, ...]
+    underspec: tuple[UnderspecifiedSegment, ...]
+    rules: tuple[Rule, ...]
+    inventory_json: Path
+    target_stems: frozenset[str]
+    palatalization_rule_names: frozenset[str]
+    expected_firings: Callable[[LexRow], frozenset[str]]
+    fallback_predict: Callable[[LexRow], bool]
+
+
+def build_profile() -> AnalysisProfile:
+    """Construct the default :class:`AnalysisProfile` for Romanian.
+
+    Preferred entry point over :func:`load_inventory` alone — callers
+    of the API pass the returned profile to
+    :func:`phonology.validation.run_validation` etc.
+    """
+    inv = load_inventory()
+    return AnalysisProfile(
+        name="romanian-palatalization",
+        inventory=inv,
+        patches=PATCHES,
+        underspec=UNDERSPEC,
+        rules=RULES_FROM_PAPER,
+        inventory_json=_INVENTORY_JSON,
+        target_stems=TARGET_STEMS,
+        palatalization_rule_names=PALATALIZATION_RULE_NAMES,
+        expected_firings=expected_firings,
+        fallback_predict=fallback_predict,
+    )
+
+
 __all__: Final[tuple[str, ...]] = (
     "ASSIBILATION",
+    "AnalysisProfile",
     "BLEED",
     "CORONAL_DEFAULT_CONT",
     "CORONAL_DEFAULT_PLACE",
     "CORONAL_DEFAULT_STRIDENT",
+    "CORONAL_STEMS",
     "DORSAL_DEFAULT",
     "DORSAL_PAL",
+    "DORSAL_STEMS",
     "GLIDE_FORMATION",
+    "PALATALIZATION_RULES",
+    "PALATALIZATION_RULE_NAMES",
     "PATCHES",
     "RULES_FROM_PAPER",
     "S_PAL",
+    "TARGET_STEMS",
     "UNDERSPEC",
+    "build_profile",
+    "expected_firings",
+    "fallback_predict",
     "load_inventory",
 )

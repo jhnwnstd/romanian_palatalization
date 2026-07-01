@@ -33,13 +33,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 from itertools import permutations
-from typing import Callable, Final, Sequence
+from typing import TYPE_CHECKING, Callable, Final, Sequence
 
 from ..inventory import FeatureInventory
 from ..pipeline import RulePipeline
 from ..rules import Rule
 from ..segments import Segment, Word, segments_to_ipa
-from .compare import compare
+from .compare import compare_ipa
+
+if TYPE_CHECKING:
+    from ..analyses.romanian_palatalization import AnalysisProfile
 
 
 class OrderingStrategy(StrEnum):
@@ -145,7 +148,7 @@ def _permutations_for(
 def find_valid_orderings(
     rules: Sequence[Rule],
     ur: Word,
-    expected_field: str,
+    expected_field: str | Sequence[str],
     resolve: Callable[[str], Segment],
     inventory: FeatureInventory,
     strategy: OrderingStrategy = OrderingStrategy.ADJACENT_SWAP,
@@ -154,20 +157,30 @@ def find_valid_orderings(
 ) -> OrderingSearchResult:
     """Search rule orderings for ones that produce ``expected_field``.
 
-    ``rules`` is the declared rule tuple; ``ur`` is the underlying
-    representation to feed through the pipeline; ``expected_field`` is
-    the attested IPA (pipe-separated variants ok). Success is defined
-    by :func:`phonology.diagnostics.compare.compare` — the same
-    matcher the driver's report uses.
+    Low-level API taking all pipeline pieces separately. Most callers
+    should prefer :func:`search_orderings`, which takes an
+    :class:`AnalysisProfile` and unpacks it for you.
+
+    ``expected_field`` accepts a pipe-separated raw string OR a tuple
+    of variants (see :func:`compare_ipa`).
     """
     rules_tuple = tuple(rules)
     n = len(rules_tuple)
+    if (
+        strategy is OrderingStrategy.MOVABLE_PERM
+        and not movable_indices
+    ):
+        raise ValueError(
+            "OrderingStrategy.MOVABLE_PERM requires a non-empty "
+            "movable_indices argument (or use ADJACENT_SWAP / "
+            "PAIRWISE_SWAP / FULL instead)"
+        )
     base = inventory.base_segments()
     baseline_sr: str = ""
     baseline_matched = False
     successful: list[OrderingCandidate] = []
     closest: OrderingCandidate | None = None
-    closest_dist = 10**9
+    closest_dist = float("inf")
     tried = 0
 
     for perm in _permutations_for(strategy, n, movable_indices, limit):
@@ -178,13 +191,14 @@ def find_valid_orderings(
         except Exception:
             continue
         sr = segments_to_ipa(deriv.sr, base)
-        cmp = compare(sr, expected_field)
+        cmp = compare_ipa(sr, expected_field)
         cand = OrderingCandidate(
             permutation=perm,
             rule_names=tuple(r.name for r in permuted),
             sr=sr,
             matched=cmp.matched,
-            edit_distance=cmp.edit_distance,
+            edit_distance=int(cmp.edit_distance)
+                if cmp.edit_distance != float("inf") else 10**9,
         )
         if perm == tuple(range(n)):
             baseline_sr = sr
@@ -192,9 +206,9 @@ def find_valid_orderings(
         if cmp.matched:
             successful.append(cand)
         else:
-            if cmp.edit_distance < closest_dist:
+            if cand.edit_distance < closest_dist:
                 closest = cand
-                closest_dist = cmp.edit_distance
+                closest_dist = cand.edit_distance
         tried += 1
 
     return OrderingSearchResult(
@@ -204,6 +218,33 @@ def find_valid_orderings(
         baseline_sr=baseline_sr,
         successful=tuple(successful),
         closest_unsuccessful=None if baseline_matched else closest,
+    )
+
+
+def search_orderings(
+    profile: "AnalysisProfile",
+    ur: Word,
+    attested: str | Sequence[str],
+    *,
+    strategy: OrderingStrategy = OrderingStrategy.ADJACENT_SWAP,
+    movable_indices: Sequence[int] | None = None,
+    limit: int | None = None,
+) -> OrderingSearchResult:
+    """Ergonomic wrapper: takes an :class:`AnalysisProfile` and
+    unpacks its rules/inventory/resolver for you.
+
+    Prefer this over :func:`find_valid_orderings` in new code.
+    """
+    inv = profile.inventory
+    return find_valid_orderings(
+        rules=profile.rules,
+        ur=ur,
+        expected_field=attested,
+        resolve=lambda label: inv.segment(label),
+        inventory=inv,
+        strategy=strategy,
+        movable_indices=movable_indices,
+        limit=limit,
     )
 
 
@@ -240,4 +281,5 @@ __all__: Final[tuple[str, ...]] = (
     "OrderingStrategy",
     "find_valid_orderings",
     "format_result",
+    "search_orderings",
 )
