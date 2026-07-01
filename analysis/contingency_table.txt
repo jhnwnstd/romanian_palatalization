@@ -1,4 +1,27 @@
-Loaded 422 (lemma, dvs, ...) tuples that pass row filters.
+==============================================================================
+HEADLINE — does the modern lexicon show Steriade's co-variation?
+==============================================================================
+
+  Question: on modern Romanian nouns with a target obstruent stem-final,
+  do nouns whose plural takes a palatalising allomorph prefer
+  the palatalising verbalizer -í over -á/-uí? (Steriade 2008 §10.2.3.5.)
+
+  Design: 2×2 contingency, row = allomorph-stemwise (purely morphological,
+  no per-noun mutation check), col = -í vs (-á ∪ -uí);
+  Fisher exact + permutation null; Steriade's own exclusions applied.
+
+  ANSWER (n = 452 noun-verbaliser pairs):
+    pooled OR = 3.79  [95% CI 2.50, 5.76]
+    Fisher exact p = 4.17e-10;  permutation p_perm = 0.0000 (zero of 10 000 shuffles beat it)
+    null distribution:  median OR = 1.01,  97.5%-ile OR = 1.50
+
+  Read as: the observed OR is far above what random reshuffling of the
+  K/T͡ʃ-vs-K/K labels produces. Steriade's paper reported OR ≈ 50 on
+  n = 157 hand-collected verbs; our OR is smaller because the modern DEX
+  has more real K/K + -í nouns (gând-í, rost-í, vad-í …) than her sample.
+  Direction and significance reproduce; magnitude is muted but real.
+
+Loaded 501 (lemma, dvs, ...) tuples that pass row filters.
 Etymology decisions: 715 explicit pairs, 4 user-keep lemmas, 374 verb verdicts.
 
 ==============================================================================
@@ -7,108 +30,203 @@ IPA-ROW DIAGNOSTIC: three-state sg-vs-pl breakdown
 
   Distribution of IPA-row states (deduped by lemma):
     sf     ALT    LEX  NONALT  UNCLEAR
-    c       75      0      17        2
-    d       11      0      44        3
-    g       18      0       7        1
-    s        0      0      40        7
-    t       24      0     119       16
-    z        1      0      26        1
+    c       74      2      24       12
+    d       14      0      45        9
+    g       20      0       9        4
+    s        1      0      40       19
+    t       25      3     125       25
+    z        1      0      30        3
+
+  LEX rows (base already palatal in singular) — verbalizer choice:
+    -a : 4
+    -i : 1
+    -ui: 1
 
 ==============================================================================
 PRIMARY
-Row: sg-vs-pl IPA (3-state, pooled). Col: -i verbs must be ALTERNATES; -a always kept.
+Row: allomorph, grouped by whether it palatalises for that stem class ({-i,-e} vs -uri for dorsals; -i vs {-e,-uri} for coronals). Col: -i vs (-a ∪ -ui). Purely allomorph-based row axis — no per-noun mutation or IPA check. This is the most atheoretical coding we have.
 ==============================================================================
 
-TOP-1000  (n_kept = 70)
-  dorsal  :  alt-pl    2  -i /  10  -a    nonalt-pl    1  -i /   7  -a    n =   20    OR =  1.40  [ 0.11, 18.61]    p = 1.000
-  coronal :  alt-pl    2  -i /   4  -a    nonalt-pl    2  -i /  42  -a    n =   50    OR = 10.50  [ 1.15, 95.91]    p = 0.066
-  pooled  :  alt-pl    4  -i /  14  -a    nonalt-pl    3  -i /  49  -a    n =   70    OR =  4.67  [ 0.93, 23.36]    p = 0.067
+TOP-1000  (n_kept = 101)
+  dorsal  :  alt-pl    4  -i /   9  nonpal    nonalt-pl    1  -i /   8  nonpal    n =   22    OR =  3.56  [ 0.33, 38.78]    p = 0.360
+  coronal :  alt-pl    9  -i /   5  nonpal    nonalt-pl    9  -i /  56  nonpal    n =   79    OR = 11.20  [ 3.05, 41.10]    p = 2.52e-04
+  pooled  :  alt-pl   13  -i /  14  nonpal    nonalt-pl   10  -i /  64  nonpal    n =  101    OR =  5.94  [ 2.17, 16.27]    p = 7.82e-04
 
-FULL DEX  (n_kept = 311)
-  dorsal  :  alt-pl   47  -i /  40  -a    nonalt-pl    5  -i /  17  -a    n =  109    OR =  4.00  [ 1.35, 11.79]    p = 0.009
-  coronal :  alt-pl    4  -i /  20  -a    nonalt-pl    5  -i / 173  -a    n =  202    OR =  6.92  [ 1.72, 27.89]    p = 0.013
-  pooled  :  alt-pl   51  -i /  60  -a    nonalt-pl   10  -i / 190  -a    n =  311    OR = 16.15  [ 7.73, 33.76]    p = 7.94e-18
-
-==============================================================================
-MUTATION-ALT
-Row: mutation flag (orth sg-vs-pl). Col: -i verbs must be ALTERNATES; -a always kept.
-==============================================================================
-
-TOP-1000  (n_kept = 79)
-  dorsal  :  alt-pl    2  -i /  10  -a    nonalt-pl    1  -i /   7  -a    n =   20    OR =  1.40  [ 0.11, 18.61]    p = 1.000
-  coronal :  alt-pl    2  -i /   4  -a    nonalt-pl    2  -i /  51  -a    n =   59    OR = 12.75  [ 1.40,   116]    p = 0.048
-  pooled  :  alt-pl    4  -i /  14  -a    nonalt-pl    3  -i /  58  -a    n =   79    OR =  5.52  [ 1.11, 27.54]    p = 0.044
-
-FULL DEX  (n_kept = 336)
-  dorsal  :  alt-pl   48  -i /  41  -a    nonalt-pl    5  -i /  18  -a    n =  112    OR =  4.21  [ 1.44, 12.35]    p = 0.009
-  coronal :  alt-pl    4  -i /  23  -a    nonalt-pl    5  -i / 192  -a    n =  224    OR =  6.68  [ 1.67, 26.65]    p = 0.014
-  pooled  :  alt-pl   52  -i /  64  -a    nonalt-pl   10  -i / 210  -a    n =  336    OR = 17.06  [ 8.20, 35.49]    p = 6.22e-19
+FULL DEX  (n_kept = 452)
+  dorsal  :  alt-pl   59  -i /  44  nonpal    nonalt-pl    8  -i /  24  nonpal    n =  135    OR =  4.02  [ 1.65,  9.80]    p = 0.002
+  coronal :  alt-pl   21  -i /  28  nonpal    nonalt-pl   60  -i / 208  nonpal    n =  317    OR =  2.60  [ 1.38,  4.90]    p = 0.004
+  pooled  :  alt-pl   80  -i /  72  nonpal    nonalt-pl   68  -i / 232  nonpal    n =  452    OR =  3.79  [ 2.50,  5.76]    p = 4.17e-10
 
 ==============================================================================
-IPA-SUFFIX
-Row: sg-vs-pl IPA. Col: -i vs -a suffix, no paradigm filter.
+MUTATION-ROW
+Row: mutation flag (orth sg-vs-pl). Col: -i vs (-a ∪ -ui). Uses the lexicon's per-noun mutation label — closer to Steriade's own coding but requires a per-noun palatalization check.
 ==============================================================================
 
-TOP-1000  (n_kept = 81)
-  dorsal  :  alt-pl    4  -i /  10  -a    nonalt-pl    1  -i /   7  -a    n =   22    OR =  2.80  [ 0.26, 30.70]    p = 0.613
-  coronal :  alt-pl    6  -i /   4  -a    nonalt-pl    7  -i /  42  -a    n =   59    OR =  9.00  [ 2.01, 40.21]    p = 0.005
-  pooled  :  alt-pl   10  -i /  14  -a    nonalt-pl    8  -i /  49  -a    n =   81    OR =  4.38  [ 1.45, 13.19]    p = 0.009
+TOP-1000  (n_kept = 110)
+  dorsal  :  alt-pl    4  -i /   9  nonpal    nonalt-pl    1  -i /   8  nonpal    n =   22    OR =  3.56  [ 0.33, 38.78]    p = 0.360
+  coronal :  alt-pl    9  -i /   5  nonpal    nonalt-pl   12  -i /  62  nonpal    n =   88    OR =  9.30  [ 2.65, 32.65]    p = 4.86e-04
+  pooled  :  alt-pl   13  -i /  14  nonpal    nonalt-pl   13  -i /  70  nonpal    n =  110    OR =  5.00  [ 1.92, 13.05]    p = 0.001
 
-FULL DEX  (n_kept = 391)
-  dorsal  :  alt-pl   58  -i /  40  -a    nonalt-pl    8  -i /  17  -a    n =  123    OR =  3.08  [ 1.21,  7.82]    p = 0.024
-  coronal :  alt-pl   16  -i /  20  -a    nonalt-pl   59  -i / 173  -a    n =  268    OR =  2.35  [ 1.14,  4.82]    p = 0.027
-  pooled  :  alt-pl   74  -i /  60  -a    nonalt-pl   67  -i / 190  -a    n =  391    OR =  3.50  [ 2.25,  5.43]    p = 2.07e-08
+FULL DEX  (n_kept = 501)
+  dorsal  :  alt-pl   59  -i /  43  nonpal    nonalt-pl   19  -i /  31  nonpal    n =  152    OR =  2.24  [ 1.12,  4.48]    p = 0.025
+  coronal :  alt-pl   19  -i /  27  nonpal    nonalt-pl   71  -i / 232  nonpal    n =  349    OR =  2.30  [ 1.21,  4.38]    p = 0.017
+  pooled  :  alt-pl   78  -i /  70  nonpal    nonalt-pl   90  -i / 263  nonpal    n =  501    OR =  3.26  [ 2.18,  4.87]    p = 8.16e-09
 
 ==============================================================================
-LITERAL-STERIADE
-Row: mutation flag. Col: -i vs -a suffix. Literal Steriade coding — no ALTERNATES filter applied.
+IPA-ROW
+Row: sg-vs-pl IPA (3-state). Col: -i vs (-a ∪ -ui). Uses phonetic sg-vs-pl comparison for the row axis; catches cluster cases the orthographic mutation flag misses.
 ==============================================================================
 
 TOP-1000  (n_kept = 95)
-  dorsal  :  alt-pl    4  -i /  10  -a    nonalt-pl    1  -i /   7  -a    n =   22    OR =  2.80  [ 0.26, 30.70]    p = 0.613
-  coronal :  alt-pl    9  -i /   4  -a    nonalt-pl    9  -i /  51  -a    n =   73    OR = 12.75  [ 3.23, 50.40]    p = 2.06e-04
-  pooled  :  alt-pl   13  -i /  14  -a    nonalt-pl   10  -i /  58  -a    n =   95    OR =  5.39  [ 1.96, 14.79]    p = 0.001
+  dorsal  :  alt-pl    4  -i /   9  nonpal    nonalt-pl    1  -i /   8  nonpal    n =   22    OR =  3.56  [ 0.33, 38.78]    p = 0.360
+  coronal :  alt-pl    6  -i /   6  nonpal    nonalt-pl   10  -i /  51  nonpal    n =   73    OR =  5.10  [ 1.36, 19.07]    p = 0.019
+  pooled  :  alt-pl   10  -i /  15  nonpal    nonalt-pl   11  -i /  59  nonpal    n =   95    OR =  3.58  [ 1.28,  9.99]    p = 0.022
 
-FULL DEX  (n_kept = 422)
-  dorsal  :  alt-pl   59  -i /  41  -a    nonalt-pl    8  -i /  18  -a    n =  126    OR =  3.24  [ 1.29,  8.15]    p = 0.015
-  coronal :  alt-pl   19  -i /  23  -a    nonalt-pl   62  -i / 192  -a    n =  296    OR =  2.56  [ 1.31,  5.01]    p = 0.008
-  pooled  :  alt-pl   78  -i /  64  -a    nonalt-pl   70  -i / 210  -a    n =  422    OR =  3.66  [ 2.39,  5.60]    p = 1.98e-09
-
-==============================================================================
-CONTAMINATION DIAGNOSTIC: trigger-absent share of -i column
-(under SUFFIX-ONLY column coding; motivates ALTERNATES-ONLY)
-==============================================================================
-
-  dorsal -i column (n=68):
-    alt  , verdict=ALTERNATES    :  48  (70.6%)
-    alt  , verdict=NO-PARADIGM   :   8  (11.8%)
-    alt  , verdict=UNKNOWN       :   4  (5.9%)
-    noalt, verdict=ALTERNATES    :   5  (7.4%)
-    noalt, verdict=NO-PARADIGM   :   1  (1.5%)
-    noalt, verdict=TRIGGER-ABSENT:   2  (2.9%)
-
-  coronal -i column (n=81):
-    alt  , verdict=ALTERNATES    :   4  (4.9%)
-    alt  , verdict=TRIGGER-ABSENT:  11  (13.6%)
-    alt  , verdict=UNKNOWN       :   4  (4.9%)
-    noalt, verdict=ALTERNATES    :   4  (4.9%)
-    noalt, verdict=NO-PARADIGM   :   5  (6.2%)
-    noalt, verdict=TRIGGER-ABSENT:  35  (43.2%)
-    noalt, verdict=UNKNOWN       :  17  (21.0%)
-    noalt, verdict=USER_KEEP     :   1  (1.2%)
+FULL DEX  (n_kept = 469)
+  dorsal  :  alt-pl   58  -i /  43  nonpal    nonalt-pl   19  -i /  29  nonpal    n =  149    OR =  2.06  [ 1.02,  4.15]    p = 0.054
+  coronal :  alt-pl   17  -i /  28  nonpal    nonalt-pl   67  -i / 208  nonpal    n =  320    OR =  1.88  [ 0.97,  3.66]    p = 0.068
+  pooled  :  alt-pl   75  -i /  71  nonpal    nonalt-pl   86  -i / 237  nonpal    n =  469    OR =  2.91  [ 1.94,  4.38]    p = 3.58e-07
 
 ==============================================================================
-SIDEBAR: -ui verbs (excluded from the main panels)
+STEM-BLIND ALLOMORPH
+Row: plural-suffix identity, stem-blind ({-i, -e} vs -uri). Col: -i vs (-a ∪ -ui). Matches Kyle-John-Daniar Table (9). Groups coronal -e with coronal -i despite the two behaving opposite — kept as a demonstration of what that grouping does to the effect.
 ==============================================================================
 
-  ``-ui`` verbs on target-stem nouns (etymology-audited, deduped by lemma):
-  Prediction under Steriade: if -ui doesn't palatalise, it should pattern like -a — i.e. attach to nonalt (K/K) bases.
+TOP-1000  (n_kept = 101)
+  dorsal  :  alt-pl    4  -i /   9  nonpal    nonalt-pl    1  -i /   8  nonpal    n =   22    OR =  3.56  [ 0.33, 38.78]    p = 0.360
+  coronal :  alt-pl   12  -i /  37  nonpal    nonalt-pl    6  -i /  24  nonpal    n =   79    OR =  1.30  [ 0.43,  3.92]    p = 0.785
+  pooled  :  alt-pl   16  -i /  46  nonpal    nonalt-pl    7  -i /  32  nonpal    n =  101    OR =  1.59  [ 0.59,  4.31]    p = 0.467
 
-    sf    alt-pl   nonalt-pl     n
-    c          2           5     7
-    d          3           3     6
-    g          2           2     4
-    s          0           2     2
-    t          1          12    13
-    z          0           5     5
-                                37  (total)
+FULL DEX  (n_kept = 452)
+  dorsal  :  alt-pl   59  -i /  44  nonpal    nonalt-pl    8  -i /  24  nonpal    n =  135    OR =  4.02  [ 1.65,  9.80]    p = 0.002
+  coronal :  alt-pl   57  -i / 162  nonpal    nonalt-pl   24  -i /  74  nonpal    n =  317    OR =  1.08  [ 0.63,  1.88]    p = 0.889
+  pooled  :  alt-pl  116  -i / 206  nonpal    nonalt-pl   32  -i /  98  nonpal    n =  452    OR =  1.72  [ 1.09,  2.73]    p = 0.020
+
+==============================================================================
+PARADIGM-STRICT
+Row: allomorph-stemwise. Col: -i verbs must be ALTERNATES; -a and -ui always kept. Drops paradigm-blocked -i verbs.
+==============================================================================
+
+TOP-1000  (n_kept = 85)
+  dorsal  :  alt-pl    2  -i /   9  nonpal    nonalt-pl    1  -i /   8  nonpal    n =   20    OR =  1.78  [ 0.13, 23.52]    p = 1.000
+  coronal :  alt-pl    2  -i /   5  nonpal    nonalt-pl    2  -i /  56  nonpal    n =   65    OR = 11.20  [ 1.29, 97.40]    p = 0.054
+  pooled  :  alt-pl    4  -i /  14  nonpal    nonalt-pl    3  -i /  64  nonpal    n =   85    OR =  6.10  [ 1.22, 30.33]    p = 0.034
+
+FULL DEX  (n_kept = 366)
+  dorsal  :  alt-pl   48  -i /  44  nonpal    nonalt-pl    5  -i /  24  nonpal    n =  121    OR =  5.24  [ 1.84, 14.92]    p = 0.001
+  coronal :  alt-pl    4  -i /  28  nonpal    nonalt-pl    5  -i / 208  nonpal    n =  245    OR =  5.94  [ 1.51, 23.45]    p = 0.019
+  pooled  :  alt-pl   52  -i /  72  nonpal    nonalt-pl   10  -i / 232  nonpal    n =  366    OR = 16.76  [ 8.10, 34.65]    p = 4.47e-19
+
+==============================================================================
+FULLY-STRICT
+Row: sg-vs-pl IPA. Col: -i verbs must be ALTERNATES; -a and -ui always kept. Both axes strict.
+==============================================================================
+
+TOP-1000  (n_kept = 81)
+  dorsal  :  alt-pl    2  -i /   9  nonpal    nonalt-pl    1  -i /   8  nonpal    n =   20    OR =  1.78  [ 0.13, 23.52]    p = 1.000
+  coronal :  alt-pl    2  -i /   6  nonpal    nonalt-pl    2  -i /  51  nonpal    n =   61    OR =  8.50  [ 1.01, 71.86]    p = 0.080
+  pooled  :  alt-pl    4  -i /  15  nonpal    nonalt-pl    3  -i /  59  nonpal    n =   81    OR =  5.24  [ 1.06, 25.99]    p = 0.049
+
+FULL DEX  (n_kept = 373)
+  dorsal  :  alt-pl   47  -i /  43  nonpal    nonalt-pl    9  -i /  29  nonpal    n =  128    OR =  3.52  [ 1.50,  8.28]    p = 0.003
+  coronal :  alt-pl    4  -i /  28  nonpal    nonalt-pl    5  -i / 208  nonpal    n =  245    OR =  5.94  [ 1.51, 23.45]    p = 0.019
+  pooled  :  alt-pl   51  -i /  71  nonpal    nonalt-pl   14  -i / 237  nonpal    n =  373    OR = 12.16  [ 6.36, 23.25]    p = 5.43e-17
+
+==============================================================================
+BASELINE: -i / -a / -ui distribution on non-alternating stems
+(Steriade §10.2.3.5 table 10.19: 57%/40%/3% at n=388)
+==============================================================================
+
+  Baseline: derived verbs on nouns whose stem-final consonant is non-alternating
+  (per Steriade §10.2.3.5: {r, n, m, ț, ș, p, b, f, v}). Steriade reports 57%/40%/3% at n=388.
+
+    Total baseline noun-suffix pairs: 156
+    -i  :   55  ( 35.3%)
+    -a  :   79  ( 50.6%)
+    -ui :   22  ( 14.1%)
+
+    Steriade paper (n=388):     57%   40%    3%
+
+==============================================================================
+NON-PAL BREAKDOWN: PRIMARY panel's NON-PAL column split by suffix
+(Steriade: K/K bases prefer -uí over -á; K/T͡ʃ bases the reverse)
+==============================================================================
+
+  NON-PAL column of PRIMARY panel: -a vs -ui breakdown.
+    stem     row         -a    -ui    %-ui
+    dorsal   alt         39      5   11.4%
+    dorsal   nonalt      18      6   25.0%
+    coronal  alt         24      4   14.3%
+    coronal  nonalt     186     22   10.6%
+    pooled   alt         63      9   12.5%
+    pooled   nonalt     204     28   12.1%
+
+==============================================================================
+ROBUSTNESS: PERMUTATION NULL TEST (PRIMARY coding)
+Does the observed OR survive shuffling the K/T͡ʃ-vs-K/K labels?
+==============================================================================
+
+  Null: shuffle K/T͡ʃ-vs-K/K labels across the 452 kept records.
+  Observed pooled OR = 3.79  (Fisher exact p = 4.17e-10)
+  Permutation null (10 000 shuffles): median OR = 1.01, 97.5%-ile = 1.50
+  Fraction of shuffles with null OR ≥ observed: 0.0000  ← empirical p-value
+
+==============================================================================
+ROBUSTNESS: PRIMARY stratified by etymology
+Does the effect survive on native rows only? Removing Latin loans?
+==============================================================================
+
+  all                         n= 452  OR= 3.79  [2.50, 5.76]  p=4.17e-10
+  native (etym='')            n= 347  OR= 4.26  [2.63, 6.90]  p=2.73e-09
+  Latin (etym=la)             n=  56  OR= 3.01  [0.84, 10.82]  p=0.104
+  everything except Latin     n= 396  OR= 3.94  [2.53, 6.15]  p=9.28e-10
+
+==============================================================================
+ROBUSTNESS: PRIMARY with variants removed
+Does the effect depend on singularia-tantum or empty-etym rows?
+==============================================================================
+
+  With singularia tantum EXCLUDED (n_kept = 452):
+    pooled  :  alt-pl   80  -i /  72  nonpal    nonalt-pl   68  -i / 232  nonpal    n =  452    OR =  3.79  [ 2.50,  5.76]    p = 4.17e-10
+
+  With empty-etym rows EXCLUDED (n_kept = 105):
+    pooled  :  alt-pl   18  -i /  22  nonpal    nonalt-pl   15  -i /  50  nonpal    n =  105    OR =  2.73  [ 1.17,  6.38]    p = 0.030
+
+==============================================================================
+SINGULARIA TANTUM: nouns with no plural — K/K by construction
+(Steriade §10.2.3.4: vlagă, Franco, Goga — categorically K/K)
+==============================================================================
+
+  sf     -i    -a   -ui
+  c      10     4     0
+  d       1     5     0
+  g       1     1     1
+  s       7     4     1
+  t       1    11     0
+  z       0     2     0
+
+  Total singularia-tantum records: 49
+
+==============================================================================
+CONTAMINATION DIAGNOSTIC: verdict breakdown of -i column
+(what PARADIGM-STRICT would drop relative to PRIMARY)
+==============================================================================
+
+  dorsal -i column (n=79):
+    alt  , verdict=ALTERNATES    :  48  (60.8%)
+    alt  , verdict=NO-PARADIGM   :   8  (10.1%)
+    alt  , verdict=UNKNOWN       :   4  (5.1%)
+    noalt, verdict=ALTERNATES    :   9  (11.4%)
+    noalt, verdict=NO-PARADIGM   :   2  (2.5%)
+    noalt, verdict=TRIGGER-ABSENT:   2  (2.5%)
+    noalt, verdict=UNKNOWN       :   6  (7.6%)
+
+  coronal -i column (n=90):
+    alt  , verdict=ALTERNATES    :   4  (4.4%)
+    alt  , verdict=TRIGGER-ABSENT:  11  (12.2%)
+    alt  , verdict=UNKNOWN       :   4  (4.4%)
+    noalt, verdict=ALTERNATES    :   4  (4.4%)
+    noalt, verdict=NO-PARADIGM   :   5  (5.6%)
+    noalt, verdict=TRIGGER-ABSENT:  35  (38.9%)
+    noalt, verdict=UNKNOWN       :  26  (28.9%)
+    noalt, verdict=USER_KEEP     :   1  (1.1%)
