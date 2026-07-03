@@ -27,14 +27,16 @@ Three things live here:
    palatalization rules given the morphology, separately from
    testing the morphology itself.
 
-The ``/K/, /G/`` underspecifications clear ``CORONAL`` and ``DORSAL``
-but *not* ``Continuant``: dorsal palatalization unifies the
-postalveolar place bundle into the segment, but no -Continuant is
-supplied, so the segment keeps the ``-Continuant`` it inherited from
-``/k/`` or ``/ɡ/`` and projects to the affricate ``/t͡ʃ/`` (resp.
-``/d͡ʒ/``), not to the fricative ``/ʃ/``. Clearing ``Continuant``
-would let the coronal default ``+Continuant`` fill-in fire and
-spirantize the result — exactly the wrong outcome.
+The ``/K/, /G/`` underspecifications clear only ``CORONAL``, per the
+paper's dorsal inventory (e:dor-inventory): /k, ɡ/ are prespecified
+-Coronal (inalterable), /K, G/ leave Coronal unspecified but keep
++Dorsal and -Continuant from their bases. Palatalisation supplies
++Coronal, -Anterior, +Distributed, +Strident; it does *not* touch
+Dorsal, so the derived affricate is +Coronal AND +Dorsal (a dorso-
+coronal complex, per the paper's write-up).
+
+The ``/t͡ʃ/`` and ``/d͡ʒ/`` inventory entries are patched to
+``DORSAL=+`` so the derived affricate projects to them cleanly.
 """
 
 from __future__ import annotations
@@ -105,17 +107,22 @@ PATCHES: Final[tuple[FeaturePatch, ...]] = (
     ),
     FeaturePatch(
         segment="t͡ʃ",
-        updates={"DelRel": "0"},
+        updates={"DelRel": "0", "DORSAL": "+"},
         reason=(
-            "Paper: 'we assume DelRel for free' — the affricate "
-            "marker is left underspecified so dorsal palatalization "
-            "needn't supply it."
+            "Paper e:velar-pal: 'Palatalization leaves Dorsal "
+            "untouched, so the derived affricate is +Coronal and "
+            "+Dorsal.' The base JSON has t͡ʃ at DORSAL=-, but the "
+            "paper's analysis wants a dorso-coronal complex so the "
+            "palatalised /K/ (which keeps its +Dorsal) projects to "
+            "/t͡ʃ/. Also 'DelRel for free' — the affricate marker is "
+            "left underspecified so dorsal palatalization needn't "
+            "supply it."
         ),
     ),
     FeaturePatch(
         segment="d͡ʒ",
-        updates={"DelRel": "0"},
-        reason="See /t͡ʃ/ patch: DelRel is assumed free.",
+        updates={"DelRel": "0", "DORSAL": "+"},
+        reason=("See /t͡ʃ/ patch: dorso-coronal complex + DelRel free."),
     ),
     FeaturePatch(
         segment="t͡s",
@@ -135,34 +142,24 @@ UNDERSPEC: Final[tuple[UnderspecifiedSegment, ...]] = (
     UnderspecifiedSegment(
         label="K",
         base="k",
-        # Closure of every feature dorsal-palatalization writes: if the
-        # base /k/ ever gains a concrete Anterior/Distributed/Strident
-        # value in the JSON (currently all 0), the analysis would
-        # silently break because unification would hit a contrary
-        # explicit value. Clearing the full set makes /K/ auditably
-        # inalterable-free w.r.t. every dorsal-pal supply feature.
-        # Continuant is *not* cleared: it stays -Continuant (from /k/)
-        # so the palatalised result is the affricate /t͡ʃ/, not /ʃ/.
-        clear=frozenset(
-            {"CORONAL", "DORSAL", "Anterior", "Distributed", "Strident"}
-        ),
+        # Paper's dorsal inventory (e:dor-inventory): /k, ɡ/ prespecified
+        # -Coronal are inalterable; /K, G/ leave Coronal unspecified but
+        # keep +Dorsal and -Continuant from their bases. So only Coronal
+        # is cleared. Anterior/Distributed/Strident are already 0 on /k/
+        # in the base JSON so they don't need clearing here.
+        clear=frozenset({"CORONAL"}),
         reason=(
-            "/K/ is the palatalisable velar. Clear set = closure of "
-            "dorsal-pal's supply features (minus Continuant, which "
-            "must stay -Cont to produce the affricate, not the "
-            "fricative)."
+            "Paper e:dor-inventory: /K/ = /k/ minus Coronal. Only "
+            "Coronal is cleared; +Dorsal and -Continuant survive from "
+            "/k/ so the palatalised result is the affricate /t͡ʃ/, "
+            "not the fricative /ʃ/."
         ),
     ),
     UnderspecifiedSegment(
         label="G",
         base="ɡ",
-        clear=frozenset(
-            {"CORONAL", "DORSAL", "Anterior", "Distributed", "Strident"}
-        ),
-        reason=(
-            "Voiced counterpart of /K/. Same closure clear set; "
-            "voice is inherited from /ɡ/."
-        ),
+        clear=frozenset({"CORONAL"}),
+        reason=("Voiced counterpart of /K/. Same minimal clear set."),
     ),
     UnderspecifiedSegment(
         label="S",
@@ -313,7 +310,6 @@ DORSAL_PAL: Final[UnificationRule] = UnificationRule(
     target=_OBSTRUENT,
     supply={
         "CORONAL": "+",
-        "DORSAL": "-",
         "Anterior": "-",
         "Distributed": "+",
         "Strident": "+",
@@ -324,10 +320,13 @@ DORSAL_PAL: Final[UnificationRule] = UnificationRule(
         condition=_FRONT_VOWEL,
     ),
 )
-"""Dorsal palatalization (latex.tex:188-207 = e:velar-pal).
+"""Dorsal palatalization (paper e:velar-pal).
 
 Target: any obstruent.
-Supply: the full postalveolar bundle.
+Supply: +Coronal, -Anterior, +Distributed, +Strident. Dorsal is left
+untouched so the derived affricate is +Coronal AND +Dorsal, per the
+paper's write-up: "Palatalization leaves Dorsal untouched, so the
+derived affricate is +Coronal and +Dorsal."
 Trigger: broad next-segment terminator + [+Syll, +Front] condition.
 The broad terminator is what blocks the rule in -ct- and -kt-: the
 next segment after /K/ is the stop /T/, which fails the condition.
@@ -337,24 +336,22 @@ next segment after /K/ is the stop /T/, which fails the condition.
 DORSAL_DEFAULT: Final[UnificationRule] = UnificationRule(
     name="dorsal-default",
     target=_OBSTRUENT,
-    supply={
-        "CORONAL": "-",
-        "DORSAL": "+",
-        "Continuant": "-",
-    },
+    supply={"CORONAL": "-"},
     search=None,  # environment-free default fill
 )
-"""Dorsal default fill-in (latex.tex:211-225 = e:default).
+"""Dorsal default fill-in (paper e:default).
 
-Supplies the velar feature bundle to any obstruent still open for
-those features — namely /K/, /G/ that escaped palatalization. /S/,
-/T/, etc. are blocked because they have +Coronal which contradicts
--Coronal.
+Supplies -Coronal to any obstruent still open for Coronal — namely
+the un-palatalised /K/, /G/, which keep +Dorsal and -Continuant from
+their bases. Prespecified /k, ɡ/ are already -Coronal so the rule is
+vacuous on them; the derived affricate is +Coronal so unification
+fails and it's untouched; other coronals (/T/, /S/, ...) are +Coronal
+so the rule can't overwrite them.
 """
 
 
 S_PAL: Final[UnificationRule] = UnificationRule(
-    name="s-pal-rev",
+    name="s-pal",
     target={
         "CORONAL": "+",
         "Strident": "+",
@@ -366,41 +363,69 @@ S_PAL: Final[UnificationRule] = UnificationRule(
     },
     search=Search(
         direction=Direction.RIGHT,
-        terminator=_POSTALVEOLAR_PLACE,
-        condition=_POSTALVEOLAR_PLACE,
+        terminator=POSTALVEOLAR_PLACE.spec,
+        condition=POSTALVEOLAR_PLACE.spec,
     ),
 )
-"""S-palatalization, revised (latex.tex:508-527 = e:s-pal-rev).
+"""S-palatalization (paper e:s-pal, with a broadening).
 
-Target: strident-coronal fricative class. Supply: postalveolar place
-features. Trigger: narrow rightward search for a segment in the
-postalveolar place class — /i/, /j/ (patched), or a derived [tʃ].
-Non-members are transparent, so /S/ in 'prost' palatalizes across /T/.
+Target: [+Coronal, +Strident, +Continuant] — the coronal-strident-
+fricative class. Supply: postalveolar place features.
+
+Trigger: narrow rightward search terminating on the first
+postalveolar-place segment. The paper's rule text specifies the
+terminator as [+High, +Front] — that is, /i/ specifically. That
+text handles *proST* → [proʃt] correctly, but leaves *muskə + -e*
+uncovered: after dorsal-pal turns /K/ into /t͡ʃ/, the preceding
+/S/ needs a trigger to shift to /ʃ/, and the paper's [+High, +Front]
+terminator won't accept the derived /t͡ʃ/ (which is -High). Widening
+the terminator to postalveolar place includes both /i/ (patched to
+postalveolar) and any derived /t͡ʃ/, so both -st and -sc cluster
+cases derive correctly. The paper doesn't explicitly cover the -sc
+cluster in its coronal derivation table; this broadening is the
+minimal generalisation needed to handle it.
 """
 
 
 BLEED: Final[DeletionRule] = DeletionRule(
-    name="bleed-rev",
+    name="bleed",
+    # Paper e:bleed: target ``[+Coronal]``, clear ``{+Strident}``,
+    # environment ``[Ⓢ] __`` with leftward SEARCH.
+    #
+    # The paper names Strident as the delinked feature, and describes
+    # the rule's job as "so the following assibilation finds nothing
+    # to strengthen". The LP ``\`` operator only clears a feature to
+    # 0, and on a /T/ whose Strident is already 0 that's a no-op, so
+    # a literal reading of the paper's rule doesn't block assibilation.
+    # We interpret the paper's INTENT: reset every feature palatal-
+    # isation added to the derived postalveolar (or its cluster
+    # partner) so the segment projects back to a plain coronal stop.
+    # That means clearing:
+    #   DORSAL     (palatalisation left +Dor on the derived affricate)
+    #   Anterior   (palatalisation set -Ant; plain /t/ is +Ant)
+    #   Distributed (palatalisation set +Dist; plain /t/ is -Dist)
+    #   Strident   (palatalisation set +Str; plain /t/ is -Str)
+    # Coronal-default then fills the unmarked plain-stop values.
+    # The paper's -st cluster derivation (proST → proʃt) requires
+    # exactly this behaviour; the -sc cluster (muskə → muʃte) requires
+    # it too, though the paper's coronal derivation table doesn't
+    # explicitly work through -sc-e.
     target=natural_class(CORONAL="+", Consonantal="+").spec,
-    clear=frozenset({"Anterior", "Distributed", "Strident"}),
-    # Paper (latex.tex:568-586): environment ``[Ⓢ] __`` — the circle
-    # denotes the natural class of any segment subsuming the derived
-    # postalveolar's bundle. We build it here via
-    # ``NaturalClass.from_segment`` so the code reads the same as
-    # the paper's ``[Ⓢ]``. Broad terminator = strict left-adjacency
-    # (N(∅) as the terminator = adjacency; see LP notes §9).
+    clear=frozenset({"DORSAL", "Anterior", "Distributed", "Strident"}),
     search=Search(
         direction=Direction.LEFT,
         terminator=NaturalClass.universal().spec,
         condition=CIRCLED_S.spec,
     ),
 )
-"""Bleed, revised (latex.tex:568-586 = e:bleed-rev).
+"""Bleed (paper e:bleed, plus a widening of clear).
 
-The one feature-changing rule in the coronal set (LP ``\\`` operator).
-Deletes place + Strident from a consonantal coronal immediately after
-the derived postalveolar. Coronal default refills the unmarked plain-
-stop values, giving /ʃt/ for both /st-i/ and /sk-e/.
+Target: consonantal coronal. Environment: derived postalveolar [Ⓢ]
+to the left (leftward SEARCH with strict adjacency = universal
+terminator). Clear: {DORSAL, Anterior, Distributed, Strident} —
+every feature palatalisation added to the derived affricate. See
+the ``clear=`` comment for why this is broader than the paper's
+literal ``\\ {+Strident}``.
 """
 
 

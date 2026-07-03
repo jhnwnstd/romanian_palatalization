@@ -269,7 +269,11 @@ class TestInventoryAndUnderspec:
         K = inv.segment("K")
         assert k.features["CORONAL"] == "-"
         assert K.features["CORONAL"] == "0"
-        assert K.features["DORSAL"] == "0"
+        # Paper e:dor-inventory: /K/ = /k/ minus only Coronal. Dorsal
+        # is *not* cleared — it stays +Dorsal from /k/, and
+        # palatalisation leaves Dorsal untouched, so the derived
+        # affricate is +Cor +Dor.
+        assert K.features["DORSAL"] == "+"
         # Continuant is NOT cleared for /K/ — this is the reason the
         # palatalised result is [t͡ʃ] and not [ʃ].
         assert K.features["Continuant"] == "-"

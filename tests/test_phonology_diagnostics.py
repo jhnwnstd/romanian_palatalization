@@ -174,8 +174,8 @@ class TestExplain:
     ) -> None:
         ur = build_ur("prost", "i", inventory, stem_final="s")
         text = format_explanation(explain_derivation(pipeline, ur))
-        assert "s-pal-rev" in text
-        assert "bleed-rev" in text
+        assert "s-pal" in text
+        assert "bleed" in text
 
 
 # ---------------------------------------------------------------------------
