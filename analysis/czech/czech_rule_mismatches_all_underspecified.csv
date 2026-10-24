@@ -1,0 +1,54 @@
+lemma,plural,stem_final,opportunity,ur,predicted_sr,attested_sr,category,normalisations,ipa_edit,feature_edit,rule_edit,total_distance,cluster
+adblock,adblockě,k,LOC.SG -ě,adblot͡sKPAL1ɛ,adblot͡st͡sɛ,ˈadblot͡skɛ,RULE_FAILURE,,4.0,4.0,0,2.8,ck+ě
+badatelský,badatelscí,k,NOM.PL.M.AN -í,badatɛlSḰPAL1iː,badatɛlʃciː,ˈbadatɛlst͡siː,RULE_FAILURE,,5.0,4.0,0,3.0,sk+í (suffix)
+banskobystrický,banskobystrickí,k,NOM.PL.M.AN -í,banskobɪstrɪTSḰPAL1iː,banskobɪstrɪt͡ʃciː,ˈbanskobɪstrɪt͡skiː,RULE_FAILURE,,3.0,2.0,0,1.6,ck+í (suffix)
+bezkorý,bezkorí,r,NOM.PL.M.AN -í,bɛskoRPAL1iː,bɛskor̝iː,ˈbɛskoriː,RULE_FAILURE,,2.0,4.0,0,2.4,
+búchr,búchre,r,VOC.SG -e,buːxRPAL1ɛ,buːxr̝ɛ,ˈbuːxrɛ,RULE_FAILURE,,2.0,4.0,0,2.4,VOC r
+bělokrký,bělokrkí,k,NOM.PL.M.AN -í,bjɛlokr̩KPAL1iː,bjɛlokr̩t͡siː,ˈbjɛlokr̩kiː,RULE_FAILURE,,4.0,4.0,0,2.8,
+captcha,captchě,ch,DAT.SG -ě,t͡saptXPAL1ɛ,t͡saptʃɛ,ˈt͡saptxɛ,RULE_FAILURE,,2.0,3.0,0,1.9,
+captcha,captchě,ch,LOC.SG -ě,t͡saptXPAL1ɛ,t͡saptʃɛ,ˈt͡saptxɛ,RULE_FAILURE,,2.0,3.0,0,1.9,
+chymický,chymiccí,k,NOM.PL.M.AN -í,xɪmɪTSḰPAL1iː,xɪmɪt͡ʃciː,ˈxɪmɪt͡st͡siː,RULE_FAILURE,,5.0,4.0,0,3.0,ck+í (suffix)
+doktrinářský,doktrinářscí,k,NOM.PL.M.AN -í,doktrɪnaːr̝SḰPAL1iː,doktrɪnaːr̝ʃciː,ˈdoktrɪnaːr̝̊st͡siː,RULE_FAILURE,,6.0,4.0,0,3.2,sk+í (suffix)
+dosovský,dosovscí,k,NOM.PL.M.AN -í,dosofSḰPAL1iː,dosofʃciː,ˈdosofst͡siː,RULE_FAILURE,,5.0,4.0,0,3.0,sk+í (suffix)
+drsnokorý,drsnokorí,r,NOM.PL.M.AN -í,dr̩snokoRPAL1iː,dr̩snokor̝iː,ˈdr̩snokoriː,RULE_FAILURE,,2.0,4.0,0,2.4,
+epistemický,epistemiccí,k,NOM.PL.M.AN -í,ɛpɪstɛmɪTSḰPAL1iː,ɛpɪstɛmɪt͡ʃciː,ˈɛpɪstɛmɪt͡st͡siː,RULE_FAILURE,,5.0,4.0,0,3.0,ck+í (suffix)
+epistemolog,epistemologe,g,VOC.SG -e,ɛpɪstɛmoloGPAL3ɛ,ɛpɪstɛmoloʒɛ,ˈɛpɪstɛmoloɡɛ,RULE_FAILURE,,2.0,4.0,0,2.4,VOC velar
+epistemologický,epistemologiccí,k,NOM.PL.M.AN -í,ɛpɪstɛmoloɡɪTSḰPAL1iː,ɛpɪstɛmoloɡɪt͡ʃciː,ˈɛpɪstɛmoloɡɪt͡st͡siː,RULE_FAILURE,,5.0,4.0,0,3.0,ck+í (suffix)
+goebbelsovský,goebbelsovscí,k,NOM.PL.M.AN -í,ɡoɛbɛlsofSḰPAL1iː,ɡoɛbɛlsofʃciː,ˈɡoɛbɛlsofst͡siː,RULE_FAILURE,,5.0,4.0,0,3.0,sk+í (suffix)
+hater,hateri,r,NOM.PL -i,ɦatɛRPAL1ɪ,ɦatɛr̝ɪ,ˈɦatɛrɪ,RULE_FAILURE,,2.0,4.0,0,2.4,
+hnidopišský,hnidopišscí,k,NOM.PL.M.AN -í,ɦɲɪdopɪʃSḰPAL1iː,ɦɲɪdopɪʃʃciː,ˈɦɲɪdopɪʃst͡siː,RULE_FAILURE,,5.0,4.0,0,3.0,sk+í (suffix)
+hulvátský,hulvátscí,k,NOM.PL.M.AN -í,ɦulvaːtSḰPAL1iː,ɦulvaːtʃciː,ˈɦulvaːtst͡siː,RULE_FAILURE,,5.0,4.0,0,3.0,sk+í (suffix)
+hédonický,hédoniccí,k,NOM.PL.M.AN -í,ɦɛːdoɲɪTSḰPAL1iː,ɦɛːdoɲɪt͡ʃciː,ˈɦɛːdoɲɪt͡st͡siː,RULE_FAILURE,,5.0,4.0,0,3.0,ck+í (suffix)
+karelský,karelskí,k,NOM.PL.M.AN -í,karɛlSḰPAL1iː,karɛlʃciː,ˈkarɛlskiː,RULE_FAILURE,,3.0,2.0,0,1.6,sk+í (suffix)
+kmoch,kmoche,ch,VOC.SG -e,kmoXPAL3ɛ,kmoʃɛ,ˈkmoxɛ,RULE_FAILURE,,2.0,3.0,0,1.9,VOC velar
+kolegáček,kolegáčke,k,VOC.SG -e,kolɛɡaːt͡ʃKPAL3ɛ,kolɛɡaːt͡ʃt͡ʃɛ,ˈkolɛɡaːt͡ʃkɛ,RULE_FAILURE,,4.0,4.0,0,2.8,VOC velar
+litoměřický,litoměřickí,k,NOM.PL.M.AN -í,lɪtomɲɛr̝ɪTSḰPAL1iː,lɪtomɲɛr̝ɪt͡ʃciː,ˈlɪtomɲɛr̝ɪt͡skiː,RULE_FAILURE,,3.0,2.0,0,1.6,ck+í (suffix)
+loketský,loketskí,k,NOM.PL.M.AN -í,lokɛtSḰPAL1iː,lokɛtʃciː,ˈlokɛtskiː,RULE_FAILURE,,3.0,2.0,0,1.6,sk+í (suffix)
+lulan,lulane,n,LOC.SG -e,lulaNPAL1ɛ,lulaɲɛ,ˈlulanɛ,RULE_FAILURE,,2.0,2.0,0,1.4,
+lúzr,lúzre,r,VOC.SG -e,luːzRPAL1ɛ,luːzr̝ɛ,ˈluːzrɛ,RULE_FAILURE,,2.0,4.0,0,2.4,VOC r
+metodický,metodickí,k,NOM.PL.M.AN -í,mɛtodɪTSḰPAL1iː,mɛtodɪt͡ʃciː,ˈmɛtodɪt͡skiː,RULE_FAILURE,,3.0,2.0,0,1.6,ck+í (suffix)
+nenávistník,nenávistníki,k,NOM.PL -i,nɛnaːvɪstɲiːKPAL1ɪ,nɛnaːvɪstɲiːt͡sɪ,ˈnɛnaːvɪstɲiːkɪ,RULE_FAILURE,,4.0,4.0,0,2.8,
+nenávistník,nenávistníke,k,VOC.SG -e,nɛnaːvɪstɲiːKPAL3ɛ,nɛnaːvɪstɲiːt͡ʃɛ,ˈnɛnaːvɪstɲiːkɛ,RULE_FAILURE,,4.0,4.0,0,2.8,VOC velar
+neofašistický,neofašisticcí,k,NOM.PL.M.AN -í,nɛofaʃɪstɪTSḰPAL1iː,nɛofaʃɪstɪt͡ʃciː,ˈnɛofaʃɪstɪt͡st͡siː,RULE_FAILURE,,5.0,4.0,0,3.0,ck+í (suffix)
+nepsycholog,nepsychologi,g,NOM.PL -i,nɛpsɪxoloGPAL1ɪ,nɛpsɪxolozɪ,ˈnɛpsɪxoloɡɪ,RULE_FAILURE,,2.0,4.0,0,2.4,
+nepsycholog,nepsychologe,g,VOC.SG -e,nɛpsɪxoloGPAL3ɛ,nɛpsɪxoloʒɛ,ˈnɛpsɪxoloɡɛ,RULE_FAILURE,,2.0,4.0,0,2.4,VOC velar
+novověký,novověkí,k,NOM.PL.M.AN -í,novovjɛKPAL1iː,novovjɛt͡siː,ˈnovovjɛkiː,RULE_FAILURE,,4.0,4.0,0,2.8,
+novořecký,novořeckí,k,NOM.PL.M.AN -í,novor̝ɛTSḰPAL1iː,novor̝ɛt͡ʃciː,ˈnovor̝ɛt͡skiː,RULE_FAILURE,,3.0,2.0,0,1.6,ck+í (suffix)
+opatrovník,opatrovníke,k,VOC.SG -e,opatrovɲiːKPAL3ɛ,opatrovɲiːt͡ʃɛ,ˈopatrovɲiːkɛ,RULE_FAILURE,,4.0,4.0,0,2.8,VOC velar
+ozhr,ozhrě,r,LOC.SG -ě,ozɦRPAL1ɛ,ozɦr̝ɛ,ˈozɦrɛ,RULE_FAILURE,,2.0,4.0,0,2.4,Cr+ě
+pajcr,pajcre,r,VOC.SG -e,pajt͡sRPAL1ɛ,pajt͡sr̝ɛ,ˈpajt͡srɛ,RULE_FAILURE,,2.0,4.0,0,2.4,VOC r
+pajsr,pajsre,r,VOC.SG -e,pajsRPAL1ɛ,pajsr̝ɛ,ˈpajsrɛ,RULE_FAILURE,,2.0,4.0,0,2.4,VOC r
+plnokrevník,plnokrevníke,k,VOC.SG -e,pl̩nokrɛvɲiːKPAL3ɛ,pl̩nokrɛvɲiːt͡ʃɛ,ˈpl̩nokrɛvɲiːkɛ,RULE_FAILURE,,4.0,4.0,0,2.8,VOC velar
+přepestrý,přepestrí,r,NOM.PL.M.AN -í,pr̝ɛpɛstRPAL1iː,pr̝ɛpɛstr̝iː,ˈpr̝̊ɛpɛstriː,RULE_FAILURE,,3.0,4.0,0,2.6,Cr+í
+racemický,racemickí,k,NOM.PL.M.AN -í,rat͡sɛmɪTSḰPAL1iː,rat͡sɛmɪt͡ʃciː,ˈrat͡sɛmɪt͡skiː,RULE_FAILURE,,3.0,2.0,0,1.6,ck+í (suffix)
+rodilák,rodiláke,k,VOC.SG -e,roɟɪlaːKPAL3ɛ,roɟɪlaːt͡ʃɛ,ˈroɟɪlaːkɛ,RULE_FAILURE,,4.0,4.0,0,2.8,VOC velar
+rotavský,Rotavskí,k,NOM.PL.M.AN -í,rotafSḰPAL1iː,rotafʃciː,ˈrotafskiː,RULE_FAILURE,,3.0,2.0,0,1.6,sk+í (suffix)
+ruSSký,ruSScí,k,NOM.PL.M.AN -í,rusSḰPAL1iː,rusʃciː,ˈrust͡siː,RULE_FAILURE,,4.0,4.0,0,2.8,sk+í (suffix)
+rumrajch,rumrajchě,ch,LOC.SG -ě,rumrajXPAL1ɛ,rumrajʃɛ,ˈrumrajxɛ,RULE_FAILURE,,2.0,3.0,0,1.9,
+sedmiruký,sedmirukí,k,NOM.PL.M.AN -í,sɛdmɪruKPAL1iː,sɛdmɪrut͡siː,ˈsɛdmɪrukiː,RULE_FAILURE,,4.0,4.0,0,2.8,
+soutvarý,soutvarí,r,NOM.PL.M.AN -í,sou̯tvaRPAL1iː,sou̯tvar̝iː,ˈsou̯tvariː,RULE_FAILURE,,2.0,4.0,0,2.4,
+storuký,storukí,k,NOM.PL.M.AN -í,storuKPAL1iː,storut͡siː,ˈstorukiː,RULE_FAILURE,,4.0,4.0,0,2.8,
+termometr,termometre,r,VOC.SG -e,tɛrmomɛtRPAL1ɛ,tɛrmomɛtr̝ɛ,ˈtɛrmomɛtrɛ,RULE_FAILURE,,2.0,4.0,0,2.4,VOC r
+vejr,vejre,r,VOC.SG -e,vɛjRPAL1ɛ,vɛjr̝ɛ,ˈvɛjrɛ,RULE_FAILURE,,2.0,4.0,0,2.4,VOC r
+vojsko,vojště,k,LOC.SG -ě,vojsKPAL1ɛ,vojst͡sɛ,ˈvojʃcɛ,RULE_FAILURE,,5.0,4.0,0,3.0,sk+ě
+českorakouský,českorakouscí,k,NOM.PL.M.AN -í,t͡ʃɛskorakou̯SḰPAL1iː,t͡ʃɛskorakou̯ʃciː,ˈt͡ʃɛskorakou̯st͡siː,RULE_FAILURE,,5.0,4.0,0,3.0,sk+í (suffix)

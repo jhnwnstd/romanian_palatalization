@@ -54,6 +54,12 @@ tools = [
     "ijson>=3.2.0",
     "scipy>=1.11.0",
 ]
+# lexpipe.stats: scipy for the 2x2 statistics; statsmodels (optional)
+# for logistic_clustered and as the Mantel-Haenszel backend.
+stats = [
+    "scipy>=1.11.0",
+    "statsmodels>=0.14.0",
+]
 
 [project.urls]
 "Bug Tracker" = "https://github.com/jhnwnstd/romanian_palatalization/issues"
@@ -65,6 +71,11 @@ package-dir = {"" = "src"}
 [tool.setuptools.packages.find]
 where = ["src"]
 
+# src/phonology/inventories/ is package data: the per-language feature
+# inventories (<name>_features.json) and the README documenting them.
+[tool.setuptools.package-data]
+phonology = ["inventories/*_features.json", "inventories/README.md"]
+
 [tool.black]
 line-length = 79
 target-version = ["py311"]
@@ -72,7 +83,15 @@ target-version = ["py311"]
 [tool.isort]
 profile = "black"
 line_length = 79
-known_first_party = ["romanian_palatalization"]
+known_first_party = [
+    "dex_cache_reader",
+    "dex_etymology",
+    "dex_utils",
+    "lexpipe",
+    "phonology",
+    "romanian_processor_lib",
+    "wiktionary_normalizer",
+]
 
 [tool.flake8]
 max-line-length = 79
@@ -98,3 +117,13 @@ mypy_path = ["src"]
 # pandas, ijson, bs4 plugins ship incomplete or missing stubs; we still
 # want strict checking of our own code rather than turning strict off.
 ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+markers = [
+    "replay: replays Romanian pipeline stages 4-5 and the validator against the pinned SHA-256 baseline (runs by default; deselect with -m 'not replay')",
+    "needs_data: reads gitignored data (data/sources/, data/leipzig/, ...) and skips when it is absent (deselect with -m 'not needs_data')",
+    "slow: takes more than a few seconds (deselect with -m 'not slow')",
+    "ro: Romanian",
+    "it: Italian",
+    "cs: Czech",
+]

@@ -1,0 +1,643 @@
+Czech palatalization: Logical Phonology analysis, all variants
+(phonology.analyses.czech_palatalization; docs/czech/phonology.md)
+
+Source: Czech entries of English Wiktionary (and of Czech Wiktionary
+for lexemes English Wiktionary lacks) via kaikki.org/wiktextract
+(Ylonen 2022), CC BY-SA 4.0. Rows: data/czech/czech_cells.csv, primary
+aligned rows of velar, r and coronal_inferred stems with a P ending or
+a hard-paradigm N ending (nouns and adjectives), one per lexeme × cell
+× form. Evidence for the policies: E0 at τ = dictionary (no corpus
+counts are used). Attested IPA: the spelling transcribed with the
+cs-IPA conventions; compared modulo stress, syllable marks, the
+allophones r̝̊ ŋ ɱ ɣ d͡z and degemination. t/d/n rows
+(coronal_inferred) compare with a change inferred from the spelling.
+
+Transcription check: transcribe() equals the en.wiktionary
+lemma IPA of 25,896 of 28,031 one-word lemmas (92.38%);
+with the hard di ti ni of the lemma's own IPA, 27,487 (98.06%).
+
+Policy: lexical
+=== czech-palatalization (lexical) ===
+
+rows 48,143; boolean match  99.98%; IPA match  99.95%; both  99.95%
+
+By class × cell × ending class (P palatalizing, N not):
+
+                                          rows   boolean       IPA      both
+  coronal_inferred       DAT.SG      P    2113   100.00%   100.00%   100.00%
+  coronal_inferred       INS.SG      N    3232   100.00%   100.00%   100.00%
+  coronal_inferred       LOC.PL      N    3638   100.00%   100.00%   100.00%
+  coronal_inferred       LOC.PL      P      18   100.00%   100.00%   100.00%
+  coronal_inferred       LOC.SG      N    2264   100.00%   100.00%   100.00%
+  coronal_inferred       LOC.SG      P    2600    99.96%    99.96%    99.96%
+  coronal_inferred       NOM.PL      N     999   100.00%   100.00%   100.00%
+  coronal_inferred       NOM.PL      P    1191   100.00%   100.00%   100.00%
+  coronal_inferred       VOC.SG      N     968   100.00%   100.00%   100.00%
+  coronal_inferred (adj) NOM.PL.M.AN P    3321   100.00%   100.00%   100.00%
+  r                      DAT.SG      P     328   100.00%   100.00%   100.00%
+  r                      INS.SG      N    1133   100.00%   100.00%   100.00%
+  r                      LOC.PL      N    1163   100.00%   100.00%   100.00%
+  r                      LOC.PL      P       2   100.00%   100.00%   100.00%
+  r                      LOC.SG      N     744   100.00%   100.00%   100.00%
+  r                      LOC.SG      P     362   100.00%   100.00%   100.00%
+  r                      NOM.PL      N      89   100.00%   100.00%   100.00%
+  r                      NOM.PL      P     372   100.00%   100.00%   100.00%
+  r                      VOC.SG      N     328   100.00%   100.00%   100.00%
+  r                      VOC.SG      P      69    94.20%    94.20%    94.20%
+  r (adj)                NOM.PL.M.AN P      44   100.00%   100.00%   100.00%
+  velar                  DAT.SG      P    3795   100.00%   100.00%   100.00%
+  velar                  INS.SG      N    3903   100.00%   100.00%   100.00%
+  velar                  LOC.PL      N     866   100.00%   100.00%   100.00%
+  velar                  LOC.PL      P    3539   100.00%   100.00%   100.00%
+  velar                  LOC.SG      N    2480   100.00%   100.00%   100.00%
+  velar                  LOC.SG      P    3841   100.00%    99.97%    99.97%
+  velar                  NOM.PL      N     622   100.00%   100.00%   100.00%
+  velar                  NOM.PL      P    1293   100.00%   100.00%   100.00%
+  velar                  VOC.SG      P      13    53.85%    53.85%    53.85%
+  velar (adj)            NOM.PL.M.AN P    2813   100.00%    99.54%    99.54%
+
+By class:
+
+                            rows   boolean       IPA      both
+  coronal_inferred         17023    99.99%    99.99%    99.99%
+  coronal_inferred (adj)    3321   100.00%   100.00%   100.00%
+  r                         4590    99.91%    99.91%    99.91%
+  r (adj)                     44   100.00%   100.00%   100.00%
+  velar                    20352    99.97%    99.97%    99.97%
+  velar (adj)               2813   100.00%    99.54%    99.54%
+
+By stem final × ending class:
+
+                rows   boolean       IPA      both
+  ch N           332   100.00%   100.00%   100.00%
+  ch P           305    99.67%    99.67%    99.67%
+  d  N          1501   100.00%   100.00%   100.00%
+  d  P           987   100.00%   100.00%   100.00%
+  g  N           442   100.00%   100.00%   100.00%
+  g  P           251    99.60%    99.60%    99.60%
+  h  N           235   100.00%   100.00%   100.00%
+  h  P           315   100.00%   100.00%   100.00%
+  k  N          6862   100.00%   100.00%   100.00%
+  k  P         14423    99.97%    99.88%    99.88%
+  n  N          4654   100.00%   100.00%   100.00%
+  n  P          6066    99.98%    99.98%    99.98%
+  r  N          3457   100.00%   100.00%   100.00%
+  r  P          1177    99.66%    99.66%    99.66%
+  t  N          4946   100.00%   100.00%   100.00%
+  t  P          2190   100.00%   100.00%   100.00%
+
+Clusters and the vocative (bucket = cluster+ending):
+
+                   rows   boolean       IPA      both
+  Cr+e              142   100.00%   100.00%   100.00%
+  Cr+ech            258   100.00%   100.00%   100.00%
+  Cr+em             249   100.00%   100.00%   100.00%
+  Cr+i               64   100.00%   100.00%   100.00%
+  Cr+ové              9   100.00%   100.00%   100.00%
+  Cr+u              184   100.00%   100.00%   100.00%
+  Cr+ách              1   100.00%   100.00%   100.00%
+  Cr+í               22   100.00%   100.00%   100.00%
+  Cr+ích              1   100.00%   100.00%   100.00%
+  Cr+ě                1   100.00%   100.00%   100.00%
+  VOC r              69    94.20%    94.20%    94.20%
+  VOC velar          13    53.85%    53.85%    53.85%
+  ck+e               43   100.00%   100.00%   100.00%
+  ck+ech              2   100.00%   100.00%   100.00%
+  ck+em              26   100.00%   100.00%   100.00%
+  ck+i                6   100.00%   100.00%   100.00%
+  ck+ové              8   100.00%   100.00%   100.00%
+  ck+u               19   100.00%   100.00%   100.00%
+  ck+ách             12   100.00%   100.00%   100.00%
+  ck+í (suffix)    1007   100.00%    99.50%    99.50%
+  ck+ích             15   100.00%   100.00%   100.00%
+  ck+ě                1   100.00%   100.00%   100.00%
+  sk+e              146   100.00%   100.00%   100.00%
+  sk+ech              1   100.00%   100.00%   100.00%
+  sk+em             113   100.00%   100.00%   100.00%
+  sk+i               16   100.00%   100.00%   100.00%
+  sk+ové             16   100.00%   100.00%   100.00%
+  sk+u               97   100.00%   100.00%   100.00%
+  sk+ách             32   100.00%   100.00%   100.00%
+  sk+í (suffix)    1625   100.00%    99.51%    99.51%
+  sk+ích            103   100.00%   100.00%   100.00%
+  sk+ě                1   100.00%     0.00%     0.00%
+  st+e               12   100.00%   100.00%   100.00%
+  st+ech            415   100.00%   100.00%   100.00%
+  st+em              96   100.00%   100.00%   100.00%
+  st+i              262   100.00%   100.00%   100.00%
+  st+ové             13   100.00%   100.00%   100.00%
+  st+u               82   100.00%   100.00%   100.00%
+  st+é              313   100.00%   100.00%   100.00%
+  st+í               39   100.00%   100.00%   100.00%
+  st+ě               69   100.00%   100.00%   100.00%
+  zd+e                1   100.00%   100.00%   100.00%
+  zd+ech             15   100.00%   100.00%   100.00%
+  zd+em              14   100.00%   100.00%   100.00%
+  zd+i                1   100.00%   100.00%   100.00%
+  zd+ové              2   100.00%   100.00%   100.00%
+  zd+u               13   100.00%   100.00%   100.00%
+  zd+ě               34   100.00%   100.00%   100.00%
+
+Mismatch classes (rows failing boolean or IPA):
+
+  [cluster-outcome] n = 14: boolean right, IPA wrong at an sk/ck/st/zd cluster (sc vs šť)
+          13  velar (adj)            NOM.PL.M.AN P
+           1  velar                  LOC.SG      P
+    badatelský → badatelscí (NOM.PL.M.AN -í): UR /badatɛlSḰPAL1iː/ predicted [badatɛlʃciː] attested [badatɛlst͡siː]
+    chymický → chymiccí (NOM.PL.M.AN -í): UR /xɪmɪTSḰPAL1iː/ predicted [xɪmɪt͡ʃciː] attested [xɪmɪt͡st͡siː]
+    doktrinářský → doktrinářscí (NOM.PL.M.AN -í): UR /doktrɪnaːr̝SḰPAL1iː/ predicted [doktrɪnaːr̝ʃciː] attested [doktrɪnaːr̝̊st͡siː]
+    dosovský → dosovscí (NOM.PL.M.AN -í): UR /dosofSḰPAL1iː/ predicted [dosofʃciː] attested [dosofst͡siː]
+    epistemický → epistemiccí (NOM.PL.M.AN -í): UR /ɛpɪstɛmɪTSḰPAL1iː/ predicted [ɛpɪstɛmɪt͡ʃciː] attested [ɛpɪstɛmɪt͡st͡siː]
+    epistemologický → epistemologiccí (NOM.PL.M.AN -í): UR /ɛpɪstɛmoloɡɪTSḰPAL1iː/ predicted [ɛpɪstɛmoloɡɪt͡ʃciː] attested [ɛpɪstɛmoloɡɪt͡st͡siː]
+
+  [unexplained-form] n = 11: P ending without the change in the data (the data layer's 'unexplained' forms, mostly cs.wiktionary table errors); the rules palatalize
+           6  velar                  VOC.SG      P
+           4  r                      VOC.SG      P
+           1  coronal_inferred       LOC.SG      P
+    búchr → búchre (VOC.SG -e): UR /buːxRPAL1ɛ/ predicted [buːxr̝ɛ] attested [buːxrɛ]
+    epistemolog → epistemologe (VOC.SG -e): UR /ɛpɪstɛmoloGPAL3ɛ/ predicted [ɛpɪstɛmoloʒɛ] attested [ɛpɪstɛmoloɡɛ]
+    kmoch → kmoche (VOC.SG -e): UR /kmoXPAL3ɛ/ predicted [kmoʃɛ] attested [kmoxɛ]
+    kolegáček → kolegáčke (VOC.SG -e): UR /kolɛɡaːt͡ʃKPAL3ɛ/ predicted [kolɛɡaːt͡ʃt͡ʃɛ] attested [kolɛɡaːt͡ʃkɛ]
+    lulan → lulane (LOC.SG -e): UR /lulaNPAL1ɛ/ predicted [lulaɲɛ] attested [lulanɛ]
+    lúzr → lúzre (VOC.SG -e): UR /luːzRPAL1ɛ/ predicted [luːzr̝ɛ] attested [luːzrɛ]
+
+Policy: all_underspecified
+=== czech-palatalization (all_underspecified) ===
+
+rows 48,143; boolean match  99.92%; IPA match  99.89%; both  99.89%
+
+By class × cell × ending class (P palatalizing, N not):
+
+                                          rows   boolean       IPA      both
+  coronal_inferred       DAT.SG      P    2113   100.00%   100.00%   100.00%
+  coronal_inferred       INS.SG      N    3232   100.00%   100.00%   100.00%
+  coronal_inferred       LOC.PL      N    3638   100.00%   100.00%   100.00%
+  coronal_inferred       LOC.PL      P      18   100.00%   100.00%   100.00%
+  coronal_inferred       LOC.SG      N    2264   100.00%   100.00%   100.00%
+  coronal_inferred       LOC.SG      P    2600    99.96%    99.96%    99.96%
+  coronal_inferred       NOM.PL      N     999   100.00%   100.00%   100.00%
+  coronal_inferred       NOM.PL      P    1191   100.00%   100.00%   100.00%
+  coronal_inferred       VOC.SG      N     968   100.00%   100.00%   100.00%
+  coronal_inferred (adj) NOM.PL.M.AN P    3321   100.00%   100.00%   100.00%
+  r                      DAT.SG      P     328   100.00%   100.00%   100.00%
+  r                      INS.SG      N    1133   100.00%   100.00%   100.00%
+  r                      LOC.PL      N    1163   100.00%   100.00%   100.00%
+  r                      LOC.PL      P       2   100.00%   100.00%   100.00%
+  r                      LOC.SG      N     744   100.00%   100.00%   100.00%
+  r                      LOC.SG      P     362    99.72%    99.72%    99.72%
+  r                      NOM.PL      N      89   100.00%   100.00%   100.00%
+  r                      NOM.PL      P     372    99.73%    99.73%    99.73%
+  r                      VOC.SG      N     328   100.00%   100.00%   100.00%
+  r                      VOC.SG      P      69    91.30%    91.30%    91.30%
+  r (adj)                NOM.PL.M.AN P      44    90.91%    90.91%    90.91%
+  velar                  DAT.SG      P    3795    99.97%    99.97%    99.97%
+  velar                  INS.SG      N    3903   100.00%   100.00%   100.00%
+  velar                  LOC.PL      N     866   100.00%   100.00%   100.00%
+  velar                  LOC.PL      P    3539   100.00%   100.00%   100.00%
+  velar                  LOC.SG      N    2480   100.00%   100.00%   100.00%
+  velar                  LOC.SG      P    3841    99.92%    99.90%    99.90%
+  velar                  NOM.PL      N     622   100.00%   100.00%   100.00%
+  velar                  NOM.PL      P    1293    99.85%    99.85%    99.85%
+  velar                  VOC.SG      P      13    38.46%    38.46%    38.46%
+  velar (adj)            NOM.PL.M.AN P    2813    99.57%    99.11%    99.11%
+
+By class:
+
+                            rows   boolean       IPA      both
+  coronal_inferred         17023    99.99%    99.99%    99.99%
+  coronal_inferred (adj)    3321   100.00%   100.00%   100.00%
+  r                         4590    99.83%    99.83%    99.83%
+  r (adj)                     44    90.91%    90.91%    90.91%
+  velar                    20352    99.93%    99.93%    99.93%
+  velar (adj)               2813    99.57%    99.11%    99.11%
+
+By stem final × ending class:
+
+                rows   boolean       IPA      both
+  ch N           332   100.00%   100.00%   100.00%
+  ch P           305    98.69%    98.69%    98.69%
+  d  N          1501   100.00%   100.00%   100.00%
+  d  P           987   100.00%   100.00%   100.00%
+  g  N           442   100.00%   100.00%   100.00%
+  g  P           251    98.80%    98.80%    98.80%
+  h  N           235   100.00%   100.00%   100.00%
+  h  P           315   100.00%   100.00%   100.00%
+  k  N          6862   100.00%   100.00%   100.00%
+  k  P         14423    99.87%    99.77%    99.77%
+  n  N          4654   100.00%   100.00%   100.00%
+  n  P          6066    99.98%    99.98%    99.98%
+  r  N          3457   100.00%   100.00%   100.00%
+  r  P          1177    98.98%    98.98%    98.98%
+  t  N          4946   100.00%   100.00%   100.00%
+  t  P          2190   100.00%   100.00%   100.00%
+
+Clusters and the vocative (bucket = cluster+ending):
+
+                   rows   boolean       IPA      both
+  Cr+e              142   100.00%   100.00%   100.00%
+  Cr+ech            258   100.00%   100.00%   100.00%
+  Cr+em             249   100.00%   100.00%   100.00%
+  Cr+i               64   100.00%   100.00%   100.00%
+  Cr+ové              9   100.00%   100.00%   100.00%
+  Cr+u              184   100.00%   100.00%   100.00%
+  Cr+ách              1   100.00%   100.00%   100.00%
+  Cr+í               22    95.45%    95.45%    95.45%
+  Cr+ích              1   100.00%   100.00%   100.00%
+  Cr+ě                1     0.00%     0.00%     0.00%
+  VOC r              69    91.30%    91.30%    91.30%
+  VOC velar          13    38.46%    38.46%    38.46%
+  ck+e               43   100.00%   100.00%   100.00%
+  ck+ech              2   100.00%   100.00%   100.00%
+  ck+em              26   100.00%   100.00%   100.00%
+  ck+i                6   100.00%   100.00%   100.00%
+  ck+ové              8   100.00%   100.00%   100.00%
+  ck+u               19   100.00%   100.00%   100.00%
+  ck+ách             12   100.00%   100.00%   100.00%
+  ck+í (suffix)    1007    99.50%    99.01%    99.01%
+  ck+ích             15   100.00%   100.00%   100.00%
+  ck+ě                1     0.00%     0.00%     0.00%
+  sk+e              146   100.00%   100.00%   100.00%
+  sk+ech              1   100.00%   100.00%   100.00%
+  sk+em             113   100.00%   100.00%   100.00%
+  sk+i               16   100.00%   100.00%   100.00%
+  sk+ové             16   100.00%   100.00%   100.00%
+  sk+u               97   100.00%   100.00%   100.00%
+  sk+ách             32   100.00%   100.00%   100.00%
+  sk+í (suffix)    1625    99.82%    99.32%    99.32%
+  sk+ích            103   100.00%   100.00%   100.00%
+  sk+ě                1   100.00%     0.00%     0.00%
+  st+e               12   100.00%   100.00%   100.00%
+  st+ech            415   100.00%   100.00%   100.00%
+  st+em              96   100.00%   100.00%   100.00%
+  st+i              262   100.00%   100.00%   100.00%
+  st+ové             13   100.00%   100.00%   100.00%
+  st+u               82   100.00%   100.00%   100.00%
+  st+é              313   100.00%   100.00%   100.00%
+  st+í               39   100.00%   100.00%   100.00%
+  st+ě               69   100.00%   100.00%   100.00%
+  zd+e                1   100.00%   100.00%   100.00%
+  zd+ech             15   100.00%   100.00%   100.00%
+  zd+em              14   100.00%   100.00%   100.00%
+  zd+i                1   100.00%   100.00%   100.00%
+  zd+ové              2   100.00%   100.00%   100.00%
+  zd+u               13   100.00%   100.00%   100.00%
+  zd+ě               34   100.00%   100.00%   100.00%
+
+Mismatch classes (rows failing boolean or IPA):
+
+  [unexplained-form] n = 39: P ending without the change in the data (the data layer's 'unexplained' forms, mostly cs.wiktionary table errors); the rules palatalize
+          12  velar (adj)            NOM.PL.M.AN P
+           8  velar                  VOC.SG      P
+           6  r                      VOC.SG      P
+           4  r (adj)                NOM.PL.M.AN P
+           3  velar                  LOC.SG      P
+           2  velar                  NOM.PL      P
+    adblock → adblockě (LOC.SG -ě): UR /adblot͡sKPAL1ɛ/ predicted [adblot͡st͡sɛ] attested [adblot͡skɛ]
+    banskobystrický → banskobystrickí (NOM.PL.M.AN -í): UR /banskobɪstrɪTSḰPAL1iː/ predicted [banskobɪstrɪt͡ʃciː] attested [banskobɪstrɪt͡skiː]
+    bezkorý → bezkorí (NOM.PL.M.AN -í): UR /bɛskoRPAL1iː/ predicted [bɛskor̝iː] attested [bɛskoriː]
+    búchr → búchre (VOC.SG -e): UR /buːxRPAL1ɛ/ predicted [buːxr̝ɛ] attested [buːxrɛ]
+    bělokrký → bělokrkí (NOM.PL.M.AN -í): UR /bjɛlokr̩KPAL1iː/ predicted [bjɛlokr̩t͡siː] attested [bjɛlokr̩kiː]
+    captcha → captchě (DAT.SG -ě): UR /t͡saptXPAL1ɛ/ predicted [t͡saptʃɛ] attested [t͡saptxɛ]
+
+  [cluster-outcome] n = 14: boolean right, IPA wrong at an sk/ck/st/zd cluster (sc vs šť)
+          13  velar (adj)            NOM.PL.M.AN P
+           1  velar                  LOC.SG      P
+    badatelský → badatelscí (NOM.PL.M.AN -í): UR /badatɛlSḰPAL1iː/ predicted [badatɛlʃciː] attested [badatɛlst͡siː]
+    chymický → chymiccí (NOM.PL.M.AN -í): UR /xɪmɪTSḰPAL1iː/ predicted [xɪmɪt͡ʃciː] attested [xɪmɪt͡st͡siː]
+    doktrinářský → doktrinářscí (NOM.PL.M.AN -í): UR /doktrɪnaːr̝SḰPAL1iː/ predicted [doktrɪnaːr̝ʃciː] attested [doktrɪnaːr̝̊st͡siː]
+    dosovský → dosovscí (NOM.PL.M.AN -í): UR /dosofSḰPAL1iː/ predicted [dosofʃciː] attested [dosofst͡siː]
+    epistemický → epistemiccí (NOM.PL.M.AN -í): UR /ɛpɪstɛmɪTSḰPAL1iː/ predicted [ɛpɪstɛmɪt͡ʃciː] attested [ɛpɪstɛmɪt͡st͡siː]
+    epistemologický → epistemologiccí (NOM.PL.M.AN -í): UR /ɛpɪstɛmoloɡɪTSḰPAL1iː/ predicted [ɛpɪstɛmoloɡɪt͡ʃciː] attested [ɛpɪstɛmoloɡɪt͡st͡siː]
+
+Policy: lexical_loo
+=== czech-palatalization (lexical_loo) ===
+
+rows 48,143; boolean match  52.39%; IPA match  52.39%; both  52.39%
+
+By class × cell × ending class (P palatalizing, N not):
+
+                                          rows   boolean       IPA      both
+  coronal_inferred       DAT.SG      P    2113     0.00%     0.00%     0.00%
+  coronal_inferred       INS.SG      N    3232   100.00%   100.00%   100.00%
+  coronal_inferred       LOC.PL      N    3638   100.00%   100.00%   100.00%
+  coronal_inferred       LOC.PL      P      18    55.56%    55.56%    55.56%
+  coronal_inferred       LOC.SG      N    2264   100.00%   100.00%   100.00%
+  coronal_inferred       LOC.SG      P    2600     0.08%     0.08%     0.08%
+  coronal_inferred       NOM.PL      N     999   100.00%   100.00%   100.00%
+  coronal_inferred       NOM.PL      P    1191     1.01%     1.01%     1.01%
+  coronal_inferred       VOC.SG      N     968   100.00%   100.00%   100.00%
+  coronal_inferred (adj) NOM.PL.M.AN P    3321     0.00%     0.00%     0.00%
+  r                      DAT.SG      P     328     0.00%     0.00%     0.00%
+  r                      INS.SG      N    1133   100.00%   100.00%   100.00%
+  r                      LOC.PL      N    1163   100.00%   100.00%   100.00%
+  r                      LOC.PL      P       2   100.00%   100.00%   100.00%
+  r                      LOC.SG      N     744   100.00%   100.00%   100.00%
+  r                      LOC.SG      P     362     0.28%     0.28%     0.28%
+  r                      NOM.PL      N      89   100.00%   100.00%   100.00%
+  r                      NOM.PL      P     372    17.20%    17.20%    17.20%
+  r                      VOC.SG      N     328   100.00%   100.00%   100.00%
+  r                      VOC.SG      P      69    92.75%    92.75%    92.75%
+  r (adj)                NOM.PL.M.AN P      44     9.09%     9.09%     9.09%
+  velar                  DAT.SG      P    3795     0.03%     0.03%     0.03%
+  velar                  INS.SG      N    3903   100.00%   100.00%   100.00%
+  velar                  LOC.PL      N     866   100.00%   100.00%   100.00%
+  velar                  LOC.PL      P    3539    36.87%    36.87%    36.87%
+  velar                  LOC.SG      N    2480   100.00%   100.00%   100.00%
+  velar                  LOC.SG      P    3841     0.73%     0.73%     0.73%
+  velar                  NOM.PL      N     622   100.00%   100.00%   100.00%
+  velar                  NOM.PL      P    1293    99.15%    99.15%    99.15%
+  velar                  VOC.SG      P      13    53.85%    53.85%    53.85%
+  velar (adj)            NOM.PL.M.AN P    2813     0.43%     0.43%     0.43%
+
+By class:
+
+                            rows   boolean       IPA      both
+  coronal_inferred         17023    65.35%    65.35%    65.35%
+  coronal_inferred (adj)    3321     0.00%     0.00%     0.00%
+  r                         4590    78.17%    78.17%    78.17%
+  r (adj)                     44     9.09%     9.09%     9.09%
+  velar                    20352    51.56%    51.56%    51.56%
+  velar (adj)               2813     0.43%     0.43%     0.43%
+
+By stem final × ending class:
+
+                rows   boolean       IPA      both
+  ch N           332   100.00%   100.00%   100.00%
+  ch P           305    29.18%    29.18%    29.18%
+  d  N          1501   100.00%   100.00%   100.00%
+  d  P           987     0.20%     0.20%     0.20%
+  g  N           442   100.00%   100.00%   100.00%
+  g  P           251     5.58%     5.58%     5.58%
+  h  N           235   100.00%   100.00%   100.00%
+  h  P           315    15.24%    15.24%    15.24%
+  k  N          6862   100.00%   100.00%   100.00%
+  k  P         14423    17.22%    17.22%    17.22%
+  n  N          4654   100.00%   100.00%   100.00%
+  n  P          6066     0.33%     0.33%     0.33%
+  r  N          3457   100.00%   100.00%   100.00%
+  r  P          1177    11.47%    11.47%    11.47%
+  t  N          4946   100.00%   100.00%   100.00%
+  t  P          2190     0.09%     0.09%     0.09%
+
+Clusters and the vocative (bucket = cluster+ending):
+
+                   rows   boolean       IPA      both
+  Cr+e              142     0.00%     0.00%     0.00%
+  Cr+ech            258   100.00%   100.00%   100.00%
+  Cr+em             249   100.00%   100.00%   100.00%
+  Cr+i               64    95.31%    95.31%    95.31%
+  Cr+ové              9   100.00%   100.00%   100.00%
+  Cr+u              184   100.00%   100.00%   100.00%
+  Cr+ách              1   100.00%   100.00%   100.00%
+  Cr+í               22     9.09%     9.09%     9.09%
+  Cr+ích              1   100.00%   100.00%   100.00%
+  Cr+ě                1   100.00%   100.00%   100.00%
+  VOC r              69    92.75%    92.75%    92.75%
+  VOC velar          13    53.85%    53.85%    53.85%
+  ck+e               43     2.33%     2.33%     2.33%
+  ck+ech              2   100.00%   100.00%   100.00%
+  ck+em              26   100.00%   100.00%   100.00%
+  ck+i                6   100.00%   100.00%   100.00%
+  ck+ové              8   100.00%   100.00%   100.00%
+  ck+u               19   100.00%   100.00%   100.00%
+  ck+ách             12   100.00%   100.00%   100.00%
+  ck+í (suffix)    1007     0.50%     0.50%     0.50%
+  ck+ích             15    46.67%    46.67%    46.67%
+  ck+ě                1   100.00%   100.00%   100.00%
+  sk+e              146     0.00%     0.00%     0.00%
+  sk+ech              1   100.00%   100.00%   100.00%
+  sk+em             113   100.00%   100.00%   100.00%
+  sk+i               16   100.00%   100.00%   100.00%
+  sk+ové             16   100.00%   100.00%   100.00%
+  sk+u               97   100.00%   100.00%   100.00%
+  sk+ách             32   100.00%   100.00%   100.00%
+  sk+í (suffix)    1625     0.18%     0.18%     0.18%
+  sk+ích            103    15.53%    15.53%    15.53%
+  sk+ě                1     0.00%     0.00%     0.00%
+  st+e               12   100.00%   100.00%   100.00%
+  st+ech            415   100.00%   100.00%   100.00%
+  st+em              96   100.00%   100.00%   100.00%
+  st+i              262     0.00%     0.00%     0.00%
+  st+ové             13   100.00%   100.00%   100.00%
+  st+u               82   100.00%   100.00%   100.00%
+  st+é              313   100.00%   100.00%   100.00%
+  st+í               39     0.00%     0.00%     0.00%
+  st+ě               69     0.00%     0.00%     0.00%
+  zd+e                1   100.00%   100.00%   100.00%
+  zd+ech             15   100.00%   100.00%   100.00%
+  zd+em              14   100.00%   100.00%   100.00%
+  zd+i                1     0.00%     0.00%     0.00%
+  zd+ové              2   100.00%   100.00%   100.00%
+  zd+u               13   100.00%   100.00%   100.00%
+  zd+ě               34     0.00%     0.00%     0.00%
+
+Mismatch classes (rows failing boolean or IPA):
+
+  [no-evidence-alternates] n = 19353: the policy left the target prespecified for want of evidence (no other cell alternates or competes: the feminine DAT/LOC.SG, the adjective NOM.PL), but the form alternates
+        3799  velar                  LOC.SG      P
+        3793  velar                  DAT.SG      P
+        3321  coronal_inferred (adj) NOM.PL.M.AN P
+        2799  velar (adj)            NOM.PL.M.AN P
+        2137  coronal_inferred       LOC.SG      P
+        2113  coronal_inferred       DAT.SG      P
+    Afghánka → Afghánce (DAT.SG -e): UR /avɡɦaːnkPAL1ɛ/ predicted [avɡɦaːnkɛ] attested [avɡɦaːnt͡sɛ]
+    Afghánka → Afghánce (LOC.SG -e): UR /avɡɦaːnkPAL1ɛ/ predicted [avɡɦaːnkɛ] attested [avɡɦaːnt͡sɛ]
+    Afričanka → Afričance (DAT.SG -e): UR /afrɪt͡ʃankPAL1ɛ/ predicted [afrɪt͡ʃankɛ] attested [afrɪt͡ʃant͡sɛ]
+    Afričanka → Afričance (LOC.SG -e): UR /afrɪt͡ʃankPAL1ɛ/ predicted [afrɪt͡ʃankɛ] attested [afrɪt͡ʃant͡sɛ]
+    Afroameričanka → Afroameričance (DAT.SG -e): UR /afroamɛrɪt͡ʃankPAL1ɛ/ predicted [afroamɛrɪt͡ʃankɛ] attested [afroamɛrɪt͡ʃant͡sɛ]
+    Afroameričanka → Afroameričance (LOC.SG -e): UR /afroamɛrɪt͡ʃankPAL1ɛ/ predicted [afroamɛrɪt͡ʃankɛ] attested [afroamɛrɪt͡ʃant͡sɛ]
+
+  [mixed-stem-alternates] n = 3553: the policy left the target prespecified, but the form alternates, and the stem also takes a competing N allomorph (in another cell, or beside this form: park has v parku but parcích): choosing an N allomorph does not mark a non-alternating root
+        2212  velar                  LOC.PL      P
+         787  coronal_inferred       NOM.PL      P
+         460  coronal_inferred       LOC.SG      P
+          46  r                      NOM.PL      P
+          30  r                      LOC.SG      P
+          13  velar                  LOC.SG      P
+    Afričan → Afričani (NOM.PL -i): UR /afrɪt͡ʃanPAL1ɪ/ predicted [afrɪt͡ʃanɪ] attested [afrɪt͡ʃaɲɪ]
+    Afroameričan → Afroameričani (NOM.PL -i): UR /afroamɛrɪt͡ʃanPAL1ɪ/ predicted [afroamɛrɪt͡ʃanɪ] attested [afroamɛrɪt͡ʃaɲɪ]
+    Akkaďan → Akkaďani (NOM.PL -i): UR /akaɟanPAL1ɪ/ predicted [akaɟanɪ] attested [akaɟaɲɪ]
+    Alabaman → Alabamani (NOM.PL -i): UR /alabamanPAL1ɪ/ predicted [alabamanɪ] attested [alabamaɲɪ]
+    Aljašan → Aljašani (NOM.PL -i): UR /aljaʃanPAL1ɪ/ predicted [aljaʃanɪ] attested [aljaʃaɲɪ]
+    Aljaščan → Aljaščani (NOM.PL -i): UR /aljaʃt͡ʃanPAL1ɪ/ predicted [aljaʃt͡ʃanɪ] attested [aljaʃt͡ʃaɲɪ]
+
+  [unexplained-form] n = 10: P ending without the change in the data (the data layer's 'unexplained' forms, mostly cs.wiktionary table errors); the rules palatalize
+           6  velar                  VOC.SG      P
+           3  r                      VOC.SG      P
+           1  coronal_inferred       LOC.SG      P
+    búchr → búchre (VOC.SG -e): UR /buːxRPAL1ɛ/ predicted [buːxr̝ɛ] attested [buːxrɛ]
+    epistemolog → epistemologe (VOC.SG -e): UR /ɛpɪstɛmoloGPAL3ɛ/ predicted [ɛpɪstɛmoloʒɛ] attested [ɛpɪstɛmoloɡɛ]
+    kmoch → kmoche (VOC.SG -e): UR /kmoXPAL3ɛ/ predicted [kmoʃɛ] attested [kmoxɛ]
+    kolegáček → kolegáčke (VOC.SG -e): UR /kolɛɡaːt͡ʃKPAL3ɛ/ predicted [kolɛɡaːt͡ʃt͡ʃɛ] attested [kolɛɡaːt͡ʃkɛ]
+    lulan → lulane (LOC.SG -e): UR /lulaNPAL1ɛ/ predicted [lulaɲɛ] attested [lulanɛ]
+    lúzr → lúzre (VOC.SG -e): UR /luːzRPAL1ɛ/ predicted [luːzr̝ɛ] attested [luːzrɛ]
+
+  [ur-not-built] n = 4: no UR (the spelling does not show the recorded change, or a letter is outside the inventory); scored by the fallback
+           2  velar (adj)            NOM.PL.M.AN P
+           1  velar                  DAT.SG      P
+           1  velar                  LOC.SG      P
+    curaçaoský → curaçaoští (NOM.PL.M.AN -í): UR /-/ predicted [] attested [t͡suraçaoʃciː]
+    erdoğanovský → erdoğanovští (NOM.PL.M.AN -í): UR /-/ predicted [] attested [ɛrdoğanofʃciː]
+    stĺkačka → stĺkačce (DAT.SG -e): UR /-/ predicted [] attested [stĺkat͡ʃt͡sɛ]
+    stĺkačka → stĺkačce (LOC.SG -e): UR /-/ predicted [] attested [stĺkat͡ʃt͡sɛ]
+
+Policy: spellout
+=== czech-palatalization (spellout) ===
+
+rows 48,143; boolean match  90.63%; IPA match  90.60%; both  90.60%
+
+By class × cell × ending class (P palatalizing, N not):
+
+                                          rows   boolean       IPA      both
+  coronal_inferred       DAT.SG      P    2113   100.00%   100.00%   100.00%
+  coronal_inferred       INS.SG      N    3232   100.00%   100.00%   100.00%
+  coronal_inferred       LOC.PL      N    3638   100.00%   100.00%   100.00%
+  coronal_inferred       LOC.PL      P      18    94.44%    94.44%    94.44%
+  coronal_inferred       LOC.SG      N    2264   100.00%   100.00%   100.00%
+  coronal_inferred       LOC.SG      P    2600    82.19%    82.19%    82.19%
+  coronal_inferred       NOM.PL      N     999   100.00%   100.00%   100.00%
+  coronal_inferred       NOM.PL      P    1191    33.67%    33.67%    33.67%
+  coronal_inferred       VOC.SG      N     968   100.00%   100.00%   100.00%
+  coronal_inferred (adj) NOM.PL.M.AN P    3321   100.00%   100.00%   100.00%
+  r                      DAT.SG      P     328   100.00%   100.00%   100.00%
+  r                      INS.SG      N    1133   100.00%   100.00%   100.00%
+  r                      LOC.PL      N    1163   100.00%   100.00%   100.00%
+  r                      LOC.PL      P       2   100.00%   100.00%   100.00%
+  r                      LOC.SG      N     744   100.00%   100.00%   100.00%
+  r                      LOC.SG      P     362    91.71%    91.71%    91.71%
+  r                      NOM.PL      N      89   100.00%   100.00%   100.00%
+  r                      NOM.PL      P     372    85.75%    85.75%    85.75%
+  r                      VOC.SG      N     328   100.00%   100.00%   100.00%
+  r                      VOC.SG      P      69    85.51%    85.51%    85.51%
+  r (adj)                NOM.PL.M.AN P      44    90.91%    90.91%    90.91%
+  velar                  DAT.SG      P    3795    99.97%    99.97%    99.97%
+  velar                  INS.SG      N    3903   100.00%   100.00%   100.00%
+  velar                  LOC.PL      N     866   100.00%   100.00%   100.00%
+  velar                  LOC.PL      P    3539    24.55%    24.55%    24.55%
+  velar                  LOC.SG      N    2480   100.00%   100.00%   100.00%
+  velar                  LOC.SG      P    3841    98.98%    98.98%    98.98%
+  velar                  NOM.PL      N     622   100.00%   100.00%   100.00%
+  velar                  NOM.PL      P    1293    66.28%    66.28%    66.28%
+  velar                  VOC.SG      P      13    84.62%    84.62%    84.62%
+  velar (adj)            NOM.PL.M.AN P    2813    99.57%    99.11%    99.11%
+
+By class:
+
+                            rows   boolean       IPA      both
+  coronal_inferred         17023    92.63%    92.63%    92.63%
+  coronal_inferred (adj)    3321   100.00%   100.00%   100.00%
+  r                         4590    97.97%    97.97%    97.97%
+  r (adj)                     44    90.91%    90.91%    90.91%
+  velar                    20352    84.53%    84.53%    84.53%
+  velar (adj)               2813    99.57%    99.11%    99.11%
+
+By stem final × ending class:
+
+                rows   boolean       IPA      both
+  ch N           332   100.00%   100.00%   100.00%
+  ch P           305    49.18%    49.18%    49.18%
+  d  N          1501   100.00%   100.00%   100.00%
+  d  P           987    86.42%    86.42%    86.42%
+  g  N           442   100.00%   100.00%   100.00%
+  g  P           251    25.50%    25.50%    25.50%
+  h  N           235   100.00%   100.00%   100.00%
+  h  P           315    58.41%    58.41%    58.41%
+  k  N          6862   100.00%   100.00%   100.00%
+  k  P         14423    81.37%    81.28%    81.28%
+  n  N          4654   100.00%   100.00%   100.00%
+  n  P          6066    91.46%    91.46%    91.46%
+  r  N          3457   100.00%   100.00%   100.00%
+  r  P          1177    91.76%    91.76%    91.76%
+  t  N          4946   100.00%   100.00%   100.00%
+  t  P          2190    72.51%    72.51%    72.51%
+
+Clusters and the vocative (bucket = cluster+ending):
+
+                   rows   boolean       IPA      both
+  Cr+e              142    94.37%    94.37%    94.37%
+  Cr+ech            258   100.00%   100.00%   100.00%
+  Cr+em             249   100.00%   100.00%   100.00%
+  Cr+i               64    87.50%    87.50%    87.50%
+  Cr+ové              9   100.00%   100.00%   100.00%
+  Cr+u              184   100.00%   100.00%   100.00%
+  Cr+ách              1   100.00%   100.00%   100.00%
+  Cr+í               22    95.45%    95.45%    95.45%
+  Cr+ích              1   100.00%   100.00%   100.00%
+  Cr+ě                1   100.00%   100.00%   100.00%
+  VOC r              69    85.51%    85.51%    85.51%
+  VOC velar          13    84.62%    84.62%    84.62%
+  ck+e               43    97.67%    97.67%    97.67%
+  ck+ech              2   100.00%   100.00%   100.00%
+  ck+em              26   100.00%   100.00%   100.00%
+  ck+i                6     0.00%     0.00%     0.00%
+  ck+ové              8   100.00%   100.00%   100.00%
+  ck+u               19   100.00%   100.00%   100.00%
+  ck+ách             12   100.00%   100.00%   100.00%
+  ck+í (suffix)    1007    99.50%    99.01%    99.01%
+  ck+ích             15     0.00%     0.00%     0.00%
+  ck+ě                1   100.00%   100.00%   100.00%
+  sk+e              146   100.00%   100.00%   100.00%
+  sk+ech              1   100.00%   100.00%   100.00%
+  sk+em             113   100.00%   100.00%   100.00%
+  sk+i               16     0.00%     0.00%     0.00%
+  sk+ové             16   100.00%   100.00%   100.00%
+  sk+u               97   100.00%   100.00%   100.00%
+  sk+ách             32   100.00%   100.00%   100.00%
+  sk+í (suffix)    1625    99.82%    99.32%    99.32%
+  sk+ích            103     0.00%     0.00%     0.00%
+  sk+ě                1     0.00%     0.00%     0.00%
+  st+e               12   100.00%   100.00%   100.00%
+  st+ech            415   100.00%   100.00%   100.00%
+  st+em              96   100.00%   100.00%   100.00%
+  st+i              262     1.15%     1.15%     1.15%
+  st+ové             13   100.00%   100.00%   100.00%
+  st+u               82   100.00%   100.00%   100.00%
+  st+é              313   100.00%   100.00%   100.00%
+  st+í               39   100.00%   100.00%   100.00%
+  st+ě               69    72.46%    72.46%    72.46%
+  zd+e                1   100.00%   100.00%   100.00%
+  zd+ech             15   100.00%   100.00%   100.00%
+  zd+em              14   100.00%   100.00%   100.00%
+  zd+i                1     0.00%     0.00%     0.00%
+  zd+ové              2   100.00%   100.00%   100.00%
+  zd+u               13   100.00%   100.00%   100.00%
+  zd+ě               34    64.71%    64.71%    64.71%
+
+Mismatch classes (rows failing boolean or IPA):
+
+  [mixed-stem-alternates] n = 4491: the policy left the target prespecified, but the form alternates, and the stem also takes a competing N allomorph (in another cell, or beside this form: park has v parku but parcích): choosing an N allomorph does not mark a non-alternating root
+        2670  velar                  LOC.PL      P
+         790  coronal_inferred       NOM.PL      P
+         462  coronal_inferred       LOC.SG      P
+         436  velar                  NOM.PL      P
+          53  r                      NOM.PL      P
+          38  velar                  LOC.SG      P
+    Afričan → Afričani (NOM.PL -i): UR /afrɪt͡ʃanPAL1ɪ/ predicted [afrɪt͡ʃanɪ] attested [afrɪt͡ʃaɲɪ]
+    Afroameričan → Afroameričani (NOM.PL -i): UR /afroamɛrɪt͡ʃanPAL1ɪ/ predicted [afroamɛrɪt͡ʃanɪ] attested [afroamɛrɪt͡ʃaɲɪ]
+    Akkaďan → Akkaďani (NOM.PL -i): UR /akaɟanPAL1ɪ/ predicted [akaɟanɪ] attested [akaɟaɲɪ]
+    Alabaman → Alabamani (NOM.PL -i): UR /alabamanPAL1ɪ/ predicted [alabamanɪ] attested [alabamaɲɪ]
+    Aljašan → Aljašani (NOM.PL -i): UR /aljaʃanPAL1ɪ/ predicted [aljaʃanɪ] attested [aljaʃaɲɪ]
+    Aljaščan → Aljaščani (NOM.PL -i): UR /aljaʃt͡ʃanPAL1ɪ/ predicted [aljaʃt͡ʃanɪ] attested [aljaʃt͡ʃaɲɪ]
+
+  [unexplained-form] n = 20: P ending without the change in the data (the data layer's 'unexplained' forms, mostly cs.wiktionary table errors); the rules palatalize
+          12  velar (adj)            NOM.PL.M.AN P
+           4  r (adj)                NOM.PL.M.AN P
+           1  r                      VOC.SG      P
+           1  velar                  DAT.SG      P
+           1  velar                  LOC.SG      P
+           1  coronal_inferred       LOC.SG      P
+    banskobystrický → banskobystrickí (NOM.PL.M.AN -í): UR /banskobɪstrɪTSḰPAL1iː/ predicted [banskobɪstrɪt͡ʃciː] attested [banskobɪstrɪt͡skiː]
+    bezkorý → bezkorí (NOM.PL.M.AN -í): UR /bɛskoRPAL1iː/ predicted [bɛskor̝iː] attested [bɛskoriː]
+    búchr → búchre (VOC.SG -e): UR /buːxRPAL1ɛ/ predicted [buːxr̝ɛ] attested [buːxrɛ]
+    bělokrký → bělokrkí (NOM.PL.M.AN -í): UR /bjɛlokr̩KPAL1iː/ predicted [bjɛlokr̩t͡siː] attested [bjɛlokr̩kiː]
+    captcha → captchě (DAT.SG -ě): UR /t͡saptXPAL1ɛ/ predicted [t͡saptʃɛ] attested [t͡saptxɛ]
+    captcha → captchě (LOC.SG -ě): UR /t͡saptXPAL1ɛ/ predicted [t͡saptʃɛ] attested [t͡saptxɛ]
+
+  [cluster-outcome] n = 13: boolean right, IPA wrong at an sk/ck/st/zd cluster (sc vs šť)
+          13  velar (adj)            NOM.PL.M.AN P
+    badatelský → badatelscí (NOM.PL.M.AN -í): UR /badatɛlSḰPAL1iː/ predicted [badatɛlʃciː] attested [badatɛlst͡siː]
+    chymický → chymiccí (NOM.PL.M.AN -í): UR /xɪmɪTSḰPAL1iː/ predicted [xɪmɪt͡ʃciː] attested [xɪmɪt͡st͡siː]
+    doktrinářský → doktrinářscí (NOM.PL.M.AN -í): UR /doktrɪnaːr̝SḰPAL1iː/ predicted [doktrɪnaːr̝ʃciː] attested [doktrɪnaːr̝̊st͡siː]
+    dosovský → dosovscí (NOM.PL.M.AN -í): UR /dosofSḰPAL1iː/ predicted [dosofʃciː] attested [dosofst͡siː]
+    epistemický → epistemiccí (NOM.PL.M.AN -í): UR /ɛpɪstɛmɪTSḰPAL1iː/ predicted [ɛpɪstɛmɪt͡ʃciː] attested [ɛpɪstɛmɪt͡st͡siː]
+    epistemologický → epistemologiccí (NOM.PL.M.AN -í): UR /ɛpɪstɛmoloɡɪTSḰPAL1iː/ predicted [ɛpɪstɛmoloɡɪt͡ʃciː] attested [ɛpɪstɛmoloɡɪt͡st͡siː]

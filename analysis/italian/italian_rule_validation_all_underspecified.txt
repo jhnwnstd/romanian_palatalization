@@ -1,0 +1,70 @@
+Analysis: italian-palatalization (all_underspecified)
+Target-stem rows validated: 7,338
+BOOLEAN mutation match: 6,258/7,338  (85.28%)
+SURFACE-IPA match: 6,258/7,338  (85.28%)
+
+========================================================================
+Per (stem_final × opportunity)  bool match / mismatch / rate
+========================================================================
+  ('c', 'e'   )      3183 /     76    97.67%
+  ('c', 'i'   ) !    2764 /    779    78.01%
+  ('g', 'e'   )       183 /      3    98.39%
+  ('g', 'i'   ) !     128 /    222    36.57%
+
+========================================================================
+Cluster-specific verification
+========================================================================
+  +e -fago adjective    17 /     0   100.00%
+  +e -fago animate     4 /     0   100.00%
+  +e -fago person     5 /     0   100.00%
+  +e -fago thing     6 /     0   100.00%
+  +e -logo adjective     3 /     0   100.00%
+  +e -logo thing     1 /     0   100.00%
+  +e nde:occhio     0 /    76     0.00%
+  +e root, stress unknown     1 /     0   100.00%
+  +e root, velar not post-tonic  1213 /     3    99.75%
+  +e root, velar post-tonic   642 /     0   100.00%
+  +e suffix -iaco     9 /     0   100.00%
+  +e suffix -ico  1465 /     0   100.00%
+  +i -fago adjective    17 /     1    94.44%
+  +i -fago animate     8 /     0   100.00%
+  +i -fago person    11 /     2    84.62%
+  +i -fago thing    15 /     1    93.75%
+  +i -fago unknown     1 /     1    50.00%
+  +i -logo adjective     0 /     3     0.00%
+  +i -logo person    66 /     5    92.96%
+  +i -logo thing     0 /     9     0.00%
+  +i -logo unknown     0 /     1     0.00%
+  +i -urgo person     5 /     9    35.71%
+  +i nde:occhio     0 /   131     0.00%
+  +i nde:psiche     0 /     3     0.00%
+  +i root, stress unknown     0 /     2     0.00%
+  +i root, velar not post-tonic  1132 /    70    94.18%
+  +i root, velar post-tonic    48 /   763     5.92%
+  +i suffix -iaco    13 /     0   100.00%
+  +i suffix -ico  1576 /     0   100.00%
+
+========================================================================
+Refined mismatch breakdown (NORM_* = data-side transcription noise; RULE_FAILURE = residual)
+========================================================================
+
+  [RULE_FAILURE]  n = 1080
+    abaco              → abachi              (c, opp=i)  rules→T, data→F
+      predicted='abat͡ʃi'              attested='ˈa.ba.ki'             d=1.8
+    abbacchio          → abbacchi            (c, opp=i)  rules→T, data→F
+      predicted='abːat͡ʃːi'            attested='aˈbːakːi'             d=1.6
+    abbadengo          → abbadenghi          (g, opp=i)  rules→T, data→F
+      predicted='abːadend͡ʒi'          attested='abːaˈden.ɡi'          d=1.6
+    abbadengo          → abbadenghi          (g, opp=i)  rules→T, data→F
+      predicted='abːadend͡ʒi'          attested='abːaˈden.ɡi'          d=1.6
+    abbiocco           → abbiocchi           (c, opp=i)  rules→T, data→F
+      predicted='abːjɔt͡ʃːi'           attested='aˈbːjɔkːi'            d=1.6
+    abelmosco          → abelmoschi          (c, opp=i)  rules→T, data→F
+      predicted='abelmɔʃːi'            attested='a.belˈmɔs.ki'         d=3.4
+    ... and 1074 more
+
+========================================================================
+Distance-to-working histogram
+========================================================================
+  1.0–2.0 (a few features off)        n=  839  ( 77.7%)  ex: abbacchio
+  2.0–4.0 (structural gap)            n=  241  ( 22.3%)  ex: antropopiteco

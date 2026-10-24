@@ -1,0 +1,155 @@
+Romanian TP parity: legacy R tables vs the shared core (design §7, §8)
+============================================================================
+
+Inputs (SHA-256):
+  analysis/romanian_tp_summary_downsampled.csv  aa9e7cc8ab8f1f32eecf4125044249b411e0983113a1852a0fb20d05c4257d6f
+  analysis/romanian_tp_summary_full.csv  0f33d09427db3d56113ae9b8d1ae21eec3260d6f9ef18ec8b53d41907abc613d
+  data/romanian_lexicon_with_freq.csv  010119db7d07af1958bbb2836b411399bf35d44b391410816557fe1cf1230108
+
+1. Legacy rows recomputed with lexpipe.tp.tp_row
+----------------------------------------------------------------------------
+  analysis/romanian_tp_summary_full.csv: 37/37 numeric rows identical
+  analysis/romanian_tp_summary_downsampled.csv: 37/37 numeric rows identical
+
+  Definitions reproduced: tp_in_domain rows without a cluster grouped
+  by stem_final x opportunity; 'WITH NDEB' and NDE rows from the
+  opportunity_tp domain; cluster rows by st/sc/ct; top-1000 by the
+  lemma's maximum frequency (core top_n), one row per lemma;
+  derivational rows with the R detector on the whole derived list.
+
+2. Harmonized cells next to the legacy rows (E0, tau = dictionary)
+----------------------------------------------------------------------------
+  harmonized: N = N_trigger (roots attested before the trigger),
+  e = palatalize-rule exceptions. 'all' keeps every outcome-blind
+  flag; 'core' removes them (suffix target, palatal context,
+  suppletive stem, -ică suppletion). Structural NDE classes are
+  separate rows in both.
+
+  legacy row                     legacy N/e      all N/e     core N/e
+  <c> + <-i> plural                   473/0      1236/49        472/0
+  <c> + <-e> plural                   434/0      985/131        431/0
+  <c> + <-i, -e> plural               907/0     2221/180        903/0
+  <g> + <-i> plural                   380/0        380/0        380/0
+  <g> + <-e> plural                   273/0        273/0        273/0
+  <g> + <-i, -e> plural               653/0        653/0        653/0
+  <t> + <-i> plural                  1522/0     1648/118       1533/4
+  <t> + <-e> plural               2049/2048    2124/2123    2116/2115
+  <t> + <-i, -e> plural           3571/2048    3772/2241    3649/2119
+  <d> + <-i> plural                   261/0        266/5        262/1
+  <d> + <-e> plural                 608/608      613/613      609/609
+  <d> + <-i, -e> plural             869/608      879/618      871/610
+  <s> + <-i> plural                   138/0        984/1        180/1
+  <s> + <-e> plural                 493/493      509/496      506/493
+  <s> + <-i, -e> plural             631/493     1493/497      686/494
+  <z> + <-i> plural                    14/4      126/116      126/116
+  <z> + <-e> plural                 862/862      864/864      864/864
+  <z> + <-i, -e> plural             876/866      990/980      990/980
+
+3. Root-by-root reconciliation (legacy row → harmonized 'all' cell)
+----------------------------------------------------------------------------
+  <c> + <-i>: legacy N=473 e=0 → harmonized N=1236 e=49 (balances)
+      +     1 roots (    0 non-alternating)  legacy -ică suppletion / lost digraph
+      +    49 roots (   49 non-alternating)  legacy already-palatal check (non-palatalizing items only)
+      +   713 roots (    0 non-alternating)  suffix-internal target (legacy target_is_suffix)
+  <c> + <-e>: legacy N=434 e=0 → harmonized N=985 e=131 (balances)
+      +    92 roots (   92 non-alternating)  legacy -ică suppletion / lost digraph
+      +    39 roots (   39 non-alternating)  legacy already-palatal check (non-palatalizing items only)
+      +   420 roots (    0 non-alternating)  suffix-internal target (legacy target_is_suffix)
+  <g> + <-i>: legacy N=380 e=0 → harmonized N=380 e=0 (balances)
+  <g> + <-e>: legacy N=273 e=0 → harmonized N=273 e=0 (balances)
+  <t> + <-i>: legacy N=1522 e=0 → harmonized N=1648 e=118 (balances)
+      +     9 roots (    0 non-alternating)  cluster (legacy reports st/sc/ct in cluster rows)
+      +   112 roots (  112 non-alternating)  legacy NDE class (assigned to non-palatalizing items only)
+      +     4 roots (    4 non-alternating)  legacy already-palatal check (non-palatalizing items only)
+      +     1 roots (    1 non-alternating)  legacy foreign-plural rule (non-palatalizing items only)
+      +     1 roots (    1 non-alternating)  legacy suppletion rule (non-palatalizing items only)
+      -     1 roots (    0 non-alternating)  harmonized structural NDE (coronal_frontstem)
+  <t> + <-e>: legacy N=2049 e=2048 → harmonized N=2124 e=2123 (balances)
+      +    61 roots (   61 non-alternating)  cluster (legacy reports st/sc/ct in cluster rows)
+      +     2 roots (    2 non-alternating)  legacy NDE class (assigned to non-palatalizing items only)
+      +     6 roots (    6 non-alternating)  legacy already-palatal check (non-palatalizing items only)
+      +     6 roots (    6 non-alternating)  legacy suppletion rule (non-palatalizing items only)
+  <d> + <-i>: legacy N=261 e=0 → harmonized N=266 e=5 (balances)
+      +     3 roots (    3 non-alternating)  legacy NDE class (assigned to non-palatalizing items only)
+      +     1 roots (    1 non-alternating)  legacy already-palatal check (non-palatalizing items only)
+      +     1 roots (    1 non-alternating)  legacy foreign-plural rule (non-palatalizing items only)
+  <d> + <-e>: legacy N=608 e=608 → harmonized N=613 e=613 (balances)
+      +     4 roots (    4 non-alternating)  legacy already-palatal check (non-palatalizing items only)
+      +     1 roots (    1 non-alternating)  legacy suppletion rule (non-palatalizing items only)
+  <s> + <-i>: legacy N=138 e=0 → harmonized N=984 e=1 (balances)
+      +   845 roots (    0 non-alternating)  cluster (legacy reports st/sc/ct in cluster rows)
+      +     1 roots (    1 non-alternating)  legacy foreign-plural rule (non-palatalizing items only)
+  <s> + <-e>: legacy N=493 e=493 → harmonized N=509 e=496 (balances)
+      +    13 roots (    0 non-alternating)  cluster (legacy reports st/sc/ct in cluster rows)
+      +     2 roots (    2 non-alternating)  legacy already-palatal check (non-palatalizing items only)
+      +     1 roots (    1 non-alternating)  legacy suppletion rule (non-palatalizing items only)
+  <z> + <-i>: legacy N=14 e=4 → harmonized N=126 e=116 (balances)
+      +   112 roots (  112 non-alternating)  legacy foreign-plural rule (non-palatalizing items only)
+  <z> + <-e>: legacy N=862 e=862 → harmonized N=864 e=864 (balances)
+      +     2 roots (    2 non-alternating)  legacy suppletion rule (non-palatalizing items only)
+
+  Reasons marked 'non-palatalizing items only' are the outcome-
+  conditioned exclusions of the legacy code (critique P0 #1): the
+  harmonized cells keep those roots, as exceptions.
+
+4. Top-1000: legacy frame vs harmonized frames (E0, dictionary, 'all')
+----------------------------------------------------------------------------
+  legacy frame: the 1,000 most frequent nouns with an -i/-e plural and
+  a target final (R build_downsampled_lexicon); R24 frame: the 1,000
+  most frequent nouns of any final segment and plural type.
+  cell           legacy row  harm. in legacy frame   harm. in R24 frame
+  <c> + <-i>          28/0               82/4                 17/0    
+  <c> + <-e>          14/0               33/1                  6/0    
+  <g> + <-i>          17/0               17/0                  2/0    
+  <g> + <-e>           3/0                3/0                  0/0    
+  <t> + <-i>         207/0              213/4                 72/1    
+  <t> + <-e>       229/229              257/257               84/84   
+  <d> + <-i>          23/0               24/1                  7/0    
+  <d> + <-e>         36/36               36/36                10/10   
+  <s> + <-i>          11/0               47/0                 14/0    
+  <s> + <-e>         44/44               46/45                21/21   
+  <z> + <-i>           2/1               12/11                 1/1    
+  <z> + <-e>         48/48               49/49                12/12   
+
+5. NDE rows: legacy classes vs harmonized structural classes
+----------------------------------------------------------------------------
+  legacy gimpe type             N=3096 (mutated 0)
+  legacy ochi-ochi type         N=30 (mutated 0)
+  legacy paduche-paduchi type   N=137 (mutated 0)
+  harmonized nde:ochi               roots=52
+  harmonized nde:paduchi            roots=31
+  harmonized nde:frontstem          roots=1741
+  harmonized nde:coronal_frontstem  roots=1043
+  Legacy NDE is assigned only to non-mutating rows and mixes coronal
+  patterns (-iște, invariant -i loans) with the dorsal ochi/păduche
+  types; the structural classes are decided by the lemma alone.
+
+6. Verb evidence (E1): audit verdicts vs this module's cell reading
+----------------------------------------------------------------------------
+  audit ALTERNATES      this module ALTERNATES       136
+  audit ALTERNATES      this module NO-READING         1
+  audit ALTERNATES      this module TRIGGER-ABSENT    35
+  audit NO-PARADIGM     this module NO-READING        41
+  audit TRIGGER-ABSENT  this module ALTERNATES         1
+  audit TRIGGER-ABSENT  this module NO-ALTERNATION    16
+  audit TRIGGER-ABSENT  this module NO-READING        10
+  audit TRIGGER-ABSENT  this module TRIGGER-ABSENT   182
+  Differences: (a) the audit's detector takes the z of the -ez-
+  augment for the palatal reflex of d (arendezi, legendezi:
+  ALTERNATES); here d + -ez- is a coronal before /e/, not a trigger;
+  (b) the audit counts any cell with the reflex (amănunțești,
+  îmbogățești: ț before the -esc- augment), here only cells whose
+  vowel triggers the class's rule count, so those are evidence of the
+  -e cell; (c) the audit reads every augmented cell as TRIGGER-ABSENT,
+  here a dorsal before -ez- (blochezi) meets /e/ unpalatalized:
+  NO-ALTERNATION; (d) NO-READING: the verb's stem does not end in the
+  noun's target (picur-a, strunj-i, micșor-a), so no cell is read.
+
+7. Doublets (R19)
+----------------------------------------------------------------------------
+  noun lemmas with more than one lexicon row: 4
+  noun lemmas whose rows list different plurals: 0
+  Each root keeps the plural of its priority row (a row with a
+  plural first), so with no conflicts every root has at most one
+  plural and the three doublet codings give identical E0 rows.
+  Doublets arise only from E1/E2 evidence (verb cells, derivatives).

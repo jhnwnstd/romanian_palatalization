@@ -1,0 +1,16 @@
+noun,verb,stem_final,opp,ds,verdict,augment,conjugare,pres_2sg,pres_3sg,subj_3sg
+atac,ataca,c,uri,-a,ALTERNATES,False,,ataci,atacă,atace
+bloc,bloca,c,uri,-a,TRIGGER-ABSENT,True,II,blochezi,blochează,blocheze
+mijloc,mijloci,c,uri,-i,ALTERNATES,True,VI,mijlocești,mijlocește,mijlocească
+plată,plăti,t,i,-i,TRIGGER-ABSENT,True,VI,plătești,plătește,plătească
+legendă,legenda,d,e,-a,ALTERNATES,True,II,legendezi,legendează,legendeze
+grad,grada,d,e,-a,ALTERNATES,True,II,gradezi,gradează,gradeze
+pic,picura,c,uri,-a,TRIGGER-ABSENT,False,,picuri,picură,picure
+bogat,îmbogăți,t,i,-i,ALTERNATES,True,VI,îmbogățești|mbogățești,îmbogățește,îmbogățească
+risc,risca,s,uri,-a,TRIGGER-ABSENT,False,,riști,riscă,riște
+ipotecă,ipoteca,c,i,-a,TRIGGER-ABSENT,True,II,ipotechezi,ipotechează,ipotecheze
+foc,înfoca,c,uri,-a,ALTERNATES,False,,înfoci,înfocă,înfoce
+vad,vădi,d,uri,-i,TRIGGER-ABSENT,True,VI,vădești,vădește,vădească
+oglindă,oglindi,d,i,-i,TRIGGER-ABSENT,True,VI,oglindești,oglindește,oglindească
+cot,coti,t,e,-i,TRIGGER-ABSENT,True,VI,cotești,cotește,cotească
+genunchi,îngenunchea,c,none,-a,NO-PARADIGM,None,II,&mdash;,,

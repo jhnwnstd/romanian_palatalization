@@ -1,0 +1,14 @@
+name	path	bytes	sha256	recorded	etag	last_modified
+cnk_syn2015_lemma	data/sources/cnk/syn2015_lemma_utf8.zip	1273063	4536f9ac59b373f15eb002ae7befe9a4a6700a9c5b5c2b8aa80bbebd1c35fa4f	2026-10-23		
+cnk_syn2015_word	data/sources/cnk/syn2015_word_utf8.zip	3089732	e785d24bdbcc11ff18875a650fb3c323ab67c071acd339efc29da39e42cb8411	2026-10-23		
+czetyl	data/sources/czetyl/czetyl.tsv	191934	88d4ccba852f86ecf9a6b0b5497eb71d66ba38596e861de62f8499cb666438bb	2026-10-23		
+derinet	data/sources/derinet/derinet-2-3.tsv	439063096	02ad0c110b8f50a22177f7c3c6a7282e6602aa6eff7acaaa7f424ab0f01b70c9	2026-10-23		
+kaikki_cs_extract	data/sources/kaikki/cs-extract.jsonl.gz	39633204	5965a132c9cfc58c715115ac1a7832f78d7166747e3d1c602804fb862248417e	2026-10-23	"6ad8a145-25cc134"	Wed, 21 Oct 2026 11:25:57 GMT
+kaikki_it_extract	data/sources/kaikki/it-extract.jsonl.gz	43849715	0f93703594850bc8ec1cd764b3b193e0a153a83e24c809938f7183777d406314	2026-10-23	"6ad8a1a0-29d17f3"	Wed, 21 Oct 2026 11:27:28 GMT
+kaikki_raw	data/sources/kaikki/raw-wiktextract-data.jsonl.gz	3082192147	244dcdc56868d81dc60e3820657780c06fac2729a90e2c5ffbfa13e6f9ecad1d	2026-10-23	"6ad8a097-b7b68513"	Wed, 21 Oct 2026 11:23:03 GMT
+kaikki_raw_cs	data/sources/kaikki/en_wiktionary_cs.jsonl	223701337	674142063ba8dc24be953d56522b08ae5bffd86cbe7f15e7219c44c0fb66c225	2026-10-23		
+kaikki_raw_it	data/sources/kaikki/en_wiktionary_it.jsonl	665207473	ae7de484ba53e3a6a472b9672a69d7e7fdc96cf55b68c5399a5b338adb387f0b	2026-10-23		
+leipzig_ces_news_2024_1M	data/sources/leipzig/ces_news_2024_1M.tar.gz	214278386	9626d10984b02dcfc9d995eb438787988e834cf5f7d4adca85932b6fadb9f50a	2026-10-23		
+leipzig_ita_news_2024_1M	data/sources/leipzig/ita_news_2024_1M.tar.gz	261325052	90ed9f839c50de9a58a7f1772516891d6721c92f4b863560bd26a480d7717e30	2026-10-23		
+morfflex	data/sources/morfflex/czech-morfflex-2.1.tsv.xz	250486476	7a908d3b272ff069b69a28121edaabf2ab0cf3d915289e8d23f546783094b38e	2026-10-23		
+morphit	data/sources/morphit/morph-it_048_utf8.txt	19068565	7375216351ee59cee4326b455503f3a6c4e9542cd63ecb86ff5cd58ca5c8e800	2026-10-23		

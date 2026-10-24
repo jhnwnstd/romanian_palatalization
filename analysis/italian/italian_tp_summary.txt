@@ -1,0 +1,419 @@
+Italian Tolerance Principle summary (design R16-R19, R24)
+========================================================================
+
+theta = N/ln N; a rule is productive iff e <= theta. N = roots
+attested before the trigger at tau; e_pal = roots that keep the
+velar (exceptions to palatalize), e_ret = roots that palatalize
+(exceptions to retain). Unit: root types (R4). E0 = nominal
+inflection, E1 = + verb cells, E2 = + derivatives (R15).
+Roots: 77,241; E0 realizations 89,587, E1 verb cells on noun roots 1,948, E2 derivatives 777; verb units 1,260.
+All rows: italian_tp_long.csv; learners: italian_learners.csv.
+
+0. Where the dictionary's dorsal -i plurals come from (R11)
+------------------------------------------------------------------------
+ dorsal -i forms listed (tau = dictionary): 7,137
+  Module:it-common defaults: 6,890 of 7,137 (96.5%); typed by an editor: 247 of 7,137 (3.5%)
+  defaults that follow the module's rule (-ico/-aco/-ologo palatal, other -co/-go velar): 6,890 of 6,890 (100.0%)
+  defaults whose competing spelling (amichi for amici), not a form of another word, has a lowercase token: 10 of 6,890 (0.1%); more tokens than the listed form: 4
+ dorsal -i forms attested (tau >= 1 token): 1,517
+  Module:it-common defaults: 1,449 of 1,517 (95.5%); typed by an editor: 68 of 1,517 (4.5%)
+  defaults that follow the module's rule (-ico/-aco/-ologo palatal, other -co/-go velar): 1,449 of 1,449 (100.0%)
+  defaults whose competing spelling (amichi for amici), not a form of another word, has a lowercase token: 6 of 1,449 (0.4%); more tokens than the listed form: 0
+ At tau = dictionary the rows mostly restate the module's spelling
+ rule (Module:it-common-predicted); the rows at tau >= 1 rest on
+ attestation, and tau = dictionary_explicit counts typed plurals
+ only (a sample biased toward the module's exceptions).
+
+1. Cross-language rule family (R17), E0, subset all, dominant coding
+------------------------------------------------------------------------
+ tau = dictionary
+  R17a dorsal/_[+front V] (-i/-e)              N_target  7732  N  7537  e_pal  7169  e_ret  5584  theta  844.2  -> neither productive
+  R17a, doublet_exception coding               N_target  7732  N  7537  e_pal  7175  e_ret  5587  theta  844.2  -> neither productive
+  R17b dorsal/_[+high,+front] (-i)             N_target  7732  N  6612  e_pal  1061  e_ret  5571  theta  751.7  -> neither productive
+  R17b -i, nouns only                          N_target  2775  N  1481  e_pal   739  e_ret   758  theta  202.9  -> neither productive
+  R17b -i, adjectives only                     N_target  5654  N  5613  e_pal   425  e_ret  5194  theta  650.2  -> palatalize productive (fragility 226)
+  R17b -i, core (no -ico, no suffixoid)        N_target  5489  N  4447  e_pal  1025  e_ret  3436  theta  529.4  -> neither productive
+  R17b non-trigger -e (feminine plurals)       N_target  7732  N  6566  e_pal  6553  e_ret    17  theta  747.0  -> retain productive (fragility 731)
+  R17c coronal/_[+high,+front] (-i)            N_target 21161  N 15935  e_pal 15935  e_ret     0  theta 1646.8  -> retain productive (fragility 1647)
+  R17c non-trigger -e                          N_target 21161  N 10063  e_pal 10063  e_ret     0  theta 1091.8  -> retain productive (fragility 1092)
+ tau = ge1
+  R17a dorsal/_[+front V] (-i/-e)              N_target  7732  N  1842  e_pal  1494  e_ret   980  theta  245.0  -> neither productive
+  R17a, doublet_exception coding               N_target  7732  N  1842  e_pal  1494  e_ret   980  theta  245.0  -> neither productive
+  R17b dorsal/_[+high,+front] (-i)             N_target  7732  N  1302  e_pal   322  e_ret   980  theta  181.5  -> neither productive
+  R17b -i, nouns only                          N_target  2775  N   520  e_pal   264  e_ret   256  theta   83.1  -> neither productive
+  R17b -i, adjectives only                     N_target  5654  N   993  e_pal   105  e_ret   888  theta  143.9  -> palatalize productive (fragility 39)
+  R17b -i, core (no -ico, no suffixoid)        N_target  5489  N   747  e_pal   308  e_ret   439  theta  112.9  -> neither productive
+  R17b non-trigger -e (feminine plurals)       N_target  7732  N  1248  e_pal  1248  e_ret     0  theta  175.1  -> retain productive (fragility 176)
+  R17c coronal/_[+high,+front] (-i)            N_target 21161  N  5601  e_pal  5601  e_ret     0  theta  649.0  -> retain productive (fragility 649)
+  R17c non-trigger -e                          N_target 21161  N  3424  e_pal  3424  e_ret     0  theta  420.7  -> retain productive (fragility 421)
+ tau = ge0.5pm
+  R17a dorsal/_[+front V] (-i/-e)              N_target  7732  N   673  e_pal   573  e_ret   305  theta  103.4  -> neither productive
+  R17a, doublet_exception coding               N_target  7732  N   673  e_pal   573  e_ret   305  theta  103.4  -> neither productive
+  R17b dorsal/_[+high,+front] (-i)             N_target  7732  N   479  e_pal   174  e_ret   305  theta   77.6  -> neither productive
+  R17b -i, nouns only                          N_target  2775  N   261  e_pal   151  e_ret   110  theta   46.9  -> neither productive
+  R17b -i, adjectives only                     N_target  5654  N   330  e_pal    51  e_ret   279  theta   56.9  -> palatalize productive (fragility 6)
+  R17b -i, core (no -ico, no suffixoid)        N_target  5489  N   287  e_pal   167  e_ret   120  theta   50.7  -> neither productive
+  R17b non-trigger -e (feminine plurals)       N_target  7732  N   429  e_pal   429  e_ret     0  theta   70.8  -> retain productive (fragility 71)
+  R17c coronal/_[+high,+front] (-i)            N_target 21161  N  2574  e_pal  2574  e_ret     0  theta  327.8  -> retain productive (fragility 328)
+  R17c non-trigger -e                          N_target 21161  N  1461  e_pal  1461  e_ret     0  theta  200.5  -> retain productive (fragility 201)
+ tau = ge2pm
+  R17a dorsal/_[+front V] (-i/-e)              N_target  7732  N   324  e_pal   273  e_ret   135  theta   56.0  -> neither productive
+  R17a, doublet_exception coding               N_target  7732  N   324  e_pal   273  e_ret   135  theta   56.0  -> neither productive
+  R17b dorsal/_[+high,+front] (-i)             N_target  7732  N   231  e_pal    96  e_ret   135  theta   42.4  -> neither productive
+  R17b -i, nouns only                          N_target  2775  N   145  e_pal    85  e_ret    60  theta   29.1  -> neither productive
+  R17b -i, adjectives only                     N_target  5654  N   154  e_pal    29  e_ret   125  theta   30.6  -> palatalize productive (fragility 2)
+  R17b -i, core (no -ico, no suffixoid)        N_target  5489  N   146  e_pal    93  e_ret    53  theta   29.3  -> neither productive
+  R17b non-trigger -e (feminine plurals)       N_target  7732  N   193  e_pal   193  e_ret     0  theta   36.7  -> retain productive (fragility 37)
+  R17c coronal/_[+high,+front] (-i)            N_target 21161  N  1365  e_pal  1365  e_ret     0  theta  189.1  -> retain productive (fragility 190)
+  R17c non-trigger -e                          N_target 21161  N   747  e_pal   747  e_ret     0  theta  112.9  -> retain productive (fragility 113)
+
+2. Evidence sets and doublet codings (R17b -i, subset all)
+------------------------------------------------------------------------
+  dictionary E0 dominant                       N_target  7732  N  6612  e_pal  1061  e_ret  5571  theta  751.7  -> neither productive
+  dictionary E0 doublet_exception              N_target  7732  N  6612  e_pal  1067  e_ret  5574  theta  751.7  -> neither productive
+  dictionary E0 doublet_excluded               N_target  7703  N  6583  e_pal  1038  e_ret  5545  theta  748.7  -> neither productive
+  dictionary E1 dominant                       N_target  7732  N  6723  e_pal  1212  e_ret  5587  theta  762.8  -> neither productive
+  dictionary E1 doublet_exception              N_target  7732  N  6723  e_pal  1217  e_ret  5590  theta  762.8  -> neither productive
+  dictionary E1 doublet_excluded               N_target  7698  N  6689  e_pal  1183  e_ret  5556  theta  759.4  -> neither productive
+  dictionary E2 dominant                       N_target  7732  N  6756  e_pal  1241  e_ret  5606  theta  766.1  -> neither productive
+  dictionary E2 doublet_exception              N_target  7732  N  6756  e_pal  1246  e_ret  5609  theta  766.1  -> neither productive
+  dictionary E2 doublet_excluded               N_target  7698  N  6722  e_pal  1212  e_ret  5575  theta  762.7  -> neither productive
+  dictionary E2_all dominant (+ borrowed, inherited) N_target  7732  N  6756  e_pal  1241  e_ret  5609  theta  766.1  -> neither productive
+  ge1 E0 dominant                              N_target  7732  N  1302  e_pal   322  e_ret   980  theta  181.5  -> neither productive
+  ge1 E0 doublet_exception                     N_target  7732  N  1302  e_pal   322  e_ret   980  theta  181.5  -> neither productive
+  ge1 E0 doublet_excluded                      N_target  7732  N  1302  e_pal   322  e_ret   980  theta  181.5  -> neither productive
+  ge1 E1 dominant                              N_target  7732  N  1352  e_pal   378  e_ret   987  theta  187.5  -> neither productive
+  ge1 E1 doublet_exception                     N_target  7732  N  1352  e_pal   378  e_ret   987  theta  187.5  -> neither productive
+  ge1 E1 doublet_excluded                      N_target  7731  N  1351  e_pal   377  e_ret   986  theta  187.4  -> neither productive
+  ge1 E2 dominant                              N_target  7732  N  1373  e_pal   393  e_ret   998  theta  190.0  -> neither productive
+  ge1 E2 doublet_exception                     N_target  7732  N  1373  e_pal   393  e_ret   998  theta  190.0  -> neither productive
+  ge1 E2 doublet_excluded                      N_target  7731  N  1372  e_pal   392  e_ret   997  theta  189.9  -> neither productive
+  ge1 E2_all dominant (+ borrowed, inherited)  N_target  7732  N  1376  e_pal   395  e_ret  1002  theta  190.4  -> neither productive
+
+3. V sweep (R24 frame: V most frequent noun roots; R17b -i)
+------------------------------------------------------------------------
+  lemma V=500 dictionary nouns                 N_target    24  N    14  e_pal     8  e_ret     6  theta    5.3  -> neither productive
+  lemma V=500 ge1 nouns                        N_target    24  N    13  e_pal     7  e_ret     6  theta    5.1  -> neither productive
+  lemma V=1000 dictionary nouns                N_target    47  N    28  e_pal    16  e_ret    12  theta    8.4  -> neither productive
+  lemma V=1000 ge1 nouns                       N_target    47  N    27  e_pal    15  e_ret    12  theta    8.2  -> neither productive
+  lemma V=2000 dictionary nouns                N_target   105  N    58  e_pal    39  e_ret    19  theta   14.3  -> neither productive
+  lemma V=2000 ge1 nouns                       N_target   105  N    55  e_pal    36  e_ret    19  theta   13.7  -> neither productive
+  lemma V=5000 dictionary nouns                N_target   285  N   160  e_pal   101  e_ret    59  theta   31.5  -> neither productive
+  lemma V=5000 ge1 nouns                       N_target   285  N   149  e_pal    92  e_ret    57  theta   29.8  -> neither productive
+  paradigm V=500 dictionary nouns              N_target    26  N    18  e_pal     9  e_ret     9  theta    6.2  -> neither productive
+  paradigm V=500 ge1 nouns                     N_target    26  N    17  e_pal     8  e_ret     9  theta    6.0  -> neither productive
+  paradigm V=1000 dictionary nouns             N_target    48  N    30  e_pal    15  e_ret    15  theta    8.8  -> neither productive
+  paradigm V=1000 ge1 nouns                    N_target    48  N    29  e_pal    14  e_ret    15  theta    8.6  -> neither productive
+  paradigm V=2000 dictionary nouns             N_target   112  N    67  e_pal    39  e_ret    28  theta   15.9  -> neither productive
+  paradigm V=2000 ge1 nouns                    N_target   112  N    66  e_pal    38  e_ret    28  theta   15.8  -> neither productive
+  paradigm V=5000 dictionary nouns             N_target   306  N   181  e_pal   104  e_ret    77  theta   34.8  -> neither productive
+  paradigm V=5000 ge1 nouns                    N_target   306  N   170  e_pal    95  e_ret    75  theta   33.1  -> neither productive
+
+4. Italian model fit: height-indexed -i nested by stress (it_stress)
+------------------------------------------------------------------------
+ tau = dictionary, E0, dorsal
+  stress:post_tonic                            N_target  1269  N   845  e_pal   770  e_ret    81  theta  125.4  -> retain productive (fragility 45)
+  stress:not_post_tonic                        N_target  3762  N  3405  e_pal    91  e_ret  3325  theta  418.7  -> palatalize productive (fragility 328)
+  stress:unknown                               N_target  2701  N  2362  e_pal   200  e_ret  2165  theta  304.1  -> palatalize productive (fragility 105)
+  nested set giavazzi:
+    nested:post_tonic          retain     N   845  e    81  theta  125.4  tolerated yes
+    nested:elsewhere           palatalize N  3405  e    91  theta  418.7  tolerated yes
+    -> every rule tolerated: the conditioned grammar is productive
+  nested set suffix_once:
+    nested:post_tonic          retain     N   818  e    54  theta  122.0  tolerated yes
+    nested:elsewhere           palatalize N  1851  e    91  theta  246.0  tolerated yes
+    -> every rule tolerated: the conditioned grammar is productive
+  nested set orth_ico_once:
+    nested:post_tonic          retain     N   799  e    35  theta  119.6  tolerated yes
+    nested:elsewhere           palatalize N   275  e    64  theta   49.0  tolerated no
+    -> not every rule tolerated
+  nested set suffix_then_stress:
+    nested:ico_suffix          palatalize N  1572  e     0  theta  213.6  tolerated yes
+    nested:post_tonic          retain     N   819  e    55  theta  122.1  tolerated yes
+    nested:elsewhere           palatalize N  1859  e    91  theta  247.0  tolerated yes
+    -> every rule tolerated: the conditioned grammar is productive
+  nested set reverse:
+    nested:not_post_tonic      palatalize N  3405  e    91  theta  418.7  tolerated yes
+    nested:elsewhere           retain     N   845  e    81  theta  125.4  tolerated yes
+    -> every rule tolerated: the conditioned grammar is productive
+ tau = dictionary, E0, k and g separately
+  nested set giavazzi, target c:
+    nested:post_tonic          retain     N   677  e    76  theta  103.9  tolerated yes
+    nested:elsewhere           palatalize N  3199  e    43  theta  396.4  tolerated yes
+    -> every rule tolerated: the conditioned grammar is productive
+  nested set giavazzi, target g:
+    nested:post_tonic          retain     N   168  e     5  theta   32.8  tolerated yes
+    nested:elsewhere           palatalize N   206  e    48  theta   38.7  tolerated no
+    -> not every rule tolerated
+ tau = dictionary, E1 (verb cells added), dorsal
+  nested set giavazzi:
+    nested:post_tonic          retain     N   914  e    95  theta  134.1  tolerated yes
+    nested:elsewhere           palatalize N  3439  e   168  theta  422.3  tolerated yes
+    -> every rule tolerated: the conditioned grammar is productive
+  nested set suffix_once:
+    nested:post_tonic          retain     N   887  e    68  theta  130.7  tolerated yes
+    nested:elsewhere           palatalize N  1885  e   146  theta  249.9  tolerated yes
+    -> every rule tolerated: the conditioned grammar is productive
+ tau = ge1, E0, dorsal
+  stress:post_tonic                            N_target  1269  N   299  e_pal   277  e_ret    22  theta   52.5  -> retain productive (fragility 31)
+  stress:not_post_tonic                        N_target  3762  N   901  e_pal    32  e_ret   869  theta  132.4  -> palatalize productive (fragility 101)
+  stress:unknown                               N_target  2701  N   102  e_pal    13  e_ret    89  theta   22.1  -> palatalize productive (fragility 10)
+  nested set giavazzi:
+    nested:post_tonic          retain     N   299  e    22  theta   52.5  tolerated yes
+    nested:elsewhere           palatalize N   901  e    32  theta  132.4  tolerated yes
+    -> every rule tolerated: the conditioned grammar is productive
+  nested set suffix_once:
+    nested:post_tonic          retain     N   292  e    15  theta   51.4  tolerated yes
+    nested:elsewhere           palatalize N   449  e    32  theta   73.5  tolerated yes
+    -> every rule tolerated: the conditioned grammar is productive
+  nested set orth_ico_once:
+    nested:post_tonic          retain     N   286  e     9  theta   50.6  tolerated yes
+    nested:elsewhere           palatalize N   104  e    21  theta   22.4  tolerated yes
+    -> every rule tolerated: the conditioned grammar is productive
+  nested set suffix_then_stress:
+    nested:ico_suffix          palatalize N   457  e     0  theta   74.6  tolerated yes
+    nested:post_tonic          retain     N   292  e    15  theta   51.4  tolerated yes
+    nested:elsewhere           palatalize N   451  e    32  theta   73.8  tolerated yes
+    -> every rule tolerated: the conditioned grammar is productive
+  nested set reverse:
+    nested:not_post_tonic      palatalize N   901  e    32  theta  132.4  tolerated yes
+    nested:elsewhere           retain     N   299  e    22  theta   52.5  tolerated yes
+    -> every rule tolerated: the conditioned grammar is productive
+ tau = ge1, E0, k and g separately
+  nested set giavazzi, target c:
+    nested:post_tonic          retain     N   239  e    21  theta   43.6  tolerated yes
+    nested:elsewhere           palatalize N   825  e    11  theta  122.9  tolerated yes
+    -> every rule tolerated: the conditioned grammar is productive
+  nested set giavazzi, target g:
+    nested:post_tonic          retain     N    60  e     1  theta   14.7  tolerated yes
+    nested:elsewhere           palatalize N    76  e    21  theta   17.5  tolerated no
+    -> not every rule tolerated
+ tau = ge1, E1 (verb cells added), dorsal
+  nested set giavazzi:
+    nested:post_tonic          retain     N   332  e    29  theta   57.2  tolerated yes
+    nested:elsewhere           palatalize N   917  e    60  theta  134.4  tolerated yes
+    -> every rule tolerated: the conditioned grammar is productive
+  nested set suffix_once:
+    nested:post_tonic          retain     N   325  e    22  theta   56.2  tolerated yes
+    nested:elsewhere           palatalize N   463  e    51  theta   75.4  tolerated yes
+    -> every rule tolerated: the conditioned grammar is productive
+ tau = dictionary_explicit (typed plurals only), E0, dorsal
+  stress:post_tonic                            N_target  1269  N    70  e_pal    46  e_ret    25  theta   16.5  -> neither productive
+  stress:not_post_tonic                        N_target  3762  N   109  e_pal    57  e_ret    58  theta   23.2  -> neither productive
+  stress:unknown                               N_target  2701  N    19  e_pal    10  e_ret    11  theta    6.5  -> neither productive
+  nested set giavazzi:
+    nested:post_tonic          retain     N    70  e    25  theta   16.5  tolerated no
+    nested:elsewhere           palatalize N   109  e    57  theta   23.2  tolerated no
+    -> not every rule tolerated
+  nested set suffix_once:
+    nested:post_tonic          retain     N    70  e    25  theta   16.5  tolerated no
+    nested:elsewhere           palatalize N   109  e    57  theta   23.2  tolerated no
+    -> not every rule tolerated
+  nested set orth_ico_once:
+    nested:post_tonic          retain     N    70  e    25  theta   16.5  tolerated no
+    nested:elsewhere           palatalize N    82  e    30  theta   18.6  tolerated no
+    -> not every rule tolerated
+
+5. Suffix rows (R26; E0, -i)
+------------------------------------------------------------------------
+  dictionary suffix:-ico                       N_target  1926  N  1848  e_pal     1  e_ret  1847  theta  245.7  -> palatalize productive (fragility 245)
+  dictionary suffix:-iaco                      N_target    11  N    11  e_pal     0  e_ret    11  theta    4.6  -> palatalize productive (fragility 5)
+  dictionary suffixoid:-logo                   N_target   250  N   250  e_pal    18  e_ret   234  theta   45.3  -> palatalize productive (fragility 28)
+  dictionary suffixoid:-fago                   N_target    44  N    44  e_pal     6  e_ret    40  theta   11.6  -> palatalize productive (fragility 6)
+  dictionary suffixoid:-urgo                   N_target    12  N    12  e_pal    11  e_ret     3  theta    4.8  -> retain productive (fragility 2)
+  dictionary root                              N_target  5489  N  4447  e_pal  1025  e_ret  3436  theta  529.4  -> neither productive
+  dictionary orth:-ico                         N_target  5731  N  5193  e_pal    32  e_ret  5164  theta  607.0  -> palatalize productive (fragility 576)
+  dictionary orth:-Vico                        N_target   136  N   131  e_pal     0  e_ret   131  theta   26.9  -> palatalize productive (fragility 27)
+  dictionary orth:-Vico post-tonic             N_target    48  N    47  e_pal     0  e_ret    47  theta   12.2  -> palatalize productive (fragility 13)
+  dictionary deverbal_from_are                 N_target    76  N    61  e_pal    57  e_ret     4  theta   14.8  -> retain productive (fragility 11)
+  dictionary shares_1st_conj_verb              N_target   360  N   238  e_pal   193  e_ret    46  theta   43.5  -> neither productive
+  ge1 suffix:-ico                              N_target  1926  N   473  e_pal     0  e_ret   473  theta   76.8  -> palatalize productive (fragility 77)
+  ge1 suffix:-iaco                             N_target    11  N     4  e_pal     0  e_ret     4  theta    2.9  -> palatalize productive (fragility 3)
+  ge1 suffixoid:-logo                          N_target   250  N    67  e_pal     9  e_ret    58  theta   15.9  -> palatalize productive (fragility 7)
+  ge1 suffixoid:-fago                          N_target    44  N     6  e_pal     0  e_ret     6  theta    3.3  -> palatalize productive (fragility 4)
+  ge1 suffixoid:-urgo                          N_target    12  N     5  e_pal     5  e_ret     0  theta    3.1  -> retain productive (fragility 4)
+  ge1 root                                     N_target  5489  N   747  e_pal   308  e_ret   439  theta  112.9  -> neither productive
+  ge1 orth:-ico                                N_target  5731  N   889  e_pal    11  e_ret   878  theta  130.9  -> palatalize productive (fragility 120)
+  ge1 orth:-Vico                               N_target   136  N    17  e_pal     0  e_ret    17  theta    6.0  -> palatalize productive (fragility 7)
+  ge1 orth:-Vico post-tonic                    N_target    48  N    14  e_pal     0  e_ret    14  theta    5.3  -> palatalize productive (fragility 6)
+  ge1 deverbal_from_are                        N_target    76  N    37  e_pal    34  e_ret     3  theta   10.2  -> retain productive (fragility 8)
+  ge1 shares_1st_conj_verb                     N_target   360  N   170  e_pal   131  e_ret    39  theta   33.1  -> neither productive
+
+6. Verbs by conjugation (verb units, E1 cells; it_verbs)
+------------------------------------------------------------------------
+  dictionary conj:are -i                       N_target   940  N   940  e_pal   940  e_ret     0  theta  137.3  -> retain productive (fragility 138)
+  dictionary conj:are -e                       N_target   940  N     0  e_pal     0  e_ret     0  theta      -  -> empty cell (N <= 1)
+  dictionary conj:ere_root -i                  N_target   252  N   249  e_pal     0  e_ret   249  theta   45.1  -> palatalize productive (fragility 46)
+  dictionary conj:ere_root -e                  N_target   252  N   252  e_pal     0  e_ret   252  theta   45.6  -> palatalize productive (fragility 46)
+  dictionary conj:ere_stressed -i              N_target     9  N     9  e_pal     0  e_ret     9  theta    4.1  -> palatalize productive (fragility 5)
+  dictionary conj:ere_stressed -e              N_target     9  N     9  e_pal     0  e_ret     9  theta    4.1  -> palatalize productive (fragility 5)
+  dictionary conj:ire -i                       N_target     6  N     6  e_pal     0  e_ret     6  theta    3.3  -> palatalize productive (fragility 4)
+  dictionary conj:ire -e                       N_target     6  N     6  e_pal     0  e_ret     6  theta    3.3  -> palatalize productive (fragility 4)
+  dictionary conj:isc -i                       N_target    36  N    36  e_pal    36  e_ret     0  theta   10.0  -> retain productive (fragility 11)
+  dictionary conj:isc -e                       N_target    36  N     0  e_pal     0  e_ret     0  theta      -  -> empty cell (N <= 1)
+  dictionary conj:dire -i                      N_target    17  N    17  e_pal     0  e_ret    17  theta    6.0  -> palatalize productive (fragility 7)
+  dictionary conj:dire -e                      N_target    17  N    17  e_pal     0  e_ret    17  theta    6.0  -> palatalize productive (fragility 7)
+  dictionary overapplying -i                   N_target    12  N    12  e_pal     0  e_ret    12  theta    4.8  -> palatalize productive (fragility 5)
+  dictionary overapplying -e                   N_target    12  N    12  e_pal     0  e_ret    12  theta    4.8  -> palatalize productive (fragility 5)
+  dictionary all -i                            N_target  1260  N  1257  e_pal   976  e_ret   281  theta  176.1  -> neither productive
+  dictionary all -e                            N_target  1260  N   284  e_pal     0  e_ret   284  theta   50.3  -> palatalize productive (fragility 51)
+  ge1 conj:are -i                              N_target   940  N   227  e_pal   227  e_ret     0  theta   41.8  -> retain productive (fragility 42)
+  ge1 conj:are -e                              N_target   940  N     0  e_pal     0  e_ret     0  theta      -  -> empty cell (N <= 1)
+  ge1 conj:ere_root -i                         N_target   252  N    57  e_pal     0  e_ret    57  theta   14.1  -> palatalize productive (fragility 15)
+  ge1 conj:ere_root -e                         N_target   252  N   115  e_pal     0  e_ret   115  theta   24.2  -> palatalize productive (fragility 25)
+  ge1 conj:ere_stressed -i                     N_target     9  N     2  e_pal     0  e_ret     2  theta    2.9  -> both tolerated
+  ge1 conj:ere_stressed -e                     N_target     9  N     6  e_pal     0  e_ret     6  theta    3.3  -> palatalize productive (fragility 4)
+  ge1 conj:ire -i                              N_target     6  N     3  e_pal     0  e_ret     3  theta    2.7  -> palatalize productive (fragility 3)
+  ge1 conj:ire -e                              N_target     6  N     6  e_pal     0  e_ret     6  theta    3.3  -> palatalize productive (fragility 4)
+  ge1 conj:isc -i                              N_target    36  N     3  e_pal     3  e_ret     0  theta    2.7  -> retain productive (fragility 3)
+  ge1 conj:isc -e                              N_target    36  N     0  e_pal     0  e_ret     0  theta      -  -> empty cell (N <= 1)
+  ge1 conj:dire -i                             N_target    17  N     3  e_pal     0  e_ret     3  theta    2.7  -> palatalize productive (fragility 3)
+  ge1 conj:dire -e                             N_target    17  N     9  e_pal     0  e_ret     9  theta    4.1  -> palatalize productive (fragility 5)
+  ge1 overapplying -i                          N_target    12  N     2  e_pal     0  e_ret     2  theta    2.9  -> both tolerated
+  ge1 overapplying -e                          N_target    12  N     8  e_pal     0  e_ret     8  theta    3.8  -> palatalize productive (fragility 4)
+  ge1 all -i                                   N_target  1260  N   295  e_pal   230  e_ret    65  theta   51.9  -> neither productive
+  ge1 all -e                                   N_target  1260  N   136  e_pal     0  e_ret   136  theta   27.7  -> palatalize productive (fragility 28)
+
+7. Pooled noun + verb row and category-indexed rules (it_nounverb, -i)
+------------------------------------------------------------------------
+  dictionary pooled                            N_target  8992  N  7869  e_pal  2037  e_ret  5852  theta  877.2  -> neither productive
+  nested set category:
+    nested:verb_are            retain     N   940  e     0  theta  137.3  tolerated yes
+    nested:verb_isc            retain     N    36  e     0  theta   10.0  tolerated yes
+    nested:elsewhere           palatalize N  6893  e  1061  theta  779.9  tolerated no
+    -> not every rule tolerated
+  nested set category_stress:
+    nested:verb_are            retain     N   940  e     0  theta  137.3  tolerated yes
+    nested:verb_isc            retain     N    36  e     0  theta   10.0  tolerated yes
+    nested:noun_post_tonic     retain     N   845  e    81  theta  125.4  tolerated yes
+    nested:elsewhere           palatalize N  6048  e   291  theta  694.6  tolerated yes
+    -> every rule tolerated: the conditioned grammar is productive
+  ge1 pooled                                   N_target  8992  N  1597  e_pal   552  e_ret  1045  theta  216.5  -> neither productive
+  nested set category:
+    nested:verb_are            retain     N   227  e     0  theta   41.8  tolerated yes
+    nested:verb_isc            retain     N     3  e     0  theta    2.7  tolerated yes
+    nested:elsewhere           palatalize N  1367  e   322  theta  189.3  tolerated no
+    -> not every rule tolerated
+  nested set category_stress:
+    nested:verb_are            retain     N   227  e     0  theta   41.8  tolerated yes
+    nested:verb_isc            retain     N     3  e     0  theta    2.7  tolerated yes
+    nested:noun_post_tonic     retain     N   299  e    22  theta   52.5  tolerated yes
+    nested:elsewhere           palatalize N  1068  e    45  theta  153.2  tolerated yes
+    -> every rule tolerated: the conditioned grammar is productive
+
+8. Structural classes (nde; E0, dictionary and ge1)
+------------------------------------------------------------------------
+  nde:occhio -i dictionary                     N_target   285  N   168  e_pal   168  e_ret     0  theta   32.8  -> retain productive (fragility 33)
+  nde:occhio -i ge1                            N_target   285  N    38  e_pal    38  e_ret     0  theta   10.4  -> retain productive (fragility 11)
+  nde:psiche -i dictionary                     N_target    14  N     4  e_pal     4  e_ret     0  theta    2.9  -> retain productive (fragility 3)
+  nde:psiche -i ge1                            N_target    14  N     0  e_pal     0  e_ret     0  theta      -  -> empty cell (N <= 1)
+  frontstem -i dictionary                      N_target  2855  N  1635  e_pal  1635  e_ret     0  theta  221.0  -> retain productive (fragility 221)
+  frontstem -i ge1                             N_target  2855  N   417  e_pal   417  e_ret     0  theta   69.1  -> retain productive (fragility 70)
+
+9. -logo/-fago/-urgo (R27; E0, -i)
+------------------------------------------------------------------------
+  -logo person dictionary                      N_target   232  N   232  e_pal     2  e_ret   232  theta   42.6  -> palatalize productive (fragility 41)
+  -logo person ge1                             N_target   232  N    58  e_pal     0  e_ret    58  theta   14.3  -> palatalize productive (fragility 15)
+  -logo animate dictionary                     N_target     0  N     0  e_pal     0  e_ret     0  theta      -  -> empty cell (N <= 1)
+  -logo animate ge1                            N_target     0  N     0  e_pal     0  e_ret     0  theta      -  -> empty cell (N <= 1)
+  -logo thing dictionary                       N_target    10  N    10  e_pal     9  e_ret     1  theta    4.3  -> retain productive (fragility 4)
+  -logo thing ge1                              N_target    10  N     5  e_pal     5  e_ret     0  theta    3.1  -> retain productive (fragility 4)
+  -logo unknown dictionary                     N_target     3  N     3  e_pal     2  e_ret     1  theta    2.7  -> both tolerated
+  -logo unknown ge1                            N_target     3  N     1  e_pal     1  e_ret     0  theta      -  -> empty cell (N <= 1)
+  -logo adjective dictionary                   N_target     5  N     5  e_pal     5  e_ret     0  theta    3.1  -> retain productive (fragility 4)
+  -logo adjective ge1                          N_target     5  N     3  e_pal     3  e_ret     0  theta    2.7  -> retain productive (fragility 3)
+  -fago person dictionary                      N_target     7  N     7  e_pal     1  e_ret     7  theta    3.6  -> palatalize productive (fragility 3)
+  -fago person ge1                             N_target     7  N     1  e_pal     0  e_ret     1  theta      -  -> empty cell (N <= 1)
+  -fago animate dictionary                     N_target     4  N     4  e_pal     0  e_ret     4  theta    2.9  -> palatalize productive (fragility 3)
+  -fago animate ge1                            N_target     4  N     1  e_pal     0  e_ret     1  theta      -  -> empty cell (N <= 1)
+  -fago thing dictionary                       N_target    11  N    11  e_pal     1  e_ret    10  theta    4.6  -> palatalize productive (fragility 4)
+  -fago thing ge1                              N_target    11  N     3  e_pal     0  e_ret     3  theta    2.7  -> palatalize productive (fragility 3)
+  -fago unknown dictionary                     N_target     4  N     4  e_pal     2  e_ret     2  theta    2.9  -> both tolerated
+  -fago unknown ge1                            N_target     4  N     0  e_pal     0  e_ret     0  theta      -  -> empty cell (N <= 1)
+  -fago adjective dictionary                   N_target    18  N    18  e_pal     2  e_ret    17  theta    6.2  -> palatalize productive (fragility 5)
+  -fago adjective ge1                          N_target    18  N     1  e_pal     0  e_ret     1  theta      -  -> empty cell (N <= 1)
+  -urgo person dictionary                      N_target    12  N    12  e_pal    11  e_ret     3  theta    4.8  -> retain productive (fragility 2)
+  -urgo person ge1                             N_target    12  N     5  e_pal     5  e_ret     0  theta    3.1  -> retain productive (fragility 4)
+  -urgo animate dictionary                     N_target     0  N     0  e_pal     0  e_ret     0  theta      -  -> empty cell (N <= 1)
+  -urgo animate ge1                            N_target     0  N     0  e_pal     0  e_ret     0  theta      -  -> empty cell (N <= 1)
+  -urgo thing dictionary                       N_target     0  N     0  e_pal     0  e_ret     0  theta      -  -> empty cell (N <= 1)
+  -urgo thing ge1                              N_target     0  N     0  e_pal     0  e_ret     0  theta      -  -> empty cell (N <= 1)
+  -urgo unknown dictionary                     N_target     0  N     0  e_pal     0  e_ret     0  theta      -  -> empty cell (N <= 1)
+  -urgo unknown ge1                            N_target     0  N     0  e_pal     0  e_ret     0  theta      -  -> empty cell (N <= 1)
+  -urgo adjective dictionary                   N_target     0  N     0  e_pal     0  e_ret     0  theta      -  -> empty cell (N <= 1)
+  -urgo adjective ge1                          N_target     0  N     0  e_pal     0  e_ret     0  theta      -  -> empty cell (N <= 1)
+
+10. Spell-out TP (R20; italian_spellout.txt)
+------------------------------------------------------------------------
+  verbalizer dictionary (spell-out default = palatalize) N_target  5551  N    44  e_pal    25  e_ret    20  theta   11.6  -> neither productive
+  verbalizer ge1 (spell-out default = palatalize) N_target   980  N    17  e_pal    11  e_ret     6  theta    6.0  -> retain productive (fragility 1)
+  verbalizer_no_are dictionary (spell-out default = palatalize) N_target  5551  N    26  e_pal     7  e_ret    20  theta    8.0  -> palatalize productive (fragility 1)
+  verbalizer_no_are ge1 (spell-out default = palatalize) N_target   980  N     8  e_pal     2  e_ret     6  theta    3.8  -> palatalize productive (fragility 2)
+  ista_ismo_ita dictionary (spell-out default = palatalize) N_target  5551  N   231  e_pal     0  e_ret   231  theta   42.4  -> palatalize productive (fragility 43)
+  ista_ismo_ita ge1 (spell-out default = palatalize) N_target   980  N    73  e_pal     0  e_ret    73  theta   17.0  -> palatalize productive (fragility 18)
+  learned dictionary (spell-out default = palatalize) N_target  5551  N   235  e_pal     0  e_ret   235  theta   43.0  -> palatalize productive (fragility 44)
+  learned ge1 (spell-out default = palatalize) N_target   980  N    78  e_pal     0  e_ret    78  theta   17.9  -> palatalize productive (fragility 18)
+
+11. Simulated learners (R18; 1000 vocabularies per V, seed 20080715; lemma basis)
+------------------------------------------------------------------------
+  table      trigger subset        E   tau            V  palatalize  retain  neither  conditioned
+  R17a       -i/-e  with_nde      E0  dictionary  1000       0.000   0.513    0.487        0.000
+  R17a       -i/-e  with_nde      E0  dictionary  5000       0.000   0.000    1.000        0.000
+  R17a       -i/-e  with_nde      E0  ge1         1000       0.000   0.472    0.528        0.000
+  R17a       -i/-e  with_nde      E0  ge1         5000       0.000   0.000    1.000        0.000
+  R17a       -i/-e  with_nde      E1  dictionary  1000       0.000   0.494    0.506        0.000
+  R17a       -i/-e  with_nde      E1  dictionary  5000       0.000   0.000    1.000        0.000
+  R17a       -i/-e  with_nde      E1  ge1         1000       0.000   0.452    0.548        0.000
+  R17a       -i/-e  with_nde      E1  ge1         5000       0.000   0.000    1.000        0.000
+  R17b       -i     all           E0  dictionary  1000       0.000   0.034    0.966        0.000
+  R17b       -i     all           E0  dictionary  5000       0.000   0.000    1.000        0.000
+  R17b       -i     all           E0  ge1         1000       0.000   0.023    0.977        0.000
+  R17b       -i     all           E0  ge1         5000       0.000   0.000    1.000        0.000
+  R17b       -i     all           E1  dictionary  1000       0.000   0.136    0.864        0.000
+  R17b       -i     all           E1  dictionary  5000       0.000   0.000    1.000        0.000
+  R17b       -i     all           E1  ge1         1000       0.000   0.114    0.886        0.000
+  R17b       -i     all           E1  ge1         5000       0.000   0.000    1.000        0.000
+  R17b       -e     all           E0  dictionary  1000       0.000   1.000    0.000        0.000
+  R17b       -e     all           E0  dictionary  5000       0.000   1.000    0.000        0.000
+  R17b       -e     all           E0  ge1         1000       0.000   1.000    0.000        0.000
+  R17b       -e     all           E0  ge1         5000       0.000   1.000    0.000        0.000
+  R17b       -e     all           E1  dictionary  1000       0.000   1.000    0.000        0.000
+  R17b       -e     all           E1  dictionary  5000       0.000   1.000    0.000        0.000
+  R17b       -e     all           E1  ge1         1000       0.000   1.000    0.000        0.000
+  R17b       -e     all           E1  ge1         5000       0.000   1.000    0.000        0.000
+  R17c       -i     all           E0  dictionary  1000       0.000   1.000    0.000        0.000
+  R17c       -i     all           E0  dictionary  5000       0.000   1.000    0.000        0.000
+  R17c       -i     all           E0  ge1         1000       0.000   1.000    0.000        0.000
+  R17c       -i     all           E0  ge1         5000       0.000   1.000    0.000        0.000
+  it_stress  -i     all           E0  dictionary  1000       0.000   0.034    0.003        0.963
+  it_stress  -i     all           E0  dictionary  5000       0.000   0.000    0.007        0.993
+  it_stress  -i     all           E0  ge1         1000       0.000   0.023    0.002        0.975
+  it_stress  -i     all           E0  ge1         5000       0.000   0.000    0.000        1.000
+  it_stress  -i     all           E1  dictionary  1000       0.000   0.136    0.848        0.016
+  it_stress  -i     all           E1  dictionary  5000       0.000   0.000    1.000        0.000
+  it_stress  -i     all           E1  ge1         1000       0.000   0.114    0.546        0.340
+  it_stress  -i     all           E1  ge1         5000       0.000   0.000    1.000        0.000
+  R17b       -i     suffix_once   E0  dictionary  1000       0.000   0.843    0.157        0.000
+  R17b       -i     suffix_once   E0  dictionary  5000       0.000   0.000    1.000        0.000
+  R17b       -i     suffix_once   E0  ge1         1000       0.000   0.811    0.189        0.000
+  R17b       -i     suffix_once   E0  ge1         5000       0.000   0.000    1.000        0.000
+  R17b       -i     suffix_once   E1  dictionary  1000       0.000   0.955    0.045        0.000
+  R17b       -i     suffix_once   E1  dictionary  5000       0.000   0.042    0.958        0.000
+  R17b       -i     suffix_once   E1  ge1         1000       0.000   0.949    0.051        0.000
+  R17b       -i     suffix_once   E1  ge1         5000       0.000   0.032    0.968        0.000
+  it_stress  -i     suffix_once   E0  dictionary  1000       0.000   0.843    0.000        0.157
+  it_stress  -i     suffix_once   E0  dictionary  5000       0.000   0.000    0.653        0.347
+  it_stress  -i     suffix_once   E0  ge1         1000       0.000   0.811    0.000        0.189
+  it_stress  -i     suffix_once   E0  ge1         5000       0.000   0.000    0.331        0.669
+  it_stress  -i     suffix_once   E1  dictionary  1000       0.000   0.955    0.044        0.001
+  it_stress  -i     suffix_once   E1  dictionary  5000       0.000   0.042    0.958        0.000
+  it_stress  -i     suffix_once   E1  ge1         1000       0.000   0.949    0.034        0.017
+  it_stress  -i     suffix_once   E1  ge1         5000       0.000   0.032    0.968        0.000
+  it_stress  -i     orth_ico_once E0  dictionary  1000       0.000   0.990    0.000        0.010
+  it_stress  -i     orth_ico_once E0  dictionary  5000       0.000   0.999    0.000        0.001
+  it_stress  -i     orth_ico_once E0  ge1         1000       0.000   0.988    0.000        0.012
+  it_stress  -i     orth_ico_once E0  ge1         5000       0.000   0.998    0.000        0.002
+  it_stress  -i     orth_ico_once E1  dictionary  1000       0.000   0.997    0.002        0.001
+  it_stress  -i     orth_ico_once E1  dictionary  5000       0.000   1.000    0.000        0.000
+  it_stress  -i     orth_ico_once E1  ge1         1000       0.000   0.998    0.000        0.002
+  it_stress  -i     orth_ico_once E1  ge1         5000       0.000   1.000    0.000        0.000

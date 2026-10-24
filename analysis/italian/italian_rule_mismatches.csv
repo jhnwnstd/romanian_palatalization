@@ -1,0 +1,36 @@
+lemma,plural,stem_final,opportunity,ur,predicted_sr,attested_sr,category,normalisations,ipa_edit,feature_edit,rule_edit,total_distance,cluster
+anatomopatologo,anatomopatologhi,g,i,anatomopatɔloGi,anatomopatɔlod͡ʒi,aˌna.to.mo.paˈtɔ.lo.ɡi,RULE_FAILURE,,9.0,1.0,1,2.6,+i -logo person
+astrologo,astrologhi,g,i,astrɔloGi,astrɔlod͡ʒi,asˈtrɔ.lo.ɡi,RULE_FAILURE,,5.0,1.0,1,1.8,+i -logo person
+australopiteco,australopitechi,c,i,awstralopitɛKi,awstralopitɛt͡ʃi,ˌaws.tra.lo.piˈtɛ.ki,RULE_FAILURE,,8.0,1.0,1,2.4,"+i root, velar post-tonic"
+bolscevico,bolscevichi,c,i,bolʃeviKi,bolʃevit͡ʃi,bol.ʃeˈvi.ki,RULE_FAILURE,,5.0,1.0,1,1.8,"+i root, velar post-tonic"
+bolscevico,bolscevichi,c,i,bolʃeviKi,bolʃevit͡ʃi,bol.ʃeˈvi.ki,RULE_FAILURE,,5.0,1.0,1,1.8,"+i root, velar post-tonic"
+cerusico,cerusichi,c,i,t͡ʃeruziKi,t͡ʃeruzit͡ʃi,t͡ʃeˈru.zi.ki,RULE_FAILURE,,5.0,1.0,1,1.8,"+i root, velar not post-tonic"
+chirurgo,chirurghi,g,i,kirurGi,kirurd͡ʒi,kiˈrur.ɡi,RULE_FAILURE,,4.0,1.0,1,1.6,+i -urgo person
+elettrochimica,elettrochimice,c,e,elɛtːrokimiKe,elɛtːrokimike,eˌlɛtːroˈki.mi.t͡ʃe,RULE_FAILURE,,7.0,1.0,1,2.2,"+e root, velar not post-tonic"
+etnologo,etnologhi,g,i,etnɔloGi,etnɔlod͡ʒi,etˈnɔ.lo.ɡi,RULE_FAILURE,,5.0,1.0,1,1.8,+i -logo person
+falisco,falischi,c,i,falisKˢi,faliʃːi,faˈlis.ki,RULE_FAILURE,,4.0,3.0,3,3.2,"+i root, velar post-tonic"
+fondaco,fondachi,c,i,fondaKi,fondat͡ʃi,ˈfon.da.ki,RULE_FAILURE,,5.0,1.0,1,1.8,"+i root, velar not post-tonic"
+fotomeccanica,fotomeccanice,c,e,fotomekːaniKe,fotomekːanike,fo.to.meˈkːa.ni.t͡ʃe,RULE_FAILURE,,8.0,1.0,1,2.4,"+e root, velar not post-tonic"
+grafologo,grafologhi,g,i,ɡrafɔloGi,ɡrafɔlod͡ʒi,ɡraˈfɔ.lo.ɡi,RULE_FAILURE,,5.0,1.0,1,1.8,+i -logo person
+idromeccanica,idromeccanice,c,e,idromekːaniKe,idromekːanike,i.dro.meˈkːa.ni.t͡ʃe,RULE_FAILURE,,8.0,1.0,1,2.4,"+e root, velar not post-tonic"
+lastrico,lastrichi,c,i,lastriKi,lastrit͡ʃi,ˈlas.tri.ki,RULE_FAILURE,,5.0,1.0,1,1.8,"+i root, velar not post-tonic"
+liturgo,liturghi,g,i,liturGi,liturd͡ʒi,liˈtur.ɡi,RULE_FAILURE,,4.0,1.0,1,1.6,+i -urgo person
+manico,manichi,c,i,maniKi,manit͡ʃi,ˈma.ni.ki,RULE_FAILURE,,5.0,1.0,1,1.8,"+i root, velar not post-tonic"
+menscevico,menscevichi,c,i,menʃeviKi,menʃevit͡ʃi,men.ʃeˈvi.ki,RULE_FAILURE,,5.0,1.0,1,1.8,"+i root, velar post-tonic"
+menscevico,menscevichi,c,i,menʃeviKi,menʃevit͡ʃi,men.ʃeˈvi.ki,RULE_FAILURE,,5.0,1.0,1,1.8,"+i root, velar post-tonic"
+metallurgo,metallurghi,g,i,metalːurGi,metalːurd͡ʒi,me.taˈlːur.ɡi,RULE_FAILURE,,5.0,1.0,1,1.8,+i -urgo person
+neurochirurgo,neurochirurghi,g,i,nɛwrokirurGi,nɛwrokirurd͡ʒi,ˌnɛw.ro.kiˈrur.ɡi,RULE_FAILURE,,7.0,1.0,1,2.2,+i -urgo person
+omofago,omofaghi,g,i,omɔfaGi,omɔfad͡ʒi,oˈmɔ.fa.ɡi,RULE_FAILURE,,5.0,1.0,1,1.8,+i -fago person
+omofago,omofaghi,g,i,omɔfaGi,omɔfad͡ʒi,oˈmɔ.fa.ɡi,RULE_FAILURE,,5.0,1.0,1,1.8,+i -fago person
+osco,oschi,c,i,ɔsKˢi,ɔʃːi,ˈɔs.ki,RULE_FAILURE,,4.0,3.0,3,3.2,"+i root, velar post-tonic"
+osco,oschi,c,i,ɔsKˢi,ɔʃːi,ˈɔs.ki,RULE_FAILURE,,4.0,3.0,3,3.2,"+i root, velar post-tonic"
+oziaco,oziachi,c,i,ot͡sːiaKi,ot͡sːiat͡ʃi,oˈt͡sːi.a.ki,RULE_FAILURE,,5.0,1.0,1,1.8,"+i root, velar not post-tonic"
+oziaco,oziachi,c,i,ot͡sːiaKi,ot͡sːiat͡ʃi,oˈt͡sːi.a.ki,RULE_FAILURE,,5.0,1.0,1,1.8,"+i root, velar not post-tonic"
+patologo,patologhi,g,i,patɔloGi,patɔlod͡ʒi,paˈtɔ.lo.ɡi,RULE_FAILURE,,5.0,1.0,1,1.8,+i -logo person
+petulco,petulchi,c,i,petulKi,petult͡ʃi,peˈtul.ki,RULE_FAILURE,,4.0,1.0,1,1.6,"+i root, velar post-tonic"
+profarmaco,profarmachi,c,i,profarmaKi,profarmat͡ʃi,proˈfar.ma.ki,RULE_FAILURE,,5.0,1.0,1,1.8,"+i root, velar not post-tonic"
+sarcofago,sarcofaghi,g,i,sarkɔfaGi,sarkɔfad͡ʒi,sarˈkɔ.fa.ɡi,RULE_FAILURE,,5.0,1.0,1,1.8,+i -fago thing
+stomaco,stomachi,c,i,stɔmaKi,stɔmat͡ʃi,ˈstɔ.ma.ki,RULE_FAILURE,,5.0,1.0,1,1.8,"+i root, velar not post-tonic"
+voltastomaco,voltastomachi,c,i,vɔltastɔmaKi,vɔltastɔmat͡ʃi,ˌvɔl.tasˈtɔ.ma.ki,RULE_FAILURE,,7.0,1.0,1,2.2,"+i root, velar not post-tonic"
+votiaco,votiachi,c,i,votiaKi,votiat͡ʃi,voˈti.a.ki,RULE_FAILURE,,5.0,1.0,1,1.8,"+i root, velar not post-tonic"
+zoofago,zoofaghi,g,i,d͡zoɔfaGi,d͡zoɔfad͡ʒi,d͡zoˈɔ.fa.ɡi,RULE_FAILURE,,5.0,1.0,1,1.8,+i -fago adjective

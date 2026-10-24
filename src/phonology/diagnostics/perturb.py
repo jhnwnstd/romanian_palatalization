@@ -37,11 +37,11 @@ from ..inventory import FeatureInventory, FeaturePatch, UnderspecifiedSegment
 from ..pipeline import RulePipeline
 from ..rules import Rule, UnificationRule
 from ..segments import Word, segments_to_ipa
-from .compare import compare_ipa
+from .compare import ROMANIAN_NORMALISERS, NormaliserCascade, compare_ipa
 
 if TYPE_CHECKING:
-    from ..analyses.romanian_palatalization import AnalysisProfile
     from ..lexicon import LexRow
+    from ..profile import AnalysisProfile
 
 
 class PerturbationKind(StrEnum):
@@ -215,6 +215,8 @@ def search_perturbations(
     baseline_rules: Sequence[Rule],
     kinds: Sequence[PerturbationKind] = tuple(PerturbationKind),
     limit: int | None = None,
+    *,
+    normalisers: NormaliserCascade = ROMANIAN_NORMALISERS,
 ) -> PerturbationReport:
     """Enumerate single-feature perturbations and report which flip the
     derivation from failing to succeeding.
@@ -223,7 +225,8 @@ def search_perturbations(
     perturbations rebuild the inventory (patches/underspec changes),
     so the UR is rebuilt each time by re-invoking this callable. This
     lets the caller keep control over how the UR is derived (which
-    may itself depend on the inventory features).
+    may itself depend on the inventory features). ``normalisers`` is
+    the cascade "succeeding" is judged under.
     """
     patches = tuple(baseline_patches)
     underspec = tuple(baseline_underspec)
@@ -250,7 +253,7 @@ def search_perturbations(
         except Exception:
             return "", False, 999
         sr = segments_to_ipa(deriv.sr, inv.base_segments())
-        cmp = compare_ipa(sr, expected_field)
+        cmp = compare_ipa(sr, expected_field, normalisers=normalisers)
         dist = (
             int(cmp.edit_distance)
             if cmp.edit_distance != float("inf")
@@ -345,23 +348,18 @@ def search_perturbations_for(
     limit: int | None = None,
 ) -> PerturbationReport:
     """Ergonomic wrapper: takes an :class:`AnalysisProfile` and a
-    :class:`LexRow`, unpacks the ur-builder closure and the baseline
+    :class:`LexRow`, unpacks the ur-builder closure (over
+    ``profile.ur_builder``), the normaliser cascade and the baseline
     (patches, underspec, rules) tuples for you.
 
     Prefer this over :func:`search_perturbations` in new code —
     the 7-kwarg surface of the low-level function is unfriendly to
     interactive use.
     """
-    from ..g2p import build_ur
+    ur_builder = profile.ur_builder
 
     def builder(inv: FeatureInventory) -> Word | None:
-        return build_ur(
-            row.ipa_lemma,
-            row.opportunity,
-            inv,
-            stem_final=row.stem_final,
-            lemma=row.lemma,
-        )
+        return ur_builder(row, inv)
 
     return search_perturbations(
         ur_builder=builder,
@@ -372,6 +370,7 @@ def search_perturbations_for(
         baseline_rules=profile.rules,
         kinds=kinds,
         limit=limit,
+        normalisers=profile.normalisers,
     )
 
 

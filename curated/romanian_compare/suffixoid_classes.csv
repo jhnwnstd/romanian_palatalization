@@ -1,0 +1,15 @@
+lemma,learned_suffixoid,semantic_class,decided_by,note,guard_gloss
+bibliofag,,person,"lexpipe romanian_compare (Claude), 2026-10-23",class: 'bibliophage': a devourer of books,bibliophage
+dialog,True,thing,"lexpipe romanian_compare (Claude), 2026-10-23",suffixoid: gloss missing; 'dialogue',
+hirurg,True,person,"lexpipe romanian_compare (Claude), 2026-10-23",suffixoid: gloss missing; variant of chirurg; class: gloss missing; variant of chirurg 'surgeon',
+ideolog,,person,"lexpipe romanian_compare (Claude), 2026-10-23",class: 'ideologue' (the rules read -logue as a thing),ideologue
+liturg,True,,"lexpipe romanian_compare (Claude), 2026-10-23",suffixoid: 'public official' < leitourgos,public official
+lotofag,,person,"lexpipe romanian_compare (Claude), 2026-10-23",class: 'lotophagi' (lotus-eaters),lotophagi
+martirolog,True,thing,"lexpipe romanian_compare (Claude), 2026-10-23",suffixoid: gloss missing; 'martyrology'; class: gloss missing; 'martyrology' (a book),
+necrolog,True,,"lexpipe romanian_compare (Claude), 2026-10-23",suffixoid: 'obituary' < necro- + -log,obituary
+omolog,,person,"lexpipe romanian_compare (Claude), 2026-10-23",class: gloss 'homologous'; noun 'counterpart',homologous
+pârlog,False,thing,"lexpipe romanian_compare (Claude), 2026-10-23",suffixoid: gloss missing; folk word ('fallow land'); class: gloss missing; fallow land,
+tărfălog,False,thing,"lexpipe romanian_compare (Claude), 2026-10-23",suffixoid: gloss missing; variant of terfelog; class: gloss missing; variant of terfelog 'register',
+ventrilog,False,person,"lexpipe romanian_compare (Claude), 2026-10-23",suffixoid: 'ventriloquist' < Latin ventriloquus; class: gloss missing; 'ventriloquist',
+vlog,False,thing,"lexpipe romanian_compare (Claude), 2026-10-23",suffixoid: English vlog (video log); class: gloss missing; 'vlog',
+volog,False,thing,"lexpipe romanian_compare (Claude), 2026-10-23",suffixoid: gloss missing; variant of polog; class: gloss missing; variant of polog 'swath',

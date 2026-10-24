@@ -55,17 +55,17 @@ Refined mismatch breakdown (NORM_* = data-side transcription noise; RULE_FAILURE
 
   [ICA_SUPPLETION]  n = 85
     alunică            → alunele             (c, opp=e)  rules→T, data→F
-      predicted='alunit͡ʃe'            attested='alunele'              d=3.8
+      predicted='alunit͡ʃe'            attested='alunele'              d=4.3
     bogățică           → bogățele            (c, opp=e)  rules→T, data→F
-      predicted='boɡət͡sit͡ʃe'         attested='boɡət͡sele'           d=3.8
+      predicted='boɡət͡sit͡ʃe'         attested='boɡət͡sele'           d=4.3
     broșurică          → broșurele           (c, opp=e)  rules→T, data→F
-      predicted='broʃurit͡ʃe'          attested='broʃurele'            d=3.8
+      predicted='broʃurit͡ʃe'          attested='broʃurele'            d=4.3
     bătrânică          → bătrânele           (c, opp=e)  rules→T, data→F
-      predicted='bətrɨnit͡ʃe'          attested='bətrɨnele'            d=3.8
+      predicted='bətrɨnit͡ʃe'          attested='bətrɨnele'            d=4.3
     cetinică           → cetinele            (c, opp=e)  rules→T, data→F
-      predicted='t͡ʃetinit͡ʃe'         attested='t͡ʃetinele'           d=3.8
+      predicted='t͡ʃetinit͡ʃe'         attested='t͡ʃetinele'           d=4.3
     cicărică           → cicărele            (c, opp=e)  rules→T, data→F
-      predicted='t͡ʃikərit͡ʃe'         attested='t͡ʃikərele'           d=3.8
+      predicted='t͡ʃikərit͡ʃe'         attested='t͡ʃikərele'           d=4.3
     ... and 79 more
 
   [NORM_TRAILING_GLIDE]  n = 82
@@ -121,5 +121,5 @@ Distance-to-working histogram
   0.0–0.5 (very close)                n=  413  ( 50.8%)  ex: absolventă
   0.5–1.0 (one feature off)           n=  178  ( 21.9%)  ex: accent
   1.0–2.0 (a few features off)        n=   43  (  5.3%)  ex: baratcă
-  2.0–4.0 (structural gap)            n=   96  ( 11.8%)  ex: povescă
-  >4.0 (far)                          n=    1  (  0.1%)  ex: dilimache
+  2.0–4.0 (structural gap)            n=   22  (  2.7%)  ex: povescă
+  >4.0 (far)                          n=   75  (  9.2%)  ex: alunică

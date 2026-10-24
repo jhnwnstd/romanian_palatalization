@@ -1,0 +1,181 @@
+Romanian spell-out TP (design R20) — harmonized comparison
+========================================================================
+
+Question: do roots whose plural alternates (underspecified with
+certainty) take the palatalizing verbalizer -i rather than -a/-ui,
+as the spell-out account predicts? Unit: root types. N = certain
+roots with an attested derived verb from the pair -i vs -a/-ui;
+e = roots taking only -a/-ui; roots with both are doublets coded by
+corpus share (dominant >= 90% decides; R19). theta = N/ln N.
+Attestation: plural and verb (infinitive + participle tokens) at tau.
+
+1. The critique's numbers, reproduced (check_claims.py definitions)
+------------------------------------------------------------------------
+  full lexicon: 164 verbalizer pairs on alternating-plural
+    dorsals (-i 91, -a 53, -ui 7, -ări 6, -iza 4, -ăni 2, -arisi 1);
+    non-palatalizing pairs (-a, -ui) = 60 vs theta(164) = 32.2
+    as root types (-i/-a/-ui only): 129 roots = 72 -i only + 43 -a/-ui only + 14 both
+  top-1000: 42 verbalizer pairs on alternating-plural
+    dorsals (-i 20, -a 15, -iza 2, -ui 2, -arisi 1, -ăni 1, -ări 1);
+    non-palatalizing pairs (-a, -ui) = 17 vs theta(42) = 11.2
+    as root types (-i/-a/-ui only): 28 roots = 12 -i only + 8 -a/-ui only + 8 both
+
+  Differences from the harmonized definition below: pairs vs roots;
+  n includes suffixes outside the competing pair (-ări, -iza, -ăni,
+  -arisi); dorsals only; no attestation threshold; the top-1000 frame
+  is check_claims' (nouns with -i/-e/-uri opportunity), not R24's.
+  Alternating-plural dorsals with a pair verb that check_claims counts and the
+  harmonized set does not (plural not marked as mutated in the lexicon): drișcă/driște
+
+2. Harmonized spell-out TP (palatalize = -i default; e as defined)
+------------------------------------------------------------------------
+  class    subset                   tau        coding             N_target     N e_only     e  theta tol?  frag
+  dorsal   all                      dictionary dominant               2694   128     50    51   26.4   no    25
+  dorsal   all                      dictionary doublet_exception      2694   128     43    54   26.4   no    28
+  dorsal   all                      dictionary doublet_excluded       2683   117     43    43   24.6   no    19
+  dorsal   all                      ge1        dominant                562    77     33    33   17.7   no    16
+  dorsal   all                      ge1        doublet_exception       562    77     26    36   17.7   no    19
+  dorsal   all                      ge1        doublet_excluded        552    67     26    26   15.9   no    11
+  dorsal   all                      ge0.5pm    dominant                191    39     17    17   10.6   no     7
+  dorsal   all                      ge0.5pm    doublet_exception       191    39     10    19   10.6   no     9
+  dorsal   all                      ge0.5pm    doublet_excluded        182    30     10    10    8.8   no     2
+  dorsal   all                      ge2pm      dominant                104    19      8     8    6.5   no     2
+  dorsal   all                      ge2pm      doublet_exception       104    19      3    10    6.5   no     4
+  dorsal   all                      ge2pm      doublet_excluded         97    12      3     3    4.8  yes     2
+  dorsal   core                     dictionary dominant               1556    87     30    31   19.5   no    12
+  dorsal   core                     dictionary doublet_exception      1556    87     28    32   19.5   no    13
+  dorsal   core                     dictionary doublet_excluded       1552    83     28    28   18.8   no    10
+  dorsal   core                     ge1        dominant                324    52     19    19   13.2   no     6
+  dorsal   core                     ge1        doublet_exception       324    52     17    20   13.2   no     7
+  dorsal   core                     ge1        doublet_excluded        321    49     17    17   12.6   no     5
+  dorsal   core                     ge0.5pm    dominant                102    21      6     6    6.9  yes     1
+  dorsal   core                     ge0.5pm    doublet_exception       102    21      4     7    6.9   no     1
+  dorsal   core                     ge0.5pm    doublet_excluded         99    18      4     4    6.2  yes     3
+  dorsal   core                     ge2pm      dominant                 52     8      0     0    3.8  yes     4
+  dorsal   core                     ge2pm      doublet_exception        52     8      0     1    3.8  yes     3
+  dorsal   core                     ge2pm      doublet_excluded         51     7      0     0    3.6  yes     4
+  coronal  all                      dictionary dominant               2788    57     34    34   14.1   no    20
+  coronal  all                      dictionary doublet_exception      2788    57     34    35   14.1   no    21
+  coronal  all                      dictionary doublet_excluded       2787    56     34    34   13.9   no    21
+  coronal  all                      ge1        dominant                865    36     21    21   10.0   no    11
+  coronal  all                      ge1        doublet_exception       865    36     21    22   10.0   no    12
+  coronal  all                      ge1        doublet_excluded        864    35     21    21    9.8   no    12
+  coronal  all                      ge0.5pm    dominant                351    22     11    11    7.1   no     4
+  coronal  all                      ge0.5pm    doublet_exception       351    22     11    12    7.1   no     5
+  coronal  all                      ge0.5pm    doublet_excluded        350    21     11    11    6.9   no     5
+  coronal  all                      ge2pm      dominant                191    15      7     7    5.5   no     2
+  coronal  all                      ge2pm      doublet_exception       191    15      7     7    5.5   no     2
+  coronal  all                      ge2pm      doublet_excluded        191    15      7     7    5.5   no     2
+  coronal  core                     dictionary dominant               1983    57     34    34   14.1   no    20
+  coronal  core                     dictionary doublet_exception      1983    57     34    35   14.1   no    21
+  coronal  core                     dictionary doublet_excluded       1982    56     34    34   13.9   no    21
+  coronal  core                     ge1        dominant                667    36     21    21   10.0   no    11
+  coronal  core                     ge1        doublet_exception       667    36     21    22   10.0   no    12
+  coronal  core                     ge1        doublet_excluded        666    35     21    21    9.8   no    12
+  coronal  core                     ge0.5pm    dominant                294    22     11    11    7.1   no     4
+  coronal  core                     ge0.5pm    doublet_exception       294    22     11    12    7.1   no     5
+  coronal  core                     ge0.5pm    doublet_excluded        293    21     11    11    6.9   no     5
+  coronal  core                     ge2pm      dominant                171    15      7     7    5.5   no     2
+  coronal  core                     ge2pm      doublet_exception       171    15      7     7    5.5   no     2
+  coronal  core                     ge2pm      doublet_excluded        171    15      7     7    5.5   no     2
+  z        all                      dictionary dominant                 10     1      0     0      -  n/a     -
+  z        all                      dictionary doublet_exception        10     1      0     0      -  n/a     -
+  z        all                      dictionary doublet_excluded         10     1      0     0      -  n/a     -
+  z        all                      ge1        dominant                  2     0      0     0      -  n/a     -
+  z        all                      ge1        doublet_exception         2     0      0     0      -  n/a     -
+  z        all                      ge1        doublet_excluded          2     0      0     0      -  n/a     -
+  z        all                      ge0.5pm    dominant                  1     0      0     0      -  n/a     -
+  z        all                      ge0.5pm    doublet_exception         1     0      0     0      -  n/a     -
+  z        all                      ge0.5pm    doublet_excluded          1     0      0     0      -  n/a     -
+  z        all                      ge2pm      dominant                  0     0      0     0      -  n/a     -
+  z        all                      ge2pm      doublet_exception         0     0      0     0      -  n/a     -
+  z        all                      ge2pm      doublet_excluded          0     0      0     0      -  n/a     -
+  z        core                     dictionary dominant                 10     1      0     0      -  n/a     -
+  z        core                     dictionary doublet_exception        10     1      0     0      -  n/a     -
+  z        core                     dictionary doublet_excluded         10     1      0     0      -  n/a     -
+  z        core                     ge1        dominant                  2     0      0     0      -  n/a     -
+  z        core                     ge1        doublet_exception         2     0      0     0      -  n/a     -
+  z        core                     ge1        doublet_excluded          2     0      0     0      -  n/a     -
+  z        core                     ge0.5pm    dominant                  1     0      0     0      -  n/a     -
+  z        core                     ge0.5pm    doublet_exception         1     0      0     0      -  n/a     -
+  z        core                     ge0.5pm    doublet_excluded          1     0      0     0      -  n/a     -
+  z        core                     ge2pm      dominant                  0     0      0     0      -  n/a     -
+  z        core                     ge2pm      doublet_exception         0     0      0     0      -  n/a     -
+  z        core                     ge2pm      doublet_excluded          0     0      0     0      -  n/a     -
+  all      all                      dictionary dominant               5492   186     84    85   35.6   no    50
+  all      all                      dictionary doublet_exception      5492   186     77    89   35.6   no    54
+  all      all                      dictionary doublet_excluded       5480   174     77    77   33.7   no    44
+  all      all                      ge1        dominant               1429   113     54    54   23.9   no    31
+  all      all                      ge1        doublet_exception      1429   113     47    58   23.9   no    35
+  all      all                      ge1        doublet_excluded       1418   102     47    47   22.1   no    25
+  all      all                      ge0.5pm    dominant                543    61     28    28   14.8   no    14
+  all      all                      ge0.5pm    doublet_exception       543    61     21    31   14.8   no    17
+  all      all                      ge0.5pm    doublet_excluded        533    51     21    21   13.0   no     9
+  all      all                      ge2pm      dominant                295    34     15    15    9.6   no     6
+  all      all                      ge2pm      doublet_exception       295    34     10    17    9.6   no     8
+  all      all                      ge2pm      doublet_excluded        288    27     10    10    8.2   no     2
+  all      core                     dictionary dominant               3549   145     64    65   29.1   no    36
+  all      core                     dictionary doublet_exception      3549   145     62    67   29.1   no    38
+  all      core                     dictionary doublet_excluded       3544   140     62    62   28.3   no    34
+  all      core                     ge1        dominant                993    88     40    40   19.7   no    21
+  all      core                     ge1        doublet_exception       993    88     38    42   19.7   no    23
+  all      core                     ge1        doublet_excluded        989    84     38    38   19.0   no    20
+  all      core                     ge0.5pm    dominant                397    43     17    17   11.4   no     6
+  all      core                     ge0.5pm    doublet_exception       397    43     15    19   11.4   no     8
+  all      core                     ge0.5pm    doublet_excluded        393    39     15    15   10.6   no     5
+  all      core                     ge2pm      dominant                223    23      7     7    7.3  yes     1
+  all      core                     ge2pm      doublet_exception       223    23      7     8    7.3   no     1
+  all      core                     ge2pm      doublet_excluded        222    22      7     7    7.1  yes     1
+
+  By base stratum (R22; dominant coding):
+  dorsal   borrowed                 dictionary N=18    e=6     theta=6.2 tolerated=yes
+  dorsal   borrowed                 ge1        N=11    e=4     theta=4.6 tolerated=yes
+  dorsal   latin_unresolved         dictionary N=10    e=7     theta=4.3 tolerated=no
+  dorsal   latin_unresolved         ge1        N=8     e=6     theta=3.8 tolerated=no
+  dorsal   unknown                  dictionary N=100   e=38    theta=21.7 tolerated=no
+  dorsal   unknown                  ge1        N=58    e=23    theta=14.3 tolerated=no
+  coronal  borrowed                 dictionary N=11    e=7     theta=4.6 tolerated=no
+  coronal  borrowed                 ge1        N=7     e=4     theta=3.6 tolerated=no
+  coronal  latin_unresolved         dictionary N=11    e=7     theta=4.6 tolerated=no
+  coronal  latin_unresolved         ge1        N=7     e=4     theta=3.6 tolerated=no
+  coronal  unknown                  dictionary N=35    e=20    theta=9.8 tolerated=no
+  coronal  unknown                  ge1        N=22    e=13    theta=7.1 tolerated=no
+  z        borrowed                 dictionary N=0     e=0     theta=- tolerated=n/a
+  z        borrowed                 ge1        N=0     e=0     theta=- tolerated=n/a
+  z        latin_unresolved         dictionary N=0     e=0     theta=- tolerated=n/a
+  z        latin_unresolved         ge1        N=0     e=0     theta=- tolerated=n/a
+  z        unknown                  dictionary N=1     e=0     theta=- tolerated=n/a
+  z        unknown                  ge1        N=0     e=0     theta=- tolerated=n/a
+  all      borrowed                 dictionary N=29    e=13    theta=8.6 tolerated=no
+  all      borrowed                 ge1        N=18    e=8     theta=6.2 tolerated=no
+  all      latin_unresolved         dictionary N=21    e=14    theta=6.9 tolerated=no
+  all      latin_unresolved         ge1        N=15    e=10    theta=5.5 tolerated=no
+  all      unknown                  dictionary N=136   e=58    theta=27.7 tolerated=no
+  all      unknown                  ge1        N=80    e=36    theta=18.3 tolerated=no
+
+  R24 frame, V = 1000 most frequent nouns (dominant coding):
+  dorsal   dictionary N=15    e=10    theta=5.5 tolerated=no
+  dorsal   ge1        N=11    e=7     theta=4.6 tolerated=no
+  coronal  dictionary N=16    e=6     theta=5.8 tolerated=no
+  coronal  ge1        N=15    e=6     theta=5.5 tolerated=no
+  z        dictionary N=0     e=0     theta=- tolerated=n/a
+  z        ge1        N=0     e=0     theta=- tolerated=n/a
+  all      dictionary N=31    e=16    theta=9.0 tolerated=no
+  all      ge1        N=26    e=13    theta=8.0 tolerated=no
+
+3. Contrast and residue (dictionary tau)
+------------------------------------------------------------------------
+  dorsal   non-alternating-plural roots (-uri or resisting): -i only 9, -a/-ui only 28, both 2
+  coronal  non-alternating-plural roots (-uri or resisting): -i only 27, -a/-ui only 80, both 3
+  z        non-alternating-plural roots (-uri or resisting): -i only 9, -a/-ui only 11, both 0
+  all      non-alternating-plural roots (-uri or resisting): -i only 45, -a/-ui only 119, both 5
+
+  -i verbs of alternating-plural roots that keep the plain consonant (18; rule-following for spell-out, phonological exceptions
+  for the root):
+    bute→buti, ciopată→ciocârti, dobândă→dobândi, grămadă→îngrămădi, mladă→mlădi, mofluz→mofluzi
+    nuntă→nunti, năpadă→năpădi, oglindă→oglindi, pardos→pardosi, plată→plăti, plămadă→plămădi
+    poveste→povesti, prost→prosti, roată→roti, răsplată→răsplăti, schilod→schilodi, urs→ursi
+
+Unit and data: noun roots of data/romanian_lexicon_with_freq.csv;
+derived verbs from its derived_verbs/deriv_suffixes columns; counts
+from ron_news_2024_1M (aggregates only here, R9).

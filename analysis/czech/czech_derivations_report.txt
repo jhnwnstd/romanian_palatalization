@@ -1,0 +1,115 @@
+Licence and attribution
+-----------------------
+Aggregate counts only: this report holds counts and statistics
+computed from the sources below, never their rows, word forms or
+text. Sources and licences:
+  czetyl         CC BY-NC-SA 4.0; Czech Etymological Lexicon 1.0
+  derinet        CC BY-NC-SA 4.0; DeriNet 2.3
+  wiktionary_cs  CC BY-SA 4.0 + GFDL; Czech Wiktionary (Wikislovník) via wiktextract
+  wiktionary_en  CC BY-SA 4.0 + GFDL; English Wiktionary via wiktextract (kaikki.org)
+Counts that rest on CC BY-NC-SA sources are tracked under the
+draft policy of DATA_LICENSE.md ('Aggregate counts from
+non-commercial sources'), pending the authors' decision; they
+may not be used commercially.
+
+Czech derivations: base x derivative pairs (design R14, R20-R22)
+========================================================================
+
+Aggregates only (R9). DeriNet 2.3 and czetyl are CC BY-NC-SA: they
+appear here as counts; the pairs themselves are in
+data/czech/nc/czech_derivations.csv (gitignored).
+
+noun bases (in-domain nouns and dual remnants): 30,428
+DeriNet: 1,042,751 nodes in 193,395 trees; 309 Fictitious nodes dropped;
+  25,906 nodes of lexicon noun lemmas, 38,611 Type=Derivation edges with such a noun parent
+
+Links that do not decompose into base + a listed suffix (dropped):
+  derinet          15,068
+  wikt_derived      3,650
+  wikt_ety          3,304
+  wikt_head         1,659
+  wikt_related     21,579
+
+Generated candidates found (R21), before the checks:
+  cand_corpus      20,192
+  cand_headword     9,271
+
+Candidates rejected (not corroborated by a link):
+  cand_corpus: -ista/-ismus of an -ie noun            1
+  cand_corpus: short stem                         1,525
+  cand_corpus: stem shared by several bases       3,363
+  cand_corpus: too few tokens of its own          5,916
+  cand_corpus: unexpected spelling                5,429
+  cand_headword: -ista/-ismus of an -ie noun          7
+  cand_headword: own etymology, other base          833
+  cand_headword: stem shared by several bases     2,112
+  cand_headword: unexpected spelling                340
+
+Pairs dropped after linking (module docstring):
+  derivative is a proper name (R25)                  28
+  homograph roots: kept on one root                 771
+  related terms: own etymology, other base          232
+  reversed: base derived from the verb              256
+
+pairs: 27,766; by narrowest basis:
+  linked          9,235
+  wikt            2,539
+  wikt+corpus     2,653
+  all            13,339
+
+pairs by evidence (a pair can have several):
+  cand_corpus       3,391
+  cand_headword     5,727
+  cand_headword_plain       24
+  derinet          23,245
+  wikt_derived      2,662
+  wikt_ety          3,210
+  wikt_head         4,321
+  wikt_related      1,961
+
+Verbs with a DeriNet edge: suffix read from the lemma vs the
+verbalizer read from DeriNet's last D morph (R14), and whether
+ConjugClass agrees with that verbalizer:
+  -et vs DeriNet -et           ConjugClass None          1
+  -et vs DeriNet -et           ConjugClass True         18
+  -it vs DeriNet -it           ConjugClass None          4
+  -it vs DeriNet -it           ConjugClass True        458
+  -ovat vs DeriNet -at         ConjugClass None          5
+  -ovat vs DeriNet -ovat       ConjugClass None          7
+  -ovat vs DeriNet -ovat       ConjugClass True      1,217
+  -ovat vs DeriNet D:konc      ConjugClass None          2
+  -ovat vs DeriNet D:t         ConjugClass None          2
+
+Velar bases, basis wikt, tau = dictionary: pairs by suffix and
+outcome (pal / plain / exception / nontarget)
+  -it          pal    91  plain     0  exception     0  nontarget     0
+  -et          pal     7  plain     0  exception     1  nontarget     0
+  -ní/-ný      pal   136  plain     0  exception     6  nontarget     0
+  -ský/-cký    pal   303  plain     0  exception     3  nontarget     0
+  -ina         pal    27  plain     0  exception     0  nontarget     0
+  -í           pal   103  plain     0  exception     0  nontarget     0
+  -ek          pal   501  plain     0  exception     0  nontarget     0
+  -ka          pal   387  plain     0  exception     0  nontarget     0
+  -ík          pal    19  plain     0  exception     0  nontarget     0
+  -an          pal     6  plain     0  exception     3  nontarget     0
+  -ník         pal    37  plain     0  exception     0  nontarget     0
+  -nice        pal    12  plain     0  exception     0  nontarget     0
+  -ovat        pal     8  plain    95  exception     0  nontarget     0
+  -ový/-ovní   pal     0  plain   696  exception     0  nontarget     0
+  -yně         pal     0  plain    33  exception     0  nontarget     0
+  -ův          pal     0  plain   124  exception     0  nontarget     0
+  -ista        pal     0  plain     4  exception     0  nontarget     0
+  -ismus       pal     0  plain     3  exception     0  nontarget     0
+
+Base strata (R22) of the pairs' bases, one count per base:
+  Wiktionary only   inherited              1,934
+  Wiktionary only   borrowed whole         1,915
+  Wiktionary only   internal formation     4,282
+  Wiktionary only   unknown                6,557
+  all sources (NC)  borrowed whole       czetyl       1,643
+  all sources (NC)  borrowed whole       derinet        923
+  all sources (NC)  borrowed whole       wiktionary   1,915
+  all sources (NC)  inherited            czetyl         298
+  all sources (NC)  inherited            wiktionary   1,934
+  all sources (NC)  internal formation   wiktionary   4,282
+  all sources (NC)  unknown              -            3,693

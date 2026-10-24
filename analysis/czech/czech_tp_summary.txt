@@ -1,0 +1,635 @@
+Czech Tolerance Principle analyses (design §6, R15-R19, R24)
+========================================================================
+
+Root types (R4) by part of speech and target class; aggregates only (R9).
+N = N_trigger (roots attested in the cell at tau), e = exceptions of the rule,
+theta = N/ln N, tol = e <= theta, frag = fewest item changes that flip tol.
+tau: dictionary (every Wiktionary form), ge1 (>= 1 token), ge2pm (>= 2 per million)
+in Leipzig ces_news_2024_1M. Full grid: czech_tp_long.csv.
+
+  adj:c 1  adj:coronal_inferred 3,455  adj:labial 2,700  adj:lateral 293  adj:other 1,204  adj:r 44  adj:sibilant 25  adj:soft 3,234  adj:velar 2,891  noun:c 2,334  noun:coronal_inferred 6,389  noun:labial 2,473  noun:lateral 1,611  noun:other 65  noun:r 1,612  noun:sibilant 1,138  noun:soft 5,214  noun:velar 8,295  noun:vowel 1,137
+
+Root summaries (E0): undergoer / resister / mixed / no evidence
+------------------------------------------------------------------------
+  velar  dictionary roots 8,295: undergoer 4,657  resister 446  mixed 2,673  no_evidence 519
+  velar  ge1        roots 8,295: undergoer 1,600  resister 912  mixed 373  no_evidence 5,410
+  r      dictionary roots 1,612: undergoer 646  resister 747  mixed 84  no_evidence 135
+  r      ge1        roots 1,612: undergoer 317  resister 360  mixed 12  no_evidence 923
+  (undergoer: an attested P form with the change; resister: only competing N allomorphs; mixed: both)
+
+(a) Rule TP per trigger cell (palatalize; e = P form without the change)
+------------------------------------------------------------------------
+  target             trigger                        tau             N     e   theta  tol  frag
+  velar              NOM.PL m.an -i                 dictionary   1272     2   177.9  yes   176
+  velar              NOM.PL m.an -i                 ge1           442     0    72.6  yes    73
+  velar              NOM.PL m.an -i                 ge1_strict    427     0    70.5  yes    71
+  velar              NOM.PL m.an -i                 ge2pm          68     0    16.1  yes    17
+  r                  NOM.PL m.an -i                 dictionary    367     1    62.1  yes    62
+  r                  NOM.PL m.an -i                 ge1           184     0    35.3  yes    36
+  r                  NOM.PL m.an -i                 ge1_strict    178     0    34.4  yes    35
+  r                  NOM.PL m.an -i                 ge2pm          37     0    10.2  yes    11
+  coronal_inferred   NOM.PL m.an -i                 dictionary   1175     0   166.2  yes   167
+  coronal_inferred   NOM.PL m.an -i                 ge1           347     0    59.3  yes    60
+  coronal_inferred   NOM.PL m.an -i                 ge1_strict    317     0    55.0  yes    56
+  coronal_inferred   NOM.PL m.an -i                 ge2pm          54     0    13.5  yes    14
+  velar              LOC.SG m.in -e                 dictionary     18     2     6.2  yes     5
+  velar              LOC.SG m.in -e                 ge1             6     0     3.3  yes     4
+  velar              LOC.SG m.in -e                 ge1_strict      4     0     2.9  yes     3
+  velar              LOC.SG m.in -e                 ge2pm           3     0     2.7  yes     3
+  r                  LOC.SG m.in -e                 dictionary     16     1     5.8  yes     5
+  r                  LOC.SG m.in -e                 ge1             6     0     3.3  yes     4
+  r                  LOC.SG m.in -e                 ge1_strict      4     0     2.9  yes     3
+  r                  LOC.SG m.in -e                 ge2pm           4     0     2.9  yes     3
+  coronal_inferred   LOC.SG m.in -e                 dictionary    383     1    64.4  yes    64
+  coronal_inferred   LOC.SG m.in -e                 ge1            68     0    16.1  yes    17
+  coronal_inferred   LOC.SG m.in -e                 ge1_strict     56     0    13.9  yes    14
+  coronal_inferred   LOC.SG m.in -e                 ge2pm          32     0     9.2  yes    10
+  velar              LOC.SG n -e                    dictionary      8     0     3.8  yes     4
+  velar              LOC.SG n -e                    ge1             3     0     2.7  yes     3
+  velar              LOC.SG n -e                    ge1_strict      2     0     2.9  yes     -
+  velar              LOC.SG n -e                    ge2pm           1     0       -    -     -
+  r                  LOC.SG n -e                    dictionary     11     0     4.6  yes     5
+  r                  LOC.SG n -e                    ge1             6     0     3.3  yes     4
+  r                  LOC.SG n -e                    ge1_strict      4     0     2.9  yes     3
+  r                  LOC.SG n -e                    ge2pm           3     0     2.7  yes     3
+  coronal_inferred   LOC.SG n -e                    dictionary     83     0    18.8  yes    19
+  coronal_inferred   LOC.SG n -e                    ge1            33     0     9.4  yes    10
+  coronal_inferred   LOC.SG n -e                    ge1_strict     26     0     8.0  yes     8
+  coronal_inferred   LOC.SG n -e                    ge2pm          13     0     5.1  yes     6
+  velar              DAT/LOC.SG f -e                dictionary   3786     1   459.5  yes   459
+  velar              DAT/LOC.SG f -e                ge1          1124     0   160.0  yes   161
+  velar              DAT/LOC.SG f -e                ge1_strict   1000     0   144.8  yes   145
+  velar              DAT/LOC.SG f -e                ge2pm         178     0    34.4  yes    35
+  r                  DAT/LOC.SG f -e                dictionary    328     0    56.6  yes    57
+  r                  DAT/LOC.SG f -e                ge1           131     0    26.9  yes    27
+  r                  DAT/LOC.SG f -e                ge1_strict    114     0    24.1  yes    25
+  r                  DAT/LOC.SG f -e                ge2pm          35     0     9.8  yes    10
+  coronal_inferred   DAT/LOC.SG f -e                dictionary   2107     1   275.3  yes   275
+  coronal_inferred   DAT/LOC.SG f -e                ge1           790     0   118.4  yes   119
+  coronal_inferred   DAT/LOC.SG f -e                ge1_strict    733     0   111.1  yes   112
+  coronal_inferred   DAT/LOC.SG f -e                ge2pm         178     0    34.4  yes    35
+  velar              LOC.PL m -ích                  dictionary   3480     0   426.7  yes   427
+  velar              LOC.PL m -ích                  ge1           484     0    78.3  yes    79
+  velar              LOC.PL m -ích                  ge1_strict    393     0    65.8  yes    66
+  velar              LOC.PL m -ích                  ge2pm          32     0     9.2  yes    10
+  r                  LOC.PL m -ích                  dictionary      2     0     2.9  yes     -
+  r                  LOC.PL m -ích                  ge1             0     0       -    -     -
+  r                  LOC.PL m -ích                  ge1_strict      0     0       -    -     -
+  r                  LOC.PL m -ích                  ge2pm           0     0       -    -     -
+  coronal_inferred   LOC.PL m -ích                  dictionary     16     0     5.8  yes     6
+  coronal_inferred   LOC.PL m -ích                  ge1            10     0     4.3  yes     5
+  coronal_inferred   LOC.PL m -ích                  ge1_strict      0     0       -    -     -
+  coronal_inferred   LOC.PL m -ích                  ge2pm           3     0     2.7  yes     3
+  velar              LOC.PL n -ích                  dictionary     40     0    10.8  yes    11
+  velar              LOC.PL n -ích                  ge1             7     0     3.6  yes     4
+  velar              LOC.PL n -ích                  ge1_strict      7     0     3.6  yes     4
+  velar              LOC.PL n -ích                  ge2pm           0     0       -    -     -
+  r                  LOC.PL n -ích                  dictionary      0     0       -    -     -
+  r                  LOC.PL n -ích                  ge1             0     0       -    -     -
+  r                  LOC.PL n -ích                  ge1_strict      0     0       -    -     -
+  r                  LOC.PL n -ích                  ge2pm           0     0       -    -     -
+  coronal_inferred   LOC.PL n -ích                  dictionary      1     0       -    -     -
+  coronal_inferred   LOC.PL n -ích                  ge1             1     0       -    -     -
+  coronal_inferred   LOC.PL n -ích                  ge1_strict      0     0       -    -     -
+  coronal_inferred   LOC.PL n -ích                  ge2pm           0     0       -    -     -
+  velar              VOC.SG m.an -e                 dictionary     13     8     5.1   no     3
+  velar              VOC.SG m.an -e                 ge1             1     0       -    -     -
+  velar              VOC.SG m.an -e                 ge1_strict      0     0       -    -     -
+  velar              VOC.SG m.an -e                 ge2pm           0     0       -    -     -
+  r                  VOC.SG m.an -e                 dictionary     64     3    15.4  yes    13
+  r                  VOC.SG m.an -e                 ge1             5     0     3.1  yes     4
+  r                  VOC.SG m.an -e                 ge1_strict      3     0     2.7  yes     3
+  r                  VOC.SG m.an -e                 ge2pm           0     0       -    -     -
+  c                  VOC.SG m.an -e                 dictionary    548     0    86.9  yes    87
+  c                  VOC.SG m.an -e                 ge1             4     0     2.9  yes     3
+  c                  VOC.SG m.an -e                 ge1_strict      3     0     2.7  yes     3
+  c                  VOC.SG m.an -e                 ge2pm           0     0       -    -     -
+  coronal_inferred   VOC.SG m.an -e                 dictionary      0     0       -    -     -
+  coronal_inferred   VOC.SG m.an -e                 ge1             0     0       -    -     -
+  coronal_inferred   VOC.SG m.an -e                 ge1_strict      0     0       -    -     -
+  coronal_inferred   VOC.SG m.an -e                 ge2pm           0     0       -    -     -
+  velar              NOM.PL.M.AN -í                 dictionary   2813    12   354.2  yes   343
+  velar              NOM.PL.M.AN -í                 ge1           456     0    74.5  yes    75
+  velar              NOM.PL.M.AN -í                 ge1_strict    444     0    72.8  yes    73
+  velar              NOM.PL.M.AN -í                 ge2pm          41     0    11.0  yes    12
+  r                  NOM.PL.M.AN -í                 dictionary     44     4    11.6  yes     8
+  r                  NOM.PL.M.AN -í                 ge1            14     0     5.3  yes     6
+  r                  NOM.PL.M.AN -í                 ge1_strict      9     0     4.1  yes     5
+  r                  NOM.PL.M.AN -í                 ge2pm           3     0     2.7  yes     3
+  coronal_inferred   NOM.PL.M.AN -í                 dictionary   3363     0   414.1  yes   415
+  coronal_inferred   NOM.PL.M.AN -í                 ge1          1161     0   164.5  yes   165
+  coronal_inferred   NOM.PL.M.AN -í                 ge1_strict    772     0   116.1  yes   117
+  coronal_inferred   NOM.PL.M.AN -í                 ge2pm         254     0    45.9  yes    46
+  velar              NOM.PL m.an -é                 dictionary      1     1       -    -     -
+  velar              NOM.PL m.an -é                 ge1             0     0       -    -     -
+  velar              NOM.PL m.an -é                 ge1_strict      0     0       -    -     -
+  velar              NOM.PL m.an -é                 ge2pm           0     0       -    -     -
+  r                  NOM.PL m.an -é                 dictionary      0     0       -    -     -
+  r                  NOM.PL m.an -é                 ge1             0     0       -    -     -
+  r                  NOM.PL m.an -é                 ge1_strict      0     0       -    -     -
+  r                  NOM.PL m.an -é                 ge2pm           0     0       -    -     -
+  coronal_inferred   NOM.PL m.an -é                 dictionary    684   684   104.8   no   580
+  coronal_inferred   NOM.PL m.an -é                 ge1           241   241    43.9   no   198
+  coronal_inferred   NOM.PL m.an -é                 ge1_strict    239   239    43.6   no   196
+  coronal_inferred   NOM.PL m.an -é                 ge2pm          46    46    12.0   no    34
+  velar              INS.SG m/n -em                 dictionary   3880  3880   469.5   no  3411
+  velar              INS.SG m/n -em                 ge1          1248  1248   175.1   no  1073
+  velar              INS.SG m/n -em                 ge1_strict   1118  1118   159.3   no   959
+  velar              INS.SG m/n -em                 ge2pm         146   146    29.3   no   117
+  r                  INS.SG m/n -em                 dictionary   1131  1131   160.9   no   971
+  r                  INS.SG m/n -em                 ge1           473   473    76.8   no   397
+  r                  INS.SG m/n -em                 ge1_strict    422   422    69.8   no   353
+  r                  INS.SG m/n -em                 ge2pm          63    63    15.2   no    48
+  coronal_inferred   INS.SG m/n -em                 dictionary   3214  3214   398.0   no  2816
+  coronal_inferred   INS.SG m/n -em                 ge1          1059  1059   152.0   no   907
+  coronal_inferred   INS.SG m/n -em                 ge1_strict    974   974   141.5   no   833
+  coronal_inferred   INS.SG m/n -em                 ge2pm         199   199    37.6   no   162
+  velar              LOC.PL m/n -ech                dictionary     24    24     7.6   no    17
+  velar              LOC.PL m/n -ech                ge1             0     0       -    -     -
+  velar              LOC.PL m/n -ech                ge1_strict      0     0       -    -     -
+  velar              LOC.PL m/n -ech                ge2pm           0     0       -    -     -
+  r                  LOC.PL m/n -ech                dictionary   1158  1158   164.2   no   994
+  r                  LOC.PL m/n -ech                ge1           222   222    41.1   no   181
+  r                  LOC.PL m/n -ech                ge1_strict    182   182    35.0   no   148
+  r                  LOC.PL m/n -ech                ge2pm          33    33     9.4   no    24
+  coronal_inferred   LOC.PL m/n -ech                dictionary   3614  3614   441.1   no  3173
+  coronal_inferred   LOC.PL m/n -ech                ge1           607   607    94.7   no   513
+  coronal_inferred   LOC.PL m/n -ech                ge1_strict    543   543    86.2   no   457
+  coronal_inferred   LOC.PL m/n -ech                ge2pm          85    85    19.1   no    66
+  velar              VOC.SG m.an -e (non-trigger)   dictionary      0     0       -    -     -
+  velar              VOC.SG m.an -e (non-trigger)   ge1             0     0       -    -     -
+  velar              VOC.SG m.an -e (non-trigger)   ge1_strict      0     0       -    -     -
+  velar              VOC.SG m.an -e (non-trigger)   ge2pm           0     0       -    -     -
+  r                  VOC.SG m.an -e (non-trigger)   dictionary    319   319    55.3   no   264
+  r                  VOC.SG m.an -e (non-trigger)   ge1            13    13     5.1   no     8
+  r                  VOC.SG m.an -e (non-trigger)   ge1_strict     13    13     5.1   no     8
+  r                  VOC.SG m.an -e (non-trigger)   ge2pm           1     1       -    -     -
+  coronal_inferred   VOC.SG m.an -e (non-trigger)   dictionary    943   943   137.7   no   806
+  coronal_inferred   VOC.SG m.an -e (non-trigger)   ge1            27    27     8.2   no    19
+  coronal_inferred   VOC.SG m.an -e (non-trigger)   ge1_strict     21    21     6.9   no    15
+  coronal_inferred   VOC.SG m.an -e (non-trigger)   ge2pm           4     4     2.9   no     2
+  coronal_inferred: the change of t/d/n is inferred from ě/i/í (spelling), so its e is 0 by construction.
+
+(b) Competition TP: palatalize = P-default, retain = N-default (dominant coding)
+------------------------------------------------------------------------
+  cell               target            tau        P-default      N     e   theta  tol  frag     N-default e/tol
+  LOC.SG m.in        velar             dictionary   2045  2039   268.3   no  1771                        16/yes
+  LOC.SG m.in        velar             ge1          1007  1002   145.6   no   857                         5/yes
+  LOC.SG m.in        velar             ge1_strict      4     0     2.9  yes     3                          4/no
+  LOC.SG m.in        velar             ge2pm         252   249    45.6   no   204                         3/yes
+  LOC.SG m.in        r                 dictionary    670   666   103.0   no   564                        10/yes
+  LOC.SG m.in        r                 ge1           325   321    56.2   no   265                         4/yes
+  LOC.SG m.in        r                 ge1_strict      4     0     2.9  yes     3                          4/no
+  LOC.SG m.in        r                 ge2pm         106   103    22.7   no    81                         3/yes
+  LOC.SG m.in        coronal_inferred  dictionary   2025  1995   266.0   no  1730                       140/yes
+  LOC.SG m.in        coronal_inferred  ge1          1000   972   144.8   no   828                        28/yes
+  LOC.SG m.in        coronal_inferred  ge1_strict     56     0    13.9  yes    14                         56/no
+  LOC.SG m.in        coronal_inferred  ge2pm         326   306    56.3   no   250                        20/yes
+  LOC.SG m.in        baseline          dictionary   2237  2210   290.0   no  1920                       146/yes
+  LOC.SG m.in        baseline          ge1           972   946   141.3   no   805                        29/yes
+  LOC.SG m.in        baseline          ge1_strict     15     0     5.5  yes     6                         15/no
+  LOC.SG m.in        baseline          ge2pm         309   291    53.9   no   238                        18/yes
+  LOC.SG n           velar             dictionary    402   399    67.0   no   332                         6/yes
+  LOC.SG n           velar             ge1           126   123    26.1   no    97                         3/yes
+  LOC.SG n           velar             ge1_strict      2     0     2.9  yes     -                         2/yes
+  LOC.SG n           velar             ge2pm          19    18     6.5   no    12                         1/yes
+  LOC.SG n           r                 dictionary     63    58    15.2   no    43                         8/yes
+  LOC.SG n           r                 ge1            34    30     9.6   no    21                         4/yes
+  LOC.SG n           r                 ge1_strict      4     0     2.9  yes     3                          4/no
+  LOC.SG n           r                 ge2pm          14    11     5.3   no     6                         3/yes
+  LOC.SG n           coronal_inferred  dictionary    225   195    41.5   no   154                         72/no
+  LOC.SG n           coronal_inferred  ge1           109    81    23.2   no    58                         30/no
+  LOC.SG n           coronal_inferred  ge1_strict     26     0     8.0  yes     8                         26/no
+  LOC.SG n           coronal_inferred  ge2pm          29    16     8.6   no     8                         13/no
+  LOC.SG n           baseline          dictionary    450   378    73.7   no   305                        209/no
+  LOC.SG n           baseline          ge1           134    82    27.4   no    55                         54/no
+  LOC.SG n           baseline          ge1_strict     50     0    12.8  yes    13                         50/no
+  LOC.SG n           baseline          ge2pm          39    19    10.6   no     9                         20/no
+  NOM.PL m.an        velar             dictionary   1449   504   199.1   no   305                       1235/no
+  NOM.PL m.an        velar             ge1           533   100    84.9   no    16                        436/no
+  NOM.PL m.an        velar             ge1_strict    514    95    82.3   no    13                        422/no
+  NOM.PL m.an        velar             ge2pm          75     7    17.4  yes    11                         68/no
+  NOM.PL m.an        r                 dictionary    396    66    66.2  yes     1                        365/no
+  NOM.PL m.an        r                 ge1           194    11    36.8  yes    26                        184/no
+  NOM.PL m.an        r                 ge1_strict    188    11    35.9  yes    25                        178/no
+  NOM.PL m.an        r                 ge2pm          38     1    10.4  yes    10                         37/no
+  NOM.PL m.an        coronal_inferred  dictionary   1016   550   146.7   no   404                        807/no
+  NOM.PL m.an        coronal_inferred  ge1           409   129    68.0   no    61                        288/no
+  NOM.PL m.an        coronal_inferred  ge1_strict    374   116    63.1   no    53                        264/no
+  NOM.PL m.an        coronal_inferred  ge2pm          81    28    18.4   no    10                         53/no
+  NOM.PL m.an        baseline          dictionary    413   363    68.6   no   295                        149/no
+  NOM.PL m.an        baseline          ge1           124    92    25.7   no    67                         34/no
+  NOM.PL m.an        baseline          ge1_strict    113    83    23.9   no    60                         30/no
+  NOM.PL m.an        baseline          ge2pm          19    17     6.5   no    11                         2/yes
+  NOM.PL m.an -ové   velar             dictionary   1449   504   199.1   no   305                       1235/no
+  NOM.PL m.an -ové   velar             ge1           533   100    84.9   no    16                        436/no
+  NOM.PL m.an -ové   velar             ge1_strict    514    95    82.3   no    13                        422/no
+  NOM.PL m.an -ové   velar             ge2pm          75     7    17.4  yes    11                         68/no
+  NOM.PL m.an -ové   r                 dictionary    396    66    66.2  yes     1                        365/no
+  NOM.PL m.an -ové   r                 ge1           194    11    36.8  yes    26                        184/no
+  NOM.PL m.an -ové   r                 ge1_strict    188    11    35.9  yes    25                        178/no
+  NOM.PL m.an -ové   r                 ge2pm          38     1    10.4  yes    10                         37/no
+  NOM.PL m.an -ové   coronal_inferred  dictionary    955   214   139.2   no    75                        891/no
+  NOM.PL m.an -ové   coronal_inferred  ge1           330    24    56.9  yes    33                        310/no
+  NOM.PL m.an -ové   coronal_inferred  ge1_strict    296    13    52.0  yes    40                        285/no
+  NOM.PL m.an -ové   coronal_inferred  ge2pm          61     8    14.8  yes     7                         53/no
+  NOM.PL m.an -ové   baseline          dictionary    410   360    68.1   no   292                        149/no
+  NOM.PL m.an -ové   baseline          ge1           120    88    25.1   no    63                         34/no
+  NOM.PL m.an -ové   baseline          ge1_strict    110    80    23.4   no    57                         30/no
+  NOM.PL m.an -ové   baseline          ge2pm          16    14     5.8   no     9                         2/yes
+  LOC.PL m.an        velar             dictionary   1475    40   202.2  yes   163                       1458/no
+  LOC.PL m.an        velar             ge1           125     0    25.9  yes    26                        125/no
+  LOC.PL m.an        velar             ge1_strict     93     0    20.5  yes    21                         93/no
+  LOC.PL m.an        velar             ge2pm           1     0       -    -     -                           1/-
+  LOC.PL m.an        r                 dictionary    399     0    66.6  yes    67                        399/no
+  LOC.PL m.an        r                 ge1            51     0    13.0  yes    13                         51/no
+  LOC.PL m.an        r                 ge1_strict     46     0    12.0  yes    13                         46/no
+  LOC.PL m.an        r                 ge2pm           1     0       -    -     -                           1/-
+  LOC.PL m.an        coronal_inferred  dictionary   1337     1   185.7  yes   185                       1336/no
+  LOC.PL m.an        coronal_inferred  ge1           138     0    28.0  yes    29                        138/no
+  LOC.PL m.an        coronal_inferred  ge1_strict    120     0    25.1  yes    26                        120/no
+  LOC.PL m.an        coronal_inferred  ge2pm           1     0       -    -     -                           1/-
+  LOC.PL m.an        baseline          dictionary    442     0    72.6  yes    73                        442/no
+  LOC.PL m.an        baseline          ge1            34     0     9.6  yes    10                         34/no
+  LOC.PL m.an        baseline          ge1_strict     24     0     7.6  yes     8                         24/no
+  LOC.PL m.an        baseline          ge2pm           2     0     2.9  yes     -                         2/yes
+  LOC.PL m.in        velar             dictionary   2070   351   271.1   no    80                       2011/no
+  LOC.PL m.in        velar             ge1           372    14    62.8  yes    49                        358/no
+  LOC.PL m.in        velar             ge1_strict    308     8    53.8  yes    46                        300/no
+  LOC.PL m.in        velar             ge2pm          31     0     9.0  yes    10                         31/no
+  LOC.PL m.in        r                 dictionary    681     1   104.4  yes   104                        680/no
+  LOC.PL m.in        r                 ge1           149     0    29.8  yes    30                        149/no
+  LOC.PL m.in        r                 ge1_strict    121     0    25.2  yes    26                        121/no
+  LOC.PL m.in        r                 ge2pm          26     0     8.0  yes     8                         26/no
+  LOC.PL m.in        coronal_inferred  dictionary   2031     2   266.7  yes   265                       2029/no
+  LOC.PL m.in        coronal_inferred  ge1           414     0    68.7  yes    69                        414/no
+  LOC.PL m.in        coronal_inferred  ge1_strict    379     0    63.8  yes    64                        379/no
+  LOC.PL m.in        coronal_inferred  ge2pm          67     0    15.9  yes    16                         67/no
+  LOC.PL m.in        baseline          dictionary   2220     0   288.1  yes   289                       2220/no
+  LOC.PL m.in        baseline          ge1           381     0    64.1  yes    65                        381/no
+  LOC.PL m.in        baseline          ge1_strict    352     0    60.0  yes    61                        352/no
+  LOC.PL m.in        baseline          ge2pm          47     0    12.2  yes    13                         47/no
+  LOC.PL n           velar             dictionary    412   401    68.4   no   333                        35/yes
+  LOC.PL n           velar             ge1            50    43    12.8   no    31                         7/yes
+  LOC.PL n           velar             ge1_strict     42    35    11.2   no    24                         7/yes
+  LOC.PL n           velar             ge2pm           2     2     2.9  yes     -                         0/yes
+  LOC.PL n           r                 dictionary     68     1    16.1  yes    16                         67/no
+  LOC.PL n           r                 ge1            21     0     6.9  yes     7                         21/no
+  LOC.PL n           r                 ge1_strict     14     0     5.3  yes     6                         14/no
+  LOC.PL n           r                 ge2pm           6     0     3.3  yes     4                          6/no
+  LOC.PL n           coronal_inferred  dictionary    234     2    42.9  yes    41                        232/no
+  LOC.PL n           coronal_inferred  ge1            55     0    13.7  yes    14                         55/no
+  LOC.PL n           coronal_inferred  ge1_strict     45     0    11.8  yes    12                         45/no
+  LOC.PL n           coronal_inferred  ge2pm          17     0     6.0  yes     7                         17/no
+  LOC.PL n           baseline          dictionary    417     0    69.1  yes    70                        417/no
+  LOC.PL n           baseline          ge1            78     0    17.9  yes    18                         78/no
+  LOC.PL n           baseline          ge1_strict     68     0    16.1  yes    17                         68/no
+  LOC.PL n           baseline          ge2pm           8     0     3.8  yes     4                          8/no
+  VOC.SG m.an        velar             dictionary   1425  1415   196.2   no  1219                        13/yes
+  VOC.SG m.an        velar             ge1           166   165    32.5   no   133                         1/yes
+  VOC.SG m.an        velar             ge1_strict      2     2     2.9  yes     -                         0/yes
+  VOC.SG m.an        velar             ge2pm          20    20     6.7   no    14                         0/yes
+  VOC.SG m.an        r                 dictionary    387     4    65.0  yes    61                        383/no
+  VOC.SG m.an        r                 ge1            18     0     6.2  yes     7                         18/no
+  VOC.SG m.an        r                 ge1_strict     16     0     5.8  yes     6                         16/no
+  VOC.SG m.an        r                 ge2pm           1     0       -    -     -                           1/-
+  VOC.SG m.an        coronal_inferred  dictionary    948     5   138.3  yes   134                        943/no
+  VOC.SG m.an        coronal_inferred  ge1            29     2     8.6  yes     7                         27/no
+  VOC.SG m.an        coronal_inferred  ge1_strict     21     0     6.9  yes     7                         21/no
+  VOC.SG m.an        coronal_inferred  ge2pm           4     0     2.9  yes     3                          4/no
+  VOC.SG m.an        baseline          dictionary    391     5    65.5  yes    61                        386/no
+  VOC.SG m.an        baseline          ge1            41     0    11.0  yes    12                         41/no
+  VOC.SG m.an        baseline          ge1_strict     21     0     6.9  yes     7                         21/no
+  VOC.SG m.an        baseline          ge2pm           4     0     2.9  yes     3                          4/no
+  ADV                velar             dictionary    412   331    68.4   no   263                        104/no
+  ADV                velar             ge1           198   168    37.4   no   131                        31/yes
+  ADV                velar             ge1_strict    198   168    37.4   no   131                        31/yes
+  ADV                velar             ge2pm          57    45    14.1   no    31                        12/yes
+  ADV                r                 dictionary     25     0     7.8  yes     8                         25/no
+  ADV                r                 ge1            16     0     5.8  yes     6                         16/no
+  ADV                r                 ge1_strict     16     0     5.8  yes     6                         16/no
+  ADV                r                 ge2pm           4     0     2.9  yes     3                          4/no
+  ADV                coronal_inferred  dictionary   1160    29   164.4  yes   136                       1143/no
+  ADV                coronal_inferred  ge1           706    17   107.6  yes    91                        691/no
+  ADV                coronal_inferred  ge1_strict    706    17   107.6  yes    91                        691/no
+  ADV                coronal_inferred  ge2pm         236     9    43.2  yes    35                        227/no
+  ADV                baseline          dictionary    586    11    91.9  yes    81                        578/no
+  ADV                baseline          ge1           327     8    56.5  yes    49                        319/no
+  ADV                baseline          ge1_strict    327     8    56.5  yes    49                        319/no
+  ADV                baseline          ge2pm          83     4    18.8  yes    15                         79/no
+  ADV -y             velar             dictionary    405   293    67.5   no   226                        114/no
+  ADV -y             velar             ge1           195   156    37.0   no   120                         39/no
+  ADV -y             velar             ge1_strict    195   156    37.0   no   120                         39/no
+  ADV -y             velar             ge2pm          51    36    13.0   no    24                         15/no
+  ADV -y             r                 dictionary     25     0     7.8  yes     8                         25/no
+  ADV -y             r                 ge1            16     0     5.8  yes     6                         16/no
+  ADV -y             r                 ge1_strict     16     0     5.8  yes     6                         16/no
+  ADV -y             r                 ge2pm           4     0     2.9  yes     3                          4/no
+  ADV -y             coronal_inferred  dictionary   1155     0   163.8  yes   164                       1155/no
+  ADV -y             coronal_inferred  ge1           695     0   106.2  yes   107                        695/no
+  ADV -y             coronal_inferred  ge1_strict    695     0   106.2  yes   107                        695/no
+  ADV -y             coronal_inferred  ge2pm         227     0    41.8  yes    42                        227/no
+  ADV -y             baseline          dictionary    586     0    91.9  yes    92                        586/no
+  ADV -y             baseline          ge1           323     0    55.9  yes    56                        323/no
+  ADV -y             baseline          ge1_strict    323     0    55.9  yes    56                        323/no
+  ADV -y             baseline          ge2pm          80     0    18.3  yes    19                         80/no
+  ADV -o             velar             dictionary    122    40    25.4   no    15                        105/no
+  ADV -o             velar             ge1            42    12    11.2   no     1                         31/no
+  ADV -o             velar             ge1_strict     42    12    11.2   no     1                         31/no
+  ADV -o             velar             ge2pm          21     9     6.9   no     3                         12/no
+  ADV -o             r                 dictionary     25     0     7.8  yes     8                         25/no
+  ADV -o             r                 ge1            16     0     5.8  yes     6                         16/no
+  ADV -o             r                 ge1_strict     16     0     5.8  yes     6                         16/no
+  ADV -o             r                 ge2pm           4     0     2.9  yes     3                          4/no
+  ADV -o             coronal_inferred  dictionary   1160    29   164.4  yes   136                       1143/no
+  ADV -o             coronal_inferred  ge1           706    17   107.6  yes    91                        691/no
+  ADV -o             coronal_inferred  ge1_strict    706    17   107.6  yes    91                        691/no
+  ADV -o             coronal_inferred  ge2pm         236     9    43.2  yes    35                        227/no
+  ADV -o             baseline          dictionary    586    11    91.9  yes    81                        578/no
+  ADV -o             baseline          ge1           327     8    56.5  yes    49                        319/no
+  ADV -o             baseline          ge1_strict    327     8    56.5  yes    49                        319/no
+  ADV -o             baseline          ge2pm          83     4    18.8  yes    15                         79/no
+
+  ge1_strict: >= 1 token, counting only forms that are neither
+  ambiguous with another lexeme nor shared with a cell outside
+  their copy group (LOC.SG -u = GEN/DAT.SG; VOC -u = DAT/LOC.SG):
+  the ge1 counts of those cells are upper bounds.
+
+  Doublet codings (R19), velars, tau >= 1: e of the P-default rule
+    LOC.SG m.in        dominant N=1007 e=1002; doublet_exception N=1007 e=1006; doublet_excluded N=1002 e=1001
+    LOC.SG n           dominant N=126 e=123; doublet_exception N=126 e=126; doublet_excluded N=123 e=123
+    NOM.PL m.an        dominant N=533 e=100; doublet_exception N=533 e=114; doublet_excluded N=512 e=93
+    NOM.PL m.an -ové   dominant N=533 e=100; doublet_exception N=533 e=114; doublet_excluded N=512 e=93
+    LOC.PL m.an        dominant N=125 e=0; doublet_exception N=125 e=0; doublet_excluded N=125 e=0
+    LOC.PL m.in        dominant N=372 e=14; doublet_exception N=372 e=17; doublet_excluded N=368 e=13
+    LOC.PL n           dominant N=50 e=43; doublet_exception N=50 e=44; doublet_excluded N=49 e=43
+    VOC.SG m.an        dominant N=166 e=165; doublet_exception N=166 e=165; doublet_excluded N=166 e=165
+    ADV                dominant N=198 e=168; doublet_exception N=198 e=171; doublet_excluded N=190 e=163
+    ADV -y             dominant N=195 e=156; doublet_exception N=195 e=156; doublet_excluded N=195 e=156
+    ADV -o             dominant N=42 e=12; doublet_exception N=42 e=15; doublet_excluded N=34 e=7
+
+(b) Nested classes, velars, tau >= 1 (Yang order: suffixoid -log/-urg/-graf, -sky/-cky, other suffix, monosyllable, loan, elsewhere)
+------------------------------------------------------------------------
+  LOC.SG m.in        suffixoid:ret N=7 e=0 yes; sky:pal N=0 e=0 -; suffix:ret N=497 e=0 yes; monosyllable:ret N=173 e=2 yes; loan:ret N=46 e=0 yes; elsewhere:ret N=284 e=3 yes
+  LOC.SG n           suffixoid:pal N=0 e=0 -; sky:pal N=0 e=0 -; suffix:pal N=0 e=0 -; monosyllable:ret N=2 e=0 yes; loan:ret N=9 e=0 yes; elsewhere:ret N=115 e=3 yes
+  NOM.PL m.an        suffixoid:ret N=44 e=0 yes; sky:pal N=3 e=0 yes; suffix:pal N=283 e=20 yes; monosyllable:pal N=37 e=12 no; loan:pal N=16 e=4 yes; elsewhere:pal N=150 e=20 yes
+  NOM.PL m.an -ové   suffixoid:ret N=44 e=0 yes; sky:pal N=3 e=0 yes; suffix:pal N=283 e=20 yes; monosyllable:pal N=37 e=12 no; loan:pal N=16 e=4 yes; elsewhere:pal N=150 e=20 yes
+  LOC.PL m.an        suffixoid:pal N=2 e=0 yes; sky:pal N=0 e=0 -; suffix:pal N=72 e=0 yes; monosyllable:pal N=13 e=0 yes; loan:pal N=8 e=0 yes; elsewhere:pal N=30 e=0 yes
+  LOC.PL m.in        suffixoid:pal N=4 e=0 yes; sky:pal N=0 e=0 -; suffix:pal N=184 e=7 yes; monosyllable:pal N=75 e=1 yes; loan:pal N=12 e=0 yes; elsewhere:pal N=97 e=6 yes
+  LOC.PL n           suffixoid:pal N=0 e=0 -; sky:pal N=0 e=0 -; suffix:ret N=1 e=0 -; monosyllable:pal N=0 e=0 -; loan:ret N=3 e=1 yes; elsewhere:ret N=46 e=6 yes
+  VOC.SG m.an        suffixoid:ret N=2 e=0 yes; sky:pal N=0 e=0 -; suffix:ret N=86 e=0 yes; monosyllable:ret N=19 e=1 yes; loan:ret N=5 e=0 yes; elsewhere:ret N=54 e=0 yes
+  ADV                sky:ret N=156 e=1 yes; monosyllable:ret N=1 e=0 -; loan:pal N=0 e=0 -; elsewhere:pal N=41 e=12 no
+  ADV -y             sky:ret N=156 e=1 yes; monosyllable:pal N=0 e=0 -; loan:pal N=0 e=0 -; elsewhere:pal N=39 e=1 yes
+  ADV -o             sky:pal N=1 e=0 -; monosyllable:ret N=1 e=0 -; loan:pal N=0 e=0 -; elsewhere:pal N=40 e=11 no
+
+(c) Spell-out TP, leave one cell out (velars; dominant coding)
+------------------------------------------------------------------------
+  underspecified = alternation evidence outside the tested cell; e = roots taking the N allomorph
+  prespecified = no such evidence; e = roots taking the P allomorph
+  tested cell    E   tau        underspecified      N     e   theta  tol  frag    prespecified      N     e   theta  tol  frag
+  LOC.SG m.in    E0  dictionary   1984  1980   261.3   no  1719                       61     4    14.8  yes    11
+  LOC.SG m.in    E0  ge1           314   311    54.6   no   257                      693     2   105.9  yes   104
+  LOC.SG m.in    E0  ge1_strict      3     0     2.7  yes     3                        1     1       -    -     -
+  LOC.SG m.in    E0  ge2pm          28    27     8.4   no    19                      224     2    41.4  yes    40
+  LOC.SG m.in    E1  dictionary   1985  1981   261.4   no  1720                       60     4    14.7  yes    11
+  LOC.SG m.in    E1  ge1           322   319    55.8   no   264                      685     2   104.9  yes   103
+  LOC.SG m.in    E1  ge1_strict      3     0     2.7  yes     3                        1     1       -    -     -
+  LOC.SG m.in    E1  ge2pm          32    31     9.2   no    22                      220     2    40.8  yes    39
+  LOC.SG m.in    E2  dictionary   1988  1984   261.8   no  1723                       57     4    14.1  yes    11
+  LOC.SG m.in    E2  ge1           402   399    67.0   no   332                      605     2    94.5  yes    93
+  LOC.SG m.in    E2  ge1_strict      4     0     2.9  yes     3                        0     0       -    -     -
+  LOC.SG m.in    E2  ge2pm          79    77    18.1   no    59                      173     1    33.6  yes    33
+  LOC.SG n       E0  dictionary     40    39    10.8   no    29                      362     3    61.4  yes    59
+  LOC.SG n       E0  ge1             6     6     3.3   no     3                      120     3    25.1  yes    23
+  LOC.SG n       E0  ge1_strict      0     0       -    -     -                        2     2     2.9  yes     -
+  LOC.SG n       E0  ge2pm           0     0       -    -     -                       19     1     6.5  yes     6
+  LOC.SG n       E1  dictionary     41    40    11.0   no    29                      361     3    61.3  yes    59
+  LOC.SG n       E1  ge1             7     7     3.6   no     4                      119     3    24.9  yes    22
+  LOC.SG n       E1  ge1_strict      0     0       -    -     -                        2     2     2.9  yes     -
+  LOC.SG n       E1  ge2pm           0     0       -    -     -                       19     1     6.5  yes     6
+  LOC.SG n       E2  dictionary     66    63    15.8   no    48                      336     1    57.8  yes    57
+  LOC.SG n       E2  ge1            13    10     5.1   no     5                      113     0    23.9  yes    24
+  LOC.SG n       E2  ge1_strict      2     0     2.9  yes     -                        0     0       -    -     -
+  LOC.SG n       E2  ge2pm           1     0       -    -     -                       18     0     6.2  yes     7
+  NOM.PL m.an    E0  dictionary   1438   494   197.8   no   297                       11     6     4.6   no     2
+  NOM.PL m.an    E0  ge1           110    14    23.4  yes    10                      423   340    69.9   no   271
+  NOM.PL m.an    E0  ge1_strict     83     6    18.8  yes    13                      431   345    71.1   no   274
+  NOM.PL m.an    E0  ge2pm           1     0       -    -     -                       74    67    17.2   no    50
+  NOM.PL m.an    E1  dictionary   1438   494   197.8   no   297                       11     6     4.6   no     2
+  NOM.PL m.an    E1  ge1           114    14    24.1  yes    11                      419   336    69.4   no   267
+  NOM.PL m.an    E1  ge1_strict     88     6    19.7  yes    14                      426   340    70.4   no   270
+  NOM.PL m.an    E1  ge2pm           2     0     2.9  yes     -                       73    66    17.0   no    49
+  NOM.PL m.an    E2  dictionary   1438   494   197.8   no   297                       11     6     4.6   no     2
+  NOM.PL m.an    E2  ge1           256    48    46.2   no     2                      277   227    49.3   no   178
+  NOM.PL m.an    E2  ge1_strict    235    41    43.0  yes     3                      279   227    49.5   no   178
+  NOM.PL m.an    E2  ge2pm          28     3     8.4  yes     6                       47    43    12.2   no    31
+  LOC.PL m.an    E0  dictionary   1283    33   179.3  yes   147                      192   186    36.5   no   150
+  LOC.PL m.an    E0  ge1            92     0    20.3  yes    21                       33    33     9.4   no    24
+  LOC.PL m.an    E0  ge1_strict     72     0    16.8  yes    17                       21    21     6.9   no    15
+  LOC.PL m.an    E0  ge2pm           1     0       -    -     -                        0     0       -    -     -
+  LOC.PL m.an    E1  dictionary   1284    33   179.4  yes   147                      191   185    36.4   no   149
+  LOC.PL m.an    E1  ge1            92     0    20.3  yes    21                       33    33     9.4   no    24
+  LOC.PL m.an    E1  ge1_strict     73     0    17.0  yes    18                       20    20     6.7   no    14
+  LOC.PL m.an    E1  ge2pm           1     0       -    -     -                        0     0       -    -     -
+  LOC.PL m.an    E2  dictionary   1360    33   188.5  yes   156                      115   109    24.2   no    85
+  LOC.PL m.an    E2  ge1            98     0    21.4  yes    22                       27    27     8.2   no    19
+  LOC.PL m.an    E2  ge1_strict     78     0    17.9  yes    18                       15    15     5.5   no    10
+  LOC.PL m.an    E2  ge2pm           1     0       -    -     -                        0     0       -    -     -
+  LOC.PL m.in    E0  dictionary     37    10    10.2  yes     1                     2033  1976   266.9   no  1710
+  LOC.PL m.in    E0  ge1             4     0     2.9  yes     3                      368   354    62.3   no   292
+  LOC.PL m.in    E0  ge1_strict      3     0     2.7  yes     3                      305   297    53.3   no   244
+  LOC.PL m.in    E0  ge2pm           1     0       -    -     -                       30    30     8.8   no    22
+  LOC.PL m.in    E1  dictionary     65    10    15.6  yes     6                     2005  1948   263.7   no  1685
+  LOC.PL m.in    E1  ge1            17     0     6.0  yes     7                      355   341    60.5   no   281
+  LOC.PL m.in    E1  ge1_strict     12     0     4.8  yes     5                      296   288    52.0   no   236
+  LOC.PL m.in    E1  ge2pm           4     0     2.9  yes     3                       27    27     8.2   no    19
+  LOC.PL m.in    E2  dictionary    429    29    70.8  yes    42                     1641  1586   221.7   no  1365
+  LOC.PL m.in    E2  ge1            90     0    20.0  yes    21                      282   268    50.0   no   219
+  LOC.PL m.in    E2  ge1_strict     76     0    17.5  yes    18                      232   224    42.6   no   182
+  LOC.PL m.in    E2  ge2pm          11     0     4.6  yes     5                       20    20     6.7   no    14
+  LOC.PL n       E0  dictionary      8     8     3.8   no     5                      404    32    67.3  yes    36
+  LOC.PL n       E0  ge1             0     0       -    -     -                       50     7    12.8  yes     6
+  LOC.PL n       E0  ge1_strict      0     0       -    -     -                       42     7    11.2  yes     5
+  LOC.PL n       E0  ge2pm           0     0       -    -     -                        2     0     2.9  yes     -
+  LOC.PL n       E1  dictionary      9     9     4.1   no     5                      403    32    67.2  yes    36
+  LOC.PL n       E1  ge1             0     0       -    -     -                       50     7    12.8  yes     6
+  LOC.PL n       E1  ge1_strict      0     0       -    -     -                       42     7    11.2  yes     5
+  LOC.PL n       E1  ge2pm           0     0       -    -     -                        2     0     2.9  yes     -
+  LOC.PL n       E2  dictionary     31    31     9.0   no    22                      381    32    64.1  yes    33
+  LOC.PL n       E2  ge1             2     2     2.9  yes     -                       48     7    12.4  yes     6
+  LOC.PL n       E2  ge1_strict      2     2     2.9  yes     -                       40     7    10.8  yes     4
+  LOC.PL n       E2  ge2pm           0     0       -    -     -                        2     0     2.9  yes     -
+  VOC.SG m.an    E0  dictionary   1416  1408   195.2   no  1213                        9     2     4.1  yes     3
+  VOC.SG m.an    E0  ge1            99    99    21.5   no    78                       67     1    15.9  yes    15
+  VOC.SG m.an    E0  ge1_strict      0     0       -    -     -                        2     0     2.9  yes     -
+  VOC.SG m.an    E0  ge2pm           4     4     2.9   no     2                       16     0     5.8  yes     6
+  VOC.SG m.an    E1  dictionary   1416  1408   195.2   no  1213                        9     2     4.1  yes     3
+  VOC.SG m.an    E1  ge1            99    99    21.5   no    78                       67     1    15.9  yes    15
+  VOC.SG m.an    E1  ge1_strict      0     0       -    -     -                        2     0     2.9  yes     -
+  VOC.SG m.an    E1  ge2pm           4     4     2.9   no     2                       16     0     5.8  yes     6
+  VOC.SG m.an    E2  dictionary   1416  1408   195.2   no  1213                        9     2     4.1  yes     3
+  VOC.SG m.an    E2  ge1           108   107    23.1   no    84                       58     0    14.3  yes    15
+  VOC.SG m.an    E2  ge1_strict      1     1       -    -     -                        1     0       -    -     -
+  VOC.SG m.an    E2  ge2pm           8     8     3.8   no     5                       12     0     4.8  yes     5
+
+R17 fixed rule family (nouns, all roots, dominant coding, palatalize row; non-trigger cells: retain row)
+------------------------------------------------------------------------
+  table  target            trigger        E   tau             N     e   theta  tol  frag
+  R17a   dorsal            -e/-i          E0  dictionary   7760  3367   866.4   no  2501
+  R17a   dorsal            -e/-i          E0  ge1          2666  1006   338.0   no   669
+  R17a   dorsal            -e/-i          E2  dictionary   7779  3267   868.3   no  2399
+  R17a   dorsal            -e/-i          E2  ge1          2732   950   345.3   no   605
+  R17a   dorsal            -e             E0  dictionary   7696  3884   860.0   no  3024
+  R17a   dorsal            -e             E0  ge1          2379  1245   306.0   no   939
+  R17a   dorsal            -e             E2  dictionary   7710  3772   861.4   no  2911
+  R17a   dorsal            -e             E2  ge1          2433  1182   312.0   no   870
+  R17a   dorsal            -i             E0  dictionary   3531     3   432.2  yes   430
+  R17a   dorsal            -i             E0  ge1           837     0   124.4  yes   125
+  R17a   dorsal            -i             E2  dictionary   3621     7   441.9  yes   435
+  R17a   dorsal            -i             E2  ge1           903     4   132.7  yes   129
+  R17a   dorsal            -e/-i/-y       E0  dictionary   7830  7240   873.3   no  6367
+  R17a   dorsal            -e/-i/-y       E0  ge1          3930  3351   474.8   no  2877
+  R17a   dorsal            -e/-i/-y       E2  dictionary   7849  7132   875.2   no  6257
+  R17a   dorsal            -e/-i/-y       E2  ge1          3971  3276   479.2   no  2797
+  R17b   dorsal            -i             E0  dictionary   3531     3   432.2  yes   430
+  R17b   dorsal            -i             E0  ge1           837     0   124.4  yes   125
+  R17b   dorsal            -i             E2  dictionary   3621     7   441.9  yes   435
+  R17b   dorsal            -i             E2  ge1           903     4   132.7  yes   129
+  R17b   dorsal            -e             E0  dictionary   7696  3827   860.0   no  2967  (retain)
+  R17b   dorsal            -e             E0  ge1          2379  1134   306.0   no   828  (retain)
+  R17b   dorsal            -e             E2  dictionary   7710  4121   861.4   no  3260  (retain)
+  R17b   dorsal            -e             E2  ge1          2433  1254   312.0   no   942  (retain)
+  R17b   dorsal            C-suffix       E2  dictionary    695   689   106.2   no   583  (retain)
+  R17b   dorsal            C-suffix       E2  ge1           437   432    71.9   no   361  (retain)
+  R17b   dorsal            back-V suffix  E2  dictionary    885    10   130.4  yes   121  (retain)
+  R17b   dorsal            back-V suffix  E2  ge1           432     7    71.2  yes    65  (retain)
+  R17c   coronal_inferred  -i             E0  dictionary   1156     0   163.9  yes   164
+  R17c   coronal_inferred  -i             E0  ge1           322     0    55.8  yes    56
+  R17c   coronal_inferred  -i             E2  dictionary   1222    77   171.9  yes    95
+  R17c   coronal_inferred  -i             E2  ge1           360    37    61.2  yes    25
+  R17c   coronal_inferred  -e             E0  dictionary   5758  2354   665.0   no  1689  (retain)
+  R17c   coronal_inferred  -e             E0  ge1          2227   846   288.9   no   558  (retain)
+  R17c   coronal_inferred  -e             E2  dictionary   5758  2356   665.0   no  1691  (retain)
+  R17c   coronal_inferred  -e             E2  ge1          2227   848   288.9   no   560  (retain)
+  R17c   r                 -i             E0  dictionary    376     5    63.4  yes    59
+  R17c   r                 -i             E0  ge1           186     1    35.6  yes    35
+  R17c   r                 -i             E2  dictionary    442    31    72.6  yes    42
+  R17c   r                 -i             E2  ge1           229    20    42.1  yes    23
+  R17c   r                 -e             E0  dictionary   1497   467   204.8   no   263  (retain)
+  R17c   r                 -e             E0  ge1           645   141    99.7   no    42  (retain)
+  R17c   r                 -e             E2  dictionary   1497   469   204.8   no   265  (retain)
+  R17c   r                 -e             E2  ge1           646   143    99.8   no    44  (retain)
+  R17c   sibilant          -i             E0  dictionary    239   239    43.6   no   196
+  R17c   sibilant          -i             E0  ge1           114   114    24.1   no    90
+  R17c   sibilant          -i             E2  dictionary    244   243    44.4   no   199
+  R17c   sibilant          -i             E2  ge1           119   118    24.9   no    94
+  R17c   sibilant          -e             E0  dictionary   1040     0   149.7  yes   150  (retain)
+  R17c   sibilant          -e             E0  ge1           451     0    73.8  yes    74  (retain)
+  R17c   sibilant          -e             E2  dictionary   1040     0   149.7  yes   150  (retain)
+  R17c   sibilant          -e             E2  ge1           451     0    73.8  yes    74  (retain)
+  R17c   lateral           -i             E0  dictionary    449   449    73.5   no   376
+  R17c   lateral           -i             E0  ge1           220   220    40.8   no   180
+  R17c   lateral           -i             E2  dictionary    495   495    79.8   no   416
+  R17c   lateral           -i             E2  ge1           255   255    46.0   no   209
+  R17c   lateral           -e             E0  dictionary   1442     0   198.2  yes   199  (retain)
+  R17c   lateral           -e             E0  ge1           659     0   101.5  yes   102  (retain)
+  R17c   lateral           -e             E2  dictionary   1442     0   198.2  yes   199  (retain)
+  R17c   lateral           -e             E2  ge1           659     0   101.5  yes   102  (retain)
+
+R22 derivational trigger rows (velar bases, basis wikt; palatalize row)
+------------------------------------------------------------------------
+  suffix       tau             N     e   theta  tol  frag  memo
+  -it          dictionary     52     0    13.2  yes    14  R22 derivational trigger
+  -it          ge1            40     0    10.8  yes    11  R22 derivational trigger
+  -et          dictionary      7     1     3.6  yes     3  R22 derivational trigger
+  -et          ge1             5     0     3.1  yes     4  R22 derivational trigger
+  -ní/-ný      dictionary    131     4    26.9  yes    23  R22 derivational trigger
+  -ní/-ný      ge1           116     3    24.4  yes    22  R22 derivational trigger
+  -ský/-cký    dictionary    303     3    53.0  yes    51  R22 derivational trigger
+  -ský/-cký    ge1           188     2    35.9  yes    34  R22 derivational trigger
+  -ina         dictionary     26     0     8.0  yes     8  R22 derivational trigger
+  -ina         ge1            17     0     6.0  yes     7  R22 derivational trigger
+  -í           dictionary    100     0    21.7  yes    22  R22 derivational trigger
+  -í           ge1            53     0    13.3  yes    14  R22 derivational trigger
+  -ek          dictionary    482     0    78.0  yes    79  R22 derivational trigger
+  -ek          ge1           165     0    32.3  yes    33  R22 derivational trigger
+  -ka          dictionary    370     0    62.6  yes    63  R22 derivational trigger
+  -ka          ge1           169     0    32.9  yes    33  R22 derivational trigger
+  -ík          dictionary     17     0     6.0  yes     7  R22 derivational trigger
+  -ík          ge1             6     0     3.3  yes     4  R22 derivational trigger
+  -an          dictionary      9     3     4.1  yes     2  R22 derivational trigger
+  -an          ge1             5     1     3.1  yes     3  R22 derivational trigger
+  -ník         dictionary     34     0     9.6  yes    10  R22 derivational trigger
+  -ník         ge1            21     0     6.9  yes     7  R22 derivational trigger
+  -nice        dictionary     11     0     4.6  yes     5  R22 derivational trigger
+  -nice        ge1             7     0     3.6  yes     4  R22 derivational trigger
+  -ovat        dictionary      0     0       -    -     -  R22 non-palatalizing suffix: shields
+  -ovat        ge1             0     0       -    -     -  R22 non-palatalizing suffix: shields
+  -ový/-ovní   dictionary      0     0       -    -     -  R22 non-palatalizing suffix: shields
+  -ový/-ovní   ge1             0     0       -    -     -  R22 non-palatalizing suffix: shields
+  -yně         dictionary      0     0       -    -     -  R22 non-palatalizing suffix: shields
+  -yně         ge1             0     0       -    -     -  R22 non-palatalizing suffix: shields
+  -ův          dictionary      0     0       -    -     -  R22 non-palatalizing suffix: shields
+  -ův          ge1             0     0       -    -     -  R22 non-palatalizing suffix: shields
+  -ista        dictionary      4     4     2.9   no     2  R22 non-trigger suffix: N = e
+  -ista        ge1             4     4     2.9   no     2  R22 non-trigger suffix: N = e
+  -ismus       dictionary      3     3     2.7   no     1  R22 non-trigger suffix: N = e
+  -ismus       ge1             2     2     2.9  yes     -  R22 non-trigger suffix: N = e
+
+Simulated learners (R18), E0, 1000 vocabularies drawn by token frequency
+------------------------------------------------------------------------
+  V = 1000 on the lemma basis: shares of learners with palatalize,
+  retain, neither or a conditioned rule set productive; then at
+  V = 5000 the palatalize/retain shares on each R24 basis: lemma
+  (lemma-form tokens), paradigm (attested forms summed), unamb.
+  (the same without forms of other lexemes: jak 'yak' loses the
+  conjunction's tokens)
+  table         target            trigger        subset          tau            pal    ret    nei   cond   5000 lemma    paradigm      unamb.
+  R17a          dorsal            -e/-i          all             dictionary   0.000  0.000  1.000  0.000  0.000/0.000 0.000/0.000 0.000/0.000
+  R17b          dorsal            -i             all             dictionary   1.000  0.000  0.000  0.000  1.000/0.000 1.000/0.000 1.000/0.000
+  R17b          dorsal            -e             all             dictionary   0.000  0.000  1.000  0.000  0.000/0.000 0.000/0.000 0.000/0.000
+  R17c          coronal_inferred  -i             all             dictionary   1.000  0.000  0.000  0.000  1.000/0.000 1.000/0.000 1.000/0.000
+  R17c          r                 -i             all             dictionary   1.000  0.000  0.000  0.000  1.000/0.000 1.000/0.000 1.000/0.000
+  R17c          r                 -e             all             dictionary   0.000  0.955  0.045  0.000  0.000/0.221 0.000/0.000 0.000/0.000
+  R17c          sibilant          -i             all             dictionary   0.000  1.000  0.000  0.000  0.000/1.000 0.000/1.000 0.000/1.000
+  R17c          lateral           -i             all             dictionary   0.000  1.000  0.000  0.000  0.000/1.000 0.000/1.000 0.000/1.000
+  competition   velar             LOC.SG m.in    all             dictionary   0.000  1.000  0.000  0.000  0.000/1.000 0.000/1.000 0.000/1.000
+  competition   baseline          LOC.SG m.in    all             dictionary   0.000  1.000  0.000  0.000  0.000/1.000 0.000/1.000 0.000/1.000
+  competition   velar             NOM.PL m.an    all             dictionary   0.950  0.000  0.050  0.000  0.042/0.000 0.125/0.000 0.666/0.000
+  competition   baseline          NOM.PL m.an    all             dictionary   0.001  0.994  0.005  0.000  0.000/0.765 0.000/0.498 0.000/0.668
+  competition   velar             LOC.PL m.in    all             dictionary   1.000  0.000  0.000  0.000  1.000/0.000 1.000/0.000 1.000/0.000
+  competition   baseline          LOC.PL m.in    all             dictionary   1.000  0.000  0.000  0.000  1.000/0.000 1.000/0.000 1.000/0.000
+  spellout_loo  velar             LOC.SG m.in    underspecified  dictionary   0.000  1.000  0.000  0.000  0.000/1.000 0.000/1.000 0.000/1.000
+  spellout_loo  velar             NOM.PL m.an    underspecified  dictionary   0.951  0.000  0.049  0.000  0.061/0.000 0.137/0.000 0.670/0.000
+  R17a          dorsal            -e/-i          all             ge1          0.000  0.000  1.000  0.000  0.000/0.000 0.000/0.000 0.000/0.000
+  R17b          dorsal            -i             all             ge1          1.000  0.000  0.000  0.000  1.000/0.000 1.000/0.000 1.000/0.000
+  R17b          dorsal            -e             all             ge1          0.000  0.000  1.000  0.000  0.000/0.000 0.000/0.000 0.000/0.000
+  R17c          coronal_inferred  -i             all             ge1          1.000  0.000  0.000  0.000  1.000/0.000 1.000/0.000 1.000/0.000
+  R17c          r                 -i             all             ge1          1.000  0.000  0.000  0.000  1.000/0.000 1.000/0.000 1.000/0.000
+  R17c          r                 -e             all             ge1          0.000  0.960  0.040  0.000  0.000/0.540 0.000/0.000 0.000/0.000
+  R17c          sibilant          -i             all             ge1          0.000  1.000  0.000  0.000  0.000/1.000 0.000/1.000 0.000/1.000
+  R17c          lateral           -i             all             ge1          0.000  1.000  0.000  0.000  0.000/1.000 0.000/1.000 0.000/1.000
+  competition   velar             LOC.SG m.in    all             ge1          0.000  1.000  0.000  0.000  0.000/1.000 0.000/1.000 0.000/1.000
+  competition   baseline          LOC.SG m.in    all             ge1          0.000  1.000  0.000  0.000  0.000/1.000 0.000/1.000 0.000/1.000
+  competition   velar             NOM.PL m.an    all             ge1          0.999  0.000  0.001  0.000  0.915/0.000 0.968/0.000 0.996/0.000
+  competition   baseline          NOM.PL m.an    all             ge1          0.004  0.988  0.008  0.000  0.000/0.944 0.000/0.727 0.000/0.760
+  competition   velar             LOC.PL m.in    all             ge1          1.000  0.000  0.000  0.000  1.000/0.000 1.000/0.000 1.000/0.000
+  competition   baseline          LOC.PL m.in    all             ge1          1.000  0.000  0.000  0.000  1.000/0.000 1.000/0.000 1.000/0.000
+  spellout_loo  velar             LOC.SG m.in    underspecified  ge1          0.000  1.000  0.000  0.000  0.000/1.000 0.000/1.000 0.000/1.000
+  spellout_loo  velar             NOM.PL m.an    underspecified  ge1          0.999  0.000  0.001  0.000  1.000/0.000 1.000/0.000 1.000/0.000
+  R17a          dorsal            -e/-i          all             ge1_strict   0.000  0.000  1.000  0.000  0.000/0.000 0.000/0.000 0.000/0.000
+  R17b          dorsal            -i             all             ge1_strict   1.000  0.000  0.000  0.000  1.000/0.000 1.000/0.000 1.000/0.000
+  R17b          dorsal            -e             all             ge1_strict   0.000  0.000  1.000  0.000  0.000/0.000 0.000/0.000 0.000/0.000
+  R17c          coronal_inferred  -i             all             ge1_strict   1.000  0.000  0.000  0.000  1.000/0.000 1.000/0.000 1.000/0.000
+  R17c          r                 -i             all             ge1_strict   1.000  0.000  0.000  0.000  1.000/0.000 1.000/0.000 1.000/0.000
+  R17c          r                 -e             all             ge1_strict   0.000  0.985  0.015  0.000  0.000/0.947 0.000/0.038 0.000/0.019
+  R17c          sibilant          -i             all             ge1_strict   0.000  1.000  0.000  0.000  0.000/1.000 0.000/1.000 0.000/1.000
+  R17c          lateral           -i             all             ge1_strict   0.000  1.000  0.000  0.000  0.000/1.000 0.000/1.000 0.000/1.000
+  competition   velar             LOC.SG m.in    all             ge1_strict   0.339  0.000  0.661  0.000  1.000/0.000 1.000/0.000 1.000/0.000
+  competition   baseline          LOC.SG m.in    all             ge1_strict   0.421  0.000  0.579  0.000  1.000/0.000 1.000/0.000 1.000/0.000
+  competition   velar             NOM.PL m.an    all             ge1_strict   1.000  0.000  0.000  0.000  0.960/0.000 0.991/0.000 0.997/0.000
+  competition   baseline          NOM.PL m.an    all             ge1_strict   0.018  0.924  0.058  0.000  0.000/0.846 0.000/0.550 0.000/0.691
+  competition   velar             LOC.PL m.in    all             ge1_strict   1.000  0.000  0.000  0.000  1.000/0.000 1.000/0.000 1.000/0.000
+  competition   baseline          LOC.PL m.in    all             ge1_strict   1.000  0.000  0.000  0.000  1.000/0.000 1.000/0.000 1.000/0.000
+  spellout_loo  velar             LOC.SG m.in    underspecified  ge1_strict   0.030  0.000  0.970  0.000  0.872/0.000 0.957/0.000 0.996/0.000
+  spellout_loo  velar             NOM.PL m.an    underspecified  ge1_strict   1.000  0.000  0.000  0.000  1.000/0.000 1.000/0.000 1.000/0.000

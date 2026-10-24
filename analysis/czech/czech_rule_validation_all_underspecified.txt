@@ -1,0 +1,185 @@
+Analysis: czech-palatalization (all_underspecified)
+Target-stem rows validated: 48,143
+BOOLEAN mutation match: 48,104/48,143  (99.92%)
+SURFACE-IPA match: 48,090/48,143  (99.89%)
+
+========================================================================
+Per (stem_final × opportunity)  bool match / mismatch / rate
+========================================================================
+  ('ch', 'DAT.SG -e')        47 /      0   100.00%
+  ('ch', 'DAT.SG -ě') !       0 /      1     0.00%
+  ('ch', 'INS.SG -em')       155 /      0   100.00%
+  ('ch', 'LOC.PL -ech')         2 /      0   100.00%
+  ('ch', 'LOC.PL -ách')        31 /      0   100.00%
+  ('ch', 'LOC.PL -ích')       146 /      0   100.00%
+  ('ch', 'LOC.SG -e')        50 /      0   100.00%
+  ('ch', 'LOC.SG -u')       105 /      0   100.00%
+  ('ch', 'LOC.SG -ě') !       0 /      2     0.00%
+  ('ch', 'NOM.PL -i')        42 /      0   100.00%
+  ('ch', 'NOM.PL -ové')        39 /      0   100.00%
+  ('ch', 'NOM.PL.M.AN -í')        16 /      0   100.00%
+  ('ch', 'VOC.SG -e') !       0 /      1     0.00%
+  ('d', 'DAT.SG -ě')       395 /      0   100.00%
+  ('d', 'INS.SG -em')       467 /      0   100.00%
+  ('d', 'LOC.PL -ech')       489 /      0   100.00%
+  ('d', 'LOC.PL -ách')         2 /      0   100.00%
+  ('d', 'LOC.PL -ích')         1 /      0   100.00%
+  ('d', 'LOC.SG -u')       379 /      0   100.00%
+  ('d', 'LOC.SG -ě')       489 /      0   100.00%
+  ('d', 'NOM.PL -i')        75 /      0   100.00%
+  ('d', 'NOM.PL -ové')        71 /      0   100.00%
+  ('d', 'NOM.PL -é')         6 /      0   100.00%
+  ('d', 'NOM.PL -í')         4 /      0   100.00%
+  ('d', 'NOM.PL.M.AN -í')        23 /      0   100.00%
+  ('d', 'VOC.SG -e')        87 /      0   100.00%
+  ('g', 'DAT.SG -e')        28 /      0   100.00%
+  ('g', 'INS.SG -em')       207 /      0   100.00%
+  ('g', 'LOC.PL -ech')         5 /      0   100.00%
+  ('g', 'LOC.PL -ách')        23 /      0   100.00%
+  ('g', 'LOC.PL -ích')       184 /      0   100.00%
+  ('g', 'LOC.SG -e')        30 /      0   100.00%
+  ('g', 'LOC.SG -u')        84 /      0   100.00%
+  ('g', 'NOM.PL -i') ?       6 /      1    85.71%
+  ('g', 'NOM.PL -ové')       123 /      0   100.00%
+  ('g', 'VOC.SG -e') !       0 /      2     0.00%
+  ('h', 'DAT.SG -e')        74 /      0   100.00%
+  ('h', 'INS.SG -em')       117 /      0   100.00%
+  ('h', 'LOC.PL -ách')         4 /      0   100.00%
+  ('h', 'LOC.PL -ích')       117 /      0   100.00%
+  ('h', 'LOC.SG -e')        74 /      0   100.00%
+  ('h', 'LOC.SG -u')        87 /      0   100.00%
+  ('h', 'NOM.PL -i')        23 /      0   100.00%
+  ('h', 'NOM.PL -ové')        27 /      0   100.00%
+  ('h', 'NOM.PL -í')         1 /      0   100.00%
+  ('h', 'NOM.PL.M.AN -í')        24 /      0   100.00%
+  ('h', 'VOC.SG -e')         2 /      0   100.00%
+  ('k', 'DAT.SG -e')      3645 /      0   100.00%
+  ('k', 'INS.SG -em')      3424 /      0   100.00%
+  ('k', 'LOC.PL -ech')        17 /      0   100.00%
+  ('k', 'LOC.PL -ách')       784 /      0   100.00%
+  ('k', 'LOC.PL -ích')      3092 /      0   100.00%
+  ('k', 'LOC.SG -e')      3683 /      0   100.00%
+  ('k', 'LOC.SG -u')      2204 /      0   100.00%
+  ('k', 'LOC.SG -ě') !       1 /      1    50.00%
+  ('k', 'NOM.PL -i')      1213 /      1    99.92%
+  ('k', 'NOM.PL -ové')       432 /      0   100.00%
+  ('k', 'NOM.PL -é')         1 /      0   100.00%
+  ('k', 'NOM.PL -í')         6 /      0   100.00%
+  ('k', 'NOM.PL.M.AN -í')      2761 /     12    99.57%
+  ('k', 'VOC.SG -e') !       3 /      5    37.50%
+  ('n', 'DAT.SG -ě')      1253 /      0   100.00%
+  ('n', 'INS.SG -em')      1398 /      0   100.00%
+  ('n', 'LOC.PL -ech')      1401 /      0   100.00%
+  ('n', 'LOC.PL -ách')         3 /      0   100.00%
+  ('n', 'LOC.PL -ích')        17 /      0   100.00%
+  ('n', 'LOC.SG -e') !       0 /      1     0.00%
+  ('n', 'LOC.SG -u')       787 /      0   100.00%
+  ('n', 'LOC.SG -ě')      1410 /      0   100.00%
+  ('n', 'NOM.PL -i')       520 /      0   100.00%
+  ('n', 'NOM.PL -ové')       133 /      0   100.00%
+  ('n', 'NOM.PL -é')       321 /      0   100.00%
+  ('n', 'NOM.PL -í')        51 /      0   100.00%
+  ('n', 'NOM.PL.M.AN -í')      2814 /      0   100.00%
+  ('n', 'VOC.SG -e')       611 /      0   100.00%
+  ('r', 'DAT.SG -e')       328 /      0   100.00%
+  ('r', 'INS.SG -em')      1133 /      0   100.00%
+  ('r', 'LOC.PL -ech')      1160 /      0   100.00%
+  ('r', 'LOC.PL -ách')         3 /      0   100.00%
+  ('r', 'LOC.PL -ích')         2 /      0   100.00%
+  ('r', 'LOC.SG -e')       361 /      0   100.00%
+  ('r', 'LOC.SG -u')       744 /      0   100.00%
+  ('r', 'LOC.SG -ě') !       0 /      1     0.00%
+  ('r', 'NOM.PL -i')       368 /      1    99.73%
+  ('r', 'NOM.PL -ové')        89 /      0   100.00%
+  ('r', 'NOM.PL -í')         3 /      0   100.00%
+  ('r', 'NOM.PL.M.AN -í') ?      40 /      4    90.91%
+  ('r', 'VOC.SG -e')       391 /      6    98.49%
+  ('t', 'DAT.SG -ě')       465 /      0   100.00%
+  ('t', 'INS.SG -em')      1367 /      0   100.00%
+  ('t', 'LOC.PL -ech')      1742 /      0   100.00%
+  ('t', 'LOC.PL -ách')         1 /      0   100.00%
+  ('t', 'LOC.SG -u')      1098 /      0   100.00%
+  ('t', 'LOC.SG -ě')       700 /      0   100.00%
+  ('t', 'NOM.PL -i')       535 /      0   100.00%
+  ('t', 'NOM.PL -ové')       106 /      0   100.00%
+  ('t', 'NOM.PL -é')       362 /      0   100.00%
+  ('t', 'NOM.PL -í')         6 /      0   100.00%
+  ('t', 'NOM.PL.M.AN -í')       484 /      0   100.00%
+  ('t', 'VOC.SG -e')       270 /      0   100.00%
+
+========================================================================
+Cluster-specific verification
+========================================================================
+  Cr+e       142 /     0   100.00%
+  Cr+ech     258 /     0   100.00%
+  Cr+em      249 /     0   100.00%
+  Cr+i        64 /     0   100.00%
+  Cr+ové       9 /     0   100.00%
+  Cr+u       184 /     0   100.00%
+  Cr+ách       1 /     0   100.00%
+  Cr+í        21 /     1    95.45%
+  Cr+ích       1 /     0   100.00%
+  Cr+ě         0 /     1     0.00%
+  VOC r       63 /     6    91.30%
+  VOC velar     5 /     8    38.46%
+  ck+e        43 /     0   100.00%
+  ck+ech       2 /     0   100.00%
+  ck+em       26 /     0   100.00%
+  ck+i         6 /     0   100.00%
+  ck+ové       8 /     0   100.00%
+  ck+u        19 /     0   100.00%
+  ck+ách      12 /     0   100.00%
+  ck+í (suffix)  1002 /     5    99.50%
+  ck+ích      15 /     0   100.00%
+  ck+ě         0 /     1     0.00%
+  sk+e       146 /     0   100.00%
+  sk+ech       1 /     0   100.00%
+  sk+em      113 /     0   100.00%
+  sk+i        16 /     0   100.00%
+  sk+ové      16 /     0   100.00%
+  sk+u        97 /     0   100.00%
+  sk+ách      32 /     0   100.00%
+  sk+í (suffix)  1622 /     3    99.82%
+  sk+ích     103 /     0   100.00%
+  sk+ě         1 /     0   100.00%
+  st+e        12 /     0   100.00%
+  st+ech     415 /     0   100.00%
+  st+em       96 /     0   100.00%
+  st+i       262 /     0   100.00%
+  st+ové      13 /     0   100.00%
+  st+u        82 /     0   100.00%
+  st+é       313 /     0   100.00%
+  st+í        39 /     0   100.00%
+  st+ě        69 /     0   100.00%
+  zd+e         1 /     0   100.00%
+  zd+ech      15 /     0   100.00%
+  zd+em       14 /     0   100.00%
+  zd+i         1 /     0   100.00%
+  zd+ové       2 /     0   100.00%
+  zd+u        13 /     0   100.00%
+  zd+ě        34 /     0   100.00%
+
+========================================================================
+Refined mismatch breakdown (NORM_* = data-side transcription noise; RULE_FAILURE = residual)
+========================================================================
+
+  [RULE_FAILURE]  n = 53
+    adblock            → adblockě            (k, opp=LOC.SG -ě)  rules→T, data→F
+      predicted='adblot͡st͡sɛ'         attested='ˈadblot͡skɛ'          d=2.8
+    badatelský         → badatelscí          (k, opp=NOM.PL.M.AN -í)  rules→T, data→F
+      predicted='badatɛlʃciː'          attested='ˈbadatɛlst͡siː'       d=3.0
+    banskobystrický    → banskobystrickí     (k, opp=NOM.PL.M.AN -í)  rules→T, data→F
+      predicted='banskobɪstrɪt͡ʃciː'   attested='ˈbanskobɪstrɪt͡skiː'  d=1.6
+    bezkorý            → bezkorí             (r, opp=NOM.PL.M.AN -í)  rules→T, data→F
+      predicted='bɛskor̝iː'            attested='ˈbɛskoriː'            d=2.4
+    búchr              → búchre              (r, opp=VOC.SG -e)  rules→T, data→F
+      predicted='buːxr̝ɛ'              attested='ˈbuːxrɛ'              d=2.4
+    bělokrký           → bělokrkí            (k, opp=NOM.PL.M.AN -í)  rules→T, data→F
+      predicted='bjɛlokr̩t͡siː'        attested='ˈbjɛlokr̩kiː'         d=2.8
+    ... and 47 more
+
+========================================================================
+Distance-to-working histogram
+========================================================================
+  1.0–2.0 (a few features off)        n=   13  ( 24.5%)  ex: lulan
+  2.0–4.0 (structural gap)            n=   40  ( 75.5%)  ex: bezkorý

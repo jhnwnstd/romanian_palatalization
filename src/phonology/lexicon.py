@@ -14,9 +14,18 @@ contingency's did not). This module is the single answer:
     consumer of the lexicon should call this, not open the CSV
     directly.
 
-Neither this module nor its consumers should hold Romanian-specific
-constants (``TARGET_STEMS``, etc.) — those live with the analysis at
-:mod:`phonology.analyses.romanian_palatalization` and are passed in.
+:class:`LexRow` is the row contract every analysis shares. The
+Romanian lexicon's specifics also live here, as the defaults of two
+:class:`~phonology.profile.AnalysisProfile` hooks:
+:meth:`LexRow.from_dict` reads the Romanian CSV schema and tags
+clusters with the Romanian orthographic tagger (``row_factory``), and
+:func:`romanian_cluster_key` buckets rows into the paper's cluster
+cells (``cluster_key``). A lexicon with another schema passes its own
+``row_factory`` to :func:`iter_lexicon_rows`; rows from such a factory
+carry ``ClusterTag.NONE`` unless the analysis has a use for the tag.
+Analysis constants (``TARGET_STEMS``, etc.) live with the analysis
+at :mod:`phonology.analyses.romanian_palatalization` and are passed
+in.
 """
 
 from __future__ import annotations
@@ -25,7 +34,7 @@ import csv
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
-from typing import Final, Iterator
+from typing import Final, Iterator, Mapping, Protocol
 
 
 class ClusterTag(StrEnum):
@@ -83,11 +92,13 @@ class LexRow:
     cluster: ClusterTag
 
     @classmethod
-    def from_dict(cls, r: dict[str, str]) -> LexRow:
+    def from_dict(cls, r: Mapping[str, str]) -> LexRow:
         """Build a LexRow from a raw csv.DictReader row.
 
-        Missing fields become empty strings; ``mutation`` is parsed
-        case-insensitively as True iff the value is 'TRUE'.
+        Reads the Romanian lexicon's column names; the default
+        ``row_factory``. Missing fields become empty strings;
+        ``mutation`` is parsed case-insensitively as True iff the
+        value is 'TRUE'.
         """
         lemma = (r.get("lemma") or "").strip()
         return cls(
@@ -104,6 +115,36 @@ class LexRow:
         )
 
 
+class RowFactoryFn(Protocol):
+    """Turn one ``csv.DictReader`` row into a :class:`LexRow`.
+
+    One CSV row yields one LexRow, so a lexicon with several cells
+    per lexeme is written in long format (one row per cell).
+    """
+
+    def __call__(self, r: Mapping[str, str], /) -> LexRow: ...
+
+
+# Report buckets for the paper's cluster cells: the validator's
+# "Cluster-specific verification" table and the mismatch CSV's
+# ``cluster`` column. Other (cluster, opportunity) pairs get no bucket.
+_ROMANIAN_CLUSTER_KEYS: Final[Mapping[tuple[ClusterTag, str], str]] = {
+    (ClusterTag.SC, "e"): "sc(ă)+e",
+    (ClusterTag.SC, "i"): "sc(ă)+i",
+    (ClusterTag.CT, "e"): "ct(ă)+e",
+    (ClusterTag.CT, "i"): "ct(ă)+i",
+    (ClusterTag.ST, "i"): "st(ă)+i",
+}
+
+
+def romanian_cluster_key(row: LexRow) -> str | None:
+    """The row's cluster-report bucket, or ``None`` if it has none.
+
+    The default :attr:`~phonology.profile.AnalysisProfile.cluster_key`.
+    """
+    return _ROMANIAN_CLUSTER_KEYS.get((row.cluster, row.opportunity))
+
+
 def iter_lexicon_rows(
     csv_path: Path,
     *,
@@ -113,6 +154,7 @@ def iter_lexicon_rows(
     skip_nde_exceptions: bool = True,
     pos_filter: str | None = "N",
     limit: int | None = None,
+    row_factory: RowFactoryFn = LexRow.from_dict,
 ) -> Iterator[LexRow]:
     """Stream a lexicon CSV as :class:`LexRow` under the given filters.
 
@@ -122,11 +164,17 @@ def iter_lexicon_rows(
     stem-final consonant present, non-empty plural, opportunity !=
     'none', NDE exceptions excluded. Toggle knobs to relax any of
     these for other analyses.
+
+    ``row_factory`` builds each LexRow (default: the Romanian schema;
+    pass ``profile.row_factory``). The filters test LexRow fields, so
+    a factory for another schema maps into the same vocabulary (pos
+    ``"N"``, opportunity ``"none"``, ``"nde:"`` exception prefix) or
+    the caller relaxes the filters.
     """
     yielded = 0
     with csv_path.open(encoding="utf-8") as f:
         for r in csv.DictReader(f):
-            row = LexRow.from_dict(r)
+            row = row_factory(r)
             if pos_filter is not None and row.pos != pos_filter:
                 continue
             if row.stem_final not in target_stems:
@@ -146,5 +194,7 @@ def iter_lexicon_rows(
 __all__: Final[tuple[str, ...]] = (
     "ClusterTag",
     "LexRow",
+    "RowFactoryFn",
     "iter_lexicon_rows",
+    "romanian_cluster_key",
 )

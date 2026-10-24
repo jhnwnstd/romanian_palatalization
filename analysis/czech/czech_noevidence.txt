@@ -1,0 +1,1235 @@
+Licence and attribution
+-----------------------
+Aggregate counts only: this report holds counts and statistics
+computed from the sources below, never their rows, word forms or
+text. Sources and licences:
+  czetyl         CC BY-NC-SA 4.0; Czech Etymological Lexicon 1.0
+  derinet        CC BY-NC-SA 4.0; DeriNet 2.3
+  wiktionary_cs  CC BY-SA 4.0 + GFDL; Czech Wiktionary (Wikislovník) via wiktextract
+  wiktionary_en  CC BY-SA 4.0 + GFDL; English Wiktionary via wiktextract (kaikki.org)
+Counts that rest on CC BY-NC-SA sources are tracked under the
+draft policy of DATA_LICENSE.md ('Aggregate counts from
+non-commercial sources'), pending the authors' decision; they
+may not be used commercially.
+
+Czech roots without alternation evidence x derivative palatalization (R21)
+========================================================================
+
+Base class from the corpus at tau (E0 inflection): alternating (an
+attested P form with the change) / non-alternating (only attested
+competing N allomorphs -u, -ove/-e, -ach, or a P ending without the
+change) / no evidence. Units: base x P suffix that palatalizes the
+base's target; outcome pal / plain / both. Derivatives attested at
+tau (summed tokens of their forms). Basis wikt = Wiktionary links
+and headword candidates. Strata: Wiktionary (R22). Words without
+counts (R9).
+
+tau = dictionary
+------------------------------------------------------------------------
+  velar noun roots by base class: alternating 7,330, non-alternating 447, no evidence 518
+  r noun roots by base class: alternating 730, non-alternating 747, no evidence 135
+  target velar (basis wikt), base x suffix units
+    suffix all P suffixes
+      base class                      pal  plain   both   % pal
+      alternating                    1472      8      0   99.5%
+      non-alternating                  32      2      0   94.1%
+      no evidence                      27      0      1   96.4%
+      (no alternation evidence)        59      2      1   95.2%
+    suffix all P suffixes, without -ik(a) → -ický
+      base class                      pal  plain   both   % pal
+      alternating                    1340      8      0   99.4%
+      non-alternating                  16      2      0   88.9%
+      no evidence                      27      0      1   96.4%
+      (no alternation evidence)        43      2      1   93.5%
+    suffix -it
+      base class                      pal  plain   both   % pal
+      alternating                      50      0      0  100.0%
+      non-alternating                   2      0      0  100.0%
+      no evidence                       0      0      0       -
+      (no alternation evidence)         2      0      0  100.0%
+    suffix -et
+      base class                      pal  plain   both   % pal
+      alternating                       6      1      0   85.7%
+      non-alternating                   0      0      0       -
+      no evidence                       0      0      0       -
+      (no alternation evidence)         0      0      0       -
+    suffix -ní/-ný
+      base class                      pal  plain   both   % pal
+      alternating                     126      3      0   97.7%
+      non-alternating                   1      1      0   50.0%
+      no evidence                       0      0      0       -
+      (no alternation evidence)         1      1      0   50.0%
+    suffix -ský/-cký
+      base class                      pal  plain   both   % pal
+      alternating                     278      1      0   99.6%
+      non-alternating                  18      1      0   94.7%
+      no evidence                       4      0      1   80.0%
+      (no alternation evidence)        22      1      1   91.7%
+    suffix -ina
+      base class                      pal  plain   both   % pal
+      alternating                      21      0      0  100.0%
+      non-alternating                   3      0      0  100.0%
+      no evidence                       2      0      0  100.0%
+      (no alternation evidence)         5      0      0  100.0%
+    suffix -í
+      base class                      pal  plain   both   % pal
+      alternating                      94      0      0  100.0%
+      non-alternating                   3      0      0  100.0%
+      no evidence                       3      0      0  100.0%
+      (no alternation evidence)         6      0      0  100.0%
+    suffix -ek
+      base class                      pal  plain   both   % pal
+      alternating                     466      0      0  100.0%
+      non-alternating                   2      0      0  100.0%
+      no evidence                      14      0      0  100.0%
+      (no alternation evidence)        16      0      0  100.0%
+    suffix -ka
+      base class                      pal  plain   both   % pal
+      alternating                     365      0      0  100.0%
+      non-alternating                   1      0      0  100.0%
+      no evidence                       4      0      0  100.0%
+      (no alternation evidence)         5      0      0  100.0%
+    suffix -ík
+      base class                      pal  plain   both   % pal
+      alternating                      17      0      0  100.0%
+      non-alternating                   0      0      0       -
+      no evidence                       0      0      0       -
+      (no alternation evidence)         0      0      0       -
+    suffix -an
+      base class                      pal  plain   both   % pal
+      alternating                       5      3      0   62.5%
+      non-alternating                   1      0      0  100.0%
+      no evidence                       0      0      0       -
+      (no alternation evidence)         1      0      0  100.0%
+    suffix -ník
+      base class                      pal  plain   both   % pal
+      alternating                      33      0      0  100.0%
+      non-alternating                   1      0      0  100.0%
+      no evidence                       0      0      0       -
+      (no alternation evidence)         1      0      0  100.0%
+    suffix -nice
+      base class                      pal  plain   both   % pal
+      alternating                      11      0      0  100.0%
+      non-alternating                   0      0      0       -
+      no evidence                       0      0      0       -
+      (no alternation evidence)         0      0      0       -
+  target velar: by base stratum (all P suffixes)
+    base stratum inherited
+      base class                      pal  plain   both   % pal
+      alternating                     424      3      0   99.3%
+      non-alternating                   6      0      0  100.0%
+      no evidence                       1      0      0  100.0%
+      (no alternation evidence)         7      0      0  100.0%
+    base stratum borrowed whole
+      base class                      pal  plain   both   % pal
+      alternating                      98      2      0   98.0%
+      non-alternating                   4      1      0   80.0%
+      no evidence                       0      0      0       -
+      (no alternation evidence)         4      1      0   80.0%
+    base stratum internal formation
+      base class                      pal  plain   both   % pal
+      alternating                     548      0      0  100.0%
+      non-alternating                   3      1      0   75.0%
+      no evidence                      10      0      0  100.0%
+      (no alternation evidence)        13      1      0   92.9%
+    base stratum unknown
+      base class                      pal  plain   both   % pal
+      alternating                     402      3      0   99.3%
+      non-alternating                  19      0      0  100.0%
+      no evidence                      16      0      1   94.1%
+      (no alternation evidence)        35      0      1   97.2%
+  target velar: all P suffixes, derivatives internal formations only
+    base class                      pal  plain   both   % pal
+    alternating                     357      4      0   98.9%
+    non-alternating                   3      1      0   75.0%
+    no evidence                       5      0      0  100.0%
+    (no alternation evidence)         8      1      0   88.9%
+  target r (basis wikt), base x suffix units
+    suffix all P suffixes
+      base class                      pal  plain   both   % pal
+      alternating                      75      3      0   96.2%
+      non-alternating                  28      1      0   96.6%
+      no evidence                       2      0      0  100.0%
+      (no alternation evidence)        30      1      0   96.8%
+    suffix all P suffixes, without -ik(a) → -ický
+      base class                      pal  plain   both   % pal
+      alternating                      75      3      0   96.2%
+      non-alternating                  28      1      0   96.6%
+      no evidence                       2      0      0  100.0%
+      (no alternation evidence)        30      1      0   96.8%
+    suffix -it
+      base class                      pal  plain   both   % pal
+      alternating                      11      0      0  100.0%
+      non-alternating                   9      0      0  100.0%
+      no evidence                       0      0      0       -
+      (no alternation evidence)         9      0      0  100.0%
+    suffix -et
+      base class                      pal  plain   both   % pal
+      alternating                       0      0      0       -
+      non-alternating                   2      0      0  100.0%
+      no evidence                       0      0      0       -
+      (no alternation evidence)         2      0      0  100.0%
+    suffix -ní/-ný
+      base class                      pal  plain   both   % pal
+      alternating                       0      0      0       -
+      non-alternating                   1      0      0  100.0%
+      no evidence                       0      0      0       -
+      (no alternation evidence)         1      0      0  100.0%
+    suffix -ina
+      base class                      pal  plain   both   % pal
+      alternating                       6      0      0  100.0%
+      non-alternating                   1      0      0  100.0%
+      no evidence                       0      0      0       -
+      (no alternation evidence)         1      0      0  100.0%
+    suffix -í
+      base class                      pal  plain   both   % pal
+      alternating                      32      0      0  100.0%
+      non-alternating                   6      0      0  100.0%
+      no evidence                       2      0      0  100.0%
+      (no alternation evidence)         8      0      0  100.0%
+    suffix -ek
+      base class                      pal  plain   both   % pal
+      alternating                       0      0      0       -
+      non-alternating                   1      0      0  100.0%
+      no evidence                       0      0      0       -
+      (no alternation evidence)         1      0      0  100.0%
+    suffix -ka
+      base class                      pal  plain   both   % pal
+      alternating                       9      1      0   90.0%
+      non-alternating                   0      0      0       -
+      no evidence                       0      0      0       -
+      (no alternation evidence)         0      0      0       -
+    suffix -ík
+      base class                      pal  plain   both   % pal
+      alternating                      14      0      0  100.0%
+      non-alternating                   7      0      0  100.0%
+      no evidence                       0      0      0       -
+      (no alternation evidence)         7      0      0  100.0%
+    suffix -an
+      base class                      pal  plain   both   % pal
+      alternating                       3      2      0   60.0%
+      non-alternating                   1      1      0   50.0%
+      no evidence                       0      0      0       -
+      (no alternation evidence)         1      1      0   50.0%
+  target r: by base stratum (all P suffixes)
+    base stratum inherited
+      base class                      pal  plain   both   % pal
+      alternating                      39      2      0   95.1%
+      non-alternating                  19      0      0  100.0%
+      no evidence                       0      0      0       -
+      (no alternation evidence)        19      0      0  100.0%
+    base stratum borrowed whole
+      base class                      pal  plain   both   % pal
+      alternating                      11      0      0  100.0%
+      non-alternating                   4      1      0   80.0%
+      no evidence                       0      0      0       -
+      (no alternation evidence)         4      1      0   80.0%
+    base stratum internal formation
+      base class                      pal  plain   both   % pal
+      alternating                       4      0      0  100.0%
+      non-alternating                   1      0      0  100.0%
+      no evidence                       0      0      0       -
+      (no alternation evidence)         1      0      0  100.0%
+    base stratum unknown
+      base class                      pal  plain   both   % pal
+      alternating                      21      1      0   95.5%
+      non-alternating                   4      0      0  100.0%
+      no evidence                       2      0      0  100.0%
+      (no alternation evidence)         6      0      0  100.0%
+  target r: all P suffixes, derivatives internal formations only
+    base class                      pal  plain   both   % pal
+    alternating                      41      1      0   97.6%
+    non-alternating                   6      0      0  100.0%
+    no evidence                       2      0      0  100.0%
+    (no alternation evidence)         8      0      0  100.0%
+  sensitivity (velar, all P suffixes):
+    basis linked
+      base class                      pal  plain   both   % pal
+      alternating                    1299      5      0   99.6%
+      non-alternating                  18      1      0   94.7%
+      no evidence                      19      0      0  100.0%
+      (no alternation evidence)        37      1      0   97.4%
+    basis wikt+corpus
+      base class                      pal  plain   both   % pal
+      alternating                    1657      8      0   99.5%
+      non-alternating                  38      2      0   95.0%
+      no evidence                      38      0      1   97.4%
+      (no alternation evidence)        76      2      1   96.2%
+  velar neuters on -ko/-go/-ho/-cho by base class: alternating 44, non-alternating 303, no evidence 9
+  velar neuters, all P suffixes:
+    base class                      pal  plain   both   % pal
+    alternating                       5      0      0  100.0%
+    non-alternating                  10      2      0   83.3%
+    no evidence                       0      0      0       -
+    (no alternation evidence)        10      2      0   83.3%
+
+  Counterexamples at tau = dictionary (basis wikt): bases without
+  alternation evidence that have a palatalized derivative, by
+  (base stratum, derivative stratum);
+  * = learned -ik(a) → -ický adjective:
+    base borrowed whole / derivative internal formation (1):
+      kufr → kufřík
+    base borrowed whole / derivative unknown (8):
+      analgetikum → analgetický*, anestetikum → anestetický*, cukr → pocukřit, hypnotikum → hypnotický*, pár → pářit, svetr → svetřík, topikum → topický*, topikum → utopický*
+    base inherited / derivative inherited (5):
+      pero → peřina, topor → topořit, ucho → ušní, večer → večeřet, žebro → žebřík
+    base inherited / derivative internal formation (9):
+      dobytek → dobytčí, husák → husačka, kur → kuří, prach → prašan, prach → prášek, sever → seveřan, svár → svářit, vír → vířit, vítr → větřík
+    base inherited / derivative unknown (15):
+      blaho → blažit, džber → džbeřík, jitro → jitřní, pero → peří, pýr → pýří, svár → svářet, ucho → náušník, uher → uhřík, vichr → zvichřit, vítr → povětří, vítr → větříček, vítr → závětří, ňadro → záňadří, žebro → podžebří, žebro → žebříček
+    base internal formation / derivative internal formation (2):
+      Vídeňák → Vídeňačka, kosák → kosáček
+    base internal formation / derivative unknown (12):
+      Pšonsko → pšonština, lesňák → lesňačka, luňák → luňáčí, nosík → nosíček, obličejík → obličejíček, odznak → odznáček, průzkumník → průzkumnický, rozhovor → rozhovořit, silák → silačka, velkostatek → velkostateček, venek → venčit, vlhko → vlhčí
+    base unknown / derivative internal formation (4):
+      kentaur → kentauří, klučík → klučičí, lemur → lemuří, mopslík → mopsličí
+    base unknown / derivative unknown (39):
+      Tolték → toltécký, anabolikum → anabolický*, antibiotikum → antibiotický*, antidiabetikum → antidiabetický*, antimykotikum → antimykotický*, antiparazitikum → antiparazitický*, chemoterapeutikum → chemoterapeutický*, cytostatikum → cytostatický*, dielektrikum → dielektrický*, homeopatikum → homeopatický*, hošík → hošíček, hypokoristikon → hypokoristický, kongo → konžský, kosodélník → kosodélníček, košerák → košerácký, malaga → malažský, mega → mežský, nábytek → nábyteček, oslík → oslíček, pantatík → pantatíček, periodikum → periodický*, pokojík → pokojíček, prstík → prstíček, pryskyřník → pryskyřníček, psychedelikum → psychedelický*, registr → registřík, rtík → rtíček, sejr → sejřit, sucho → souška, sucho → sušina, sucho → suška, sucho → suší, tagalský → tagalština, virostatikum → virostatický*, vnitro → vnitřek, vořech → voříšek, široko → širočina, ženská → ženština, žďár → žďářit
+
+tau = ge1
+------------------------------------------------------------------------
+  velar noun roots by base class: alternating 1,973, non-alternating 912, no evidence 5,410
+  r noun roots by base class: alternating 329, non-alternating 360, no evidence 923
+  target velar (basis wikt), base x suffix units
+    suffix all P suffixes
+      base class                      pal  plain   both   % pal
+      alternating                     480      3      0   99.4%
+      non-alternating                 151      2      0   98.7%
+      no evidence                     155      1      0   99.4%
+      (no alternation evidence)       306      3      0   99.0%
+    suffix all P suffixes, without -ik(a) → -ický
+      base class                      pal  plain   both   % pal
+      alternating                     432      3      0   99.3%
+      non-alternating                 148      2      0   98.7%
+      no evidence                     113      1      0   99.1%
+      (no alternation evidence)       261      3      0   98.9%
+    suffix -it
+      base class                      pal  plain   both   % pal
+      alternating                      28      0      0  100.0%
+      non-alternating                   7      0      0  100.0%
+      no evidence                       5      0      0  100.0%
+      (no alternation evidence)        12      0      0  100.0%
+    suffix -et
+      base class                      pal  plain   both   % pal
+      alternating                       0      0      0       -
+      non-alternating                   3      0      0  100.0%
+      no evidence                       2      0      0  100.0%
+      (no alternation evidence)         5      0      0  100.0%
+    suffix -ní/-ný
+      base class                      pal  plain   both   % pal
+      alternating                      72      2      0   97.3%
+      non-alternating                  35      1      0   97.2%
+      no evidence                       6      0      0  100.0%
+      (no alternation evidence)        41      1      0   97.6%
+    suffix -ský/-cký
+      base class                      pal  plain   both   % pal
+      alternating                     118      0      0  100.0%
+      non-alternating                   8      1      0   88.9%
+      no evidence                      60      1      0   98.4%
+      (no alternation evidence)        68      2      0   97.1%
+    suffix -ina
+      base class                      pal  plain   both   % pal
+      alternating                      10      0      0  100.0%
+      non-alternating                   4      0      0  100.0%
+      no evidence                       3      0      0  100.0%
+      (no alternation evidence)         7      0      0  100.0%
+    suffix -í
+      base class                      pal  plain   both   % pal
+      alternating                      37      0      0  100.0%
+      non-alternating                   4      0      0  100.0%
+      no evidence                      12      0      0  100.0%
+      (no alternation evidence)        16      0      0  100.0%
+    suffix -ek
+      base class                      pal  plain   both   % pal
+      alternating                      90      0      0  100.0%
+      non-alternating                  41      0      0  100.0%
+      no evidence                      34      0      0  100.0%
+      (no alternation evidence)        75      0      0  100.0%
+    suffix -ka
+      base class                      pal  plain   both   % pal
+      alternating                     105      0      0  100.0%
+      non-alternating                  35      0      0  100.0%
+      no evidence                      29      0      0  100.0%
+      (no alternation evidence)        64      0      0  100.0%
+    suffix -ík
+      base class                      pal  plain   both   % pal
+      alternating                       5      0      0  100.0%
+      non-alternating                   0      0      0       -
+      no evidence                       1      0      0  100.0%
+      (no alternation evidence)         1      0      0  100.0%
+    suffix -an
+      base class                      pal  plain   both   % pal
+      alternating                       1      1      0   50.0%
+      non-alternating                   2      0      0  100.0%
+      no evidence                       1      0      0  100.0%
+      (no alternation evidence)         3      0      0  100.0%
+    suffix -ník
+      base class                      pal  plain   both   % pal
+      alternating                      10      0      0  100.0%
+      non-alternating                  10      0      0  100.0%
+      no evidence                       1      0      0  100.0%
+      (no alternation evidence)        11      0      0  100.0%
+    suffix -nice
+      base class                      pal  plain   both   % pal
+      alternating                       4      0      0  100.0%
+      non-alternating                   2      0      0  100.0%
+      no evidence                       1      0      0  100.0%
+      (no alternation evidence)         3      0      0  100.0%
+  target velar: by base stratum (all P suffixes)
+    base stratum inherited
+      base class                      pal  plain   both   % pal
+      alternating                     201      2      0   99.0%
+      non-alternating                  64      0      0  100.0%
+      no evidence                      32      0      0  100.0%
+      (no alternation evidence)        96      0      0  100.0%
+    base stratum borrowed whole
+      base class                      pal  plain   both   % pal
+      alternating                      30      0      0  100.0%
+      non-alternating                  11      1      0   91.7%
+      no evidence                      10      1      0   90.9%
+      (no alternation evidence)        21      2      0   91.3%
+    base stratum internal formation
+      base class                      pal  plain   both   % pal
+      alternating                     152      0      0  100.0%
+      non-alternating                  37      1      0   97.4%
+      no evidence                      40      0      0  100.0%
+      (no alternation evidence)        77      1      0   98.7%
+    base stratum unknown
+      base class                      pal  plain   both   % pal
+      alternating                      97      1      0   99.0%
+      non-alternating                  39      0      0  100.0%
+      no evidence                      73      0      0  100.0%
+      (no alternation evidence)       112      0      0  100.0%
+  target velar: all P suffixes, derivatives internal formations only
+    base class                      pal  plain   both   % pal
+    alternating                     172      3      0   98.3%
+    non-alternating                  69      1      0   98.6%
+    no evidence                      33      1      0   97.1%
+    (no alternation evidence)       102      2      0   98.1%
+  target r (basis wikt), base x suffix units
+    suffix all P suffixes
+      base class                      pal  plain   both   % pal
+      alternating                      31      0      0  100.0%
+      non-alternating                  13      1      0   92.9%
+      no evidence                      12      2      0   85.7%
+      (no alternation evidence)        25      3      0   89.3%
+    suffix all P suffixes, without -ik(a) → -ický
+      base class                      pal  plain   both   % pal
+      alternating                      31      0      0  100.0%
+      non-alternating                  13      1      0   92.9%
+      no evidence                      12      2      0   85.7%
+      (no alternation evidence)        25      3      0   89.3%
+    suffix -it
+      base class                      pal  plain   both   % pal
+      alternating                       8      0      0  100.0%
+      non-alternating                   3      0      0  100.0%
+      no evidence                       0      0      0       -
+      (no alternation evidence)         3      0      0  100.0%
+    suffix -et
+      base class                      pal  plain   both   % pal
+      alternating                       0      0      0       -
+      non-alternating                   2      0      0  100.0%
+      no evidence                       0      0      0       -
+      (no alternation evidence)         2      0      0  100.0%
+    suffix -ní/-ný
+      base class                      pal  plain   both   % pal
+      alternating                       0      0      0       -
+      non-alternating                   0      0      0       -
+      no evidence                       1      0      0  100.0%
+      (no alternation evidence)         1      0      0  100.0%
+    suffix -ina
+      base class                      pal  plain   both   % pal
+      alternating                       1      0      0  100.0%
+      non-alternating                   1      0      0  100.0%
+      no evidence                       1      0      0  100.0%
+      (no alternation evidence)         2      0      0  100.0%
+    suffix -í
+      base class                      pal  plain   both   % pal
+      alternating                      13      0      0  100.0%
+      non-alternating                   2      0      0  100.0%
+      no evidence                       8      0      0  100.0%
+      (no alternation evidence)        10      0      0  100.0%
+    suffix -ek
+      base class                      pal  plain   both   % pal
+      alternating                       0      0      0       -
+      non-alternating                   1      0      0  100.0%
+      no evidence                       0      0      0       -
+      (no alternation evidence)         1      0      0  100.0%
+    suffix -ka
+      base class                      pal  plain   both   % pal
+      alternating                       2      0      0  100.0%
+      non-alternating                   0      1      0    0.0%
+      no evidence                       1      0      0  100.0%
+      (no alternation evidence)         1      1      0   50.0%
+    suffix -ík
+      base class                      pal  plain   both   % pal
+      alternating                       6      0      0  100.0%
+      non-alternating                   3      0      0  100.0%
+      no evidence                       1      0      0  100.0%
+      (no alternation evidence)         4      0      0  100.0%
+    suffix -an
+      base class                      pal  plain   both   % pal
+      alternating                       1      0      0  100.0%
+      non-alternating                   1      0      0  100.0%
+      no evidence                       0      2      0    0.0%
+      (no alternation evidence)         1      2      0   33.3%
+  target r: by base stratum (all P suffixes)
+    base stratum inherited
+      base class                      pal  plain   both   % pal
+      alternating                      21      0      0  100.0%
+      non-alternating                   8      1      0   88.9%
+      no evidence                       5      1      0   83.3%
+      (no alternation evidence)        13      2      0   86.7%
+    base stratum borrowed whole
+      base class                      pal  plain   both   % pal
+      alternating                       1      0      0  100.0%
+      non-alternating                   3      0      0  100.0%
+      no evidence                       5      0      0  100.0%
+      (no alternation evidence)         8      0      0  100.0%
+    base stratum internal formation
+      base class                      pal  plain   both   % pal
+      alternating                       1      0      0  100.0%
+      non-alternating                   1      0      0  100.0%
+      no evidence                       0      0      0       -
+      (no alternation evidence)         1      0      0  100.0%
+    base stratum unknown
+      base class                      pal  plain   both   % pal
+      alternating                       8      0      0  100.0%
+      non-alternating                   1      0      0  100.0%
+      no evidence                       2      1      0   66.7%
+      (no alternation evidence)         3      1      0   75.0%
+  target r: all P suffixes, derivatives internal formations only
+    base class                      pal  plain   both   % pal
+    alternating                      14      0      0  100.0%
+    non-alternating                   4      0      0  100.0%
+    no evidence                       9      1      0   90.0%
+    (no alternation evidence)        13      1      0   92.9%
+  sensitivity (velar, all P suffixes):
+    basis linked
+      base class                      pal  plain   both   % pal
+      alternating                     440      3      0   99.3%
+      non-alternating                 127      1      0   99.2%
+      no evidence                     120      1      0   99.2%
+      (no alternation evidence)       247      2      0   99.2%
+    basis wikt+corpus
+      base class                      pal  plain   both   % pal
+      alternating                     565      3      0   99.5%
+      non-alternating                 193      2      0   99.0%
+      no evidence                     223      1      0   99.6%
+      (no alternation evidence)       416      3      0   99.3%
+  velar neuters on -ko/-go/-ho/-cho by base class: alternating 10, non-alternating 114, no evidence 232
+  velar neuters, all P suffixes:
+    base class                      pal  plain   both   % pal
+    alternating                       5      0      0  100.0%
+    non-alternating                   5      2      0   71.4%
+    no evidence                       1      0      0  100.0%
+    (no alternation evidence)         6      2      0   75.0%
+
+tau = ge1_strict
+------------------------------------------------------------------------
+  velar noun roots by base class: alternating 1,758, non-alternating 130, no evidence 6,407
+  r noun roots by base class: alternating 302, non-alternating 11, no evidence 1,299
+  target velar (basis wikt), base x suffix units
+    suffix all P suffixes
+      base class                      pal  plain   both   % pal
+      alternating                     429      2      0   99.5%
+      non-alternating                  41      0      0  100.0%
+      no evidence                     316      4      0   98.8%
+      (no alternation evidence)       357      4      0   98.9%
+    suffix all P suffixes, without -ik(a) → -ický
+      base class                      pal  plain   both   % pal
+      alternating                     382      2      0   99.5%
+      non-alternating                  39      0      0  100.0%
+      no evidence                     272      4      0   98.6%
+      (no alternation evidence)       311      4      0   98.7%
+    suffix -it
+      base class                      pal  plain   both   % pal
+      alternating                      22      0      0  100.0%
+      non-alternating                   1      0      0  100.0%
+      no evidence                      17      0      0  100.0%
+      (no alternation evidence)        18      0      0  100.0%
+    suffix -et
+      base class                      pal  plain   both   % pal
+      alternating                       0      0      0       -
+      non-alternating                   0      0      0       -
+      no evidence                       5      0      0  100.0%
+      (no alternation evidence)         5      0      0  100.0%
+    suffix -ní/-ný
+      base class                      pal  plain   both   % pal
+      alternating                      65      1      0   98.5%
+      non-alternating                   2      0      0  100.0%
+      no evidence                      46      2      0   95.8%
+      (no alternation evidence)        48      2      0   96.0%
+    suffix -ský/-cký
+      base class                      pal  plain   both   % pal
+      alternating                     112      0      0  100.0%
+      non-alternating                   7      0      0  100.0%
+      no evidence                      67      2      0   97.1%
+      (no alternation evidence)        74      2      0   97.4%
+    suffix -ina
+      base class                      pal  plain   both   % pal
+      alternating                       7      0      0  100.0%
+      non-alternating                   0      0      0       -
+      no evidence                      10      0      0  100.0%
+      (no alternation evidence)        10      0      0  100.0%
+    suffix -í
+      base class                      pal  plain   both   % pal
+      alternating                      32      0      0  100.0%
+      non-alternating                   1      0      0  100.0%
+      no evidence                      20      0      0  100.0%
+      (no alternation evidence)        21      0      0  100.0%
+    suffix -ek
+      base class                      pal  plain   both   % pal
+      alternating                      78      0      0  100.0%
+      non-alternating                   1      0      0  100.0%
+      no evidence                      86      0      0  100.0%
+      (no alternation evidence)        87      0      0  100.0%
+    suffix -ka
+      base class                      pal  plain   both   % pal
+      alternating                      97      0      0  100.0%
+      non-alternating                  29      0      0  100.0%
+      no evidence                      43      0      0  100.0%
+      (no alternation evidence)        72      0      0  100.0%
+    suffix -ík
+      base class                      pal  plain   both   % pal
+      alternating                       4      0      0  100.0%
+      non-alternating                   0      0      0       -
+      no evidence                       2      0      0  100.0%
+      (no alternation evidence)         2      0      0  100.0%
+    suffix -an
+      base class                      pal  plain   both   % pal
+      alternating                       0      1      0    0.0%
+      non-alternating                   0      0      0       -
+      no evidence                       4      0      0  100.0%
+      (no alternation evidence)         4      0      0  100.0%
+    suffix -ník
+      base class                      pal  plain   both   % pal
+      alternating                      10      0      0  100.0%
+      non-alternating                   0      0      0       -
+      no evidence                      11      0      0  100.0%
+      (no alternation evidence)        11      0      0  100.0%
+    suffix -nice
+      base class                      pal  plain   both   % pal
+      alternating                       2      0      0  100.0%
+      non-alternating                   0      0      0       -
+      no evidence                       5      0      0  100.0%
+      (no alternation evidence)         5      0      0  100.0%
+  target velar: by base stratum (all P suffixes)
+    base stratum inherited
+      base class                      pal  plain   both   % pal
+      alternating                     172      1      0   99.4%
+      non-alternating                   7      0      0  100.0%
+      no evidence                     118      1      0   99.2%
+      (no alternation evidence)       125      1      0   99.2%
+    base stratum borrowed whole
+      base class                      pal  plain   both   % pal
+      alternating                      28      0      0  100.0%
+      non-alternating                   3      0      0  100.0%
+      no evidence                      20      2      0   90.9%
+      (no alternation evidence)        23      2      0   92.0%
+    base stratum internal formation
+      base class                      pal  plain   both   % pal
+      alternating                     138      0      0  100.0%
+      non-alternating                   8      0      0  100.0%
+      no evidence                      83      1      0   98.8%
+      (no alternation evidence)        91      1      0   98.9%
+    base stratum unknown
+      base class                      pal  plain   both   % pal
+      alternating                      91      1      0   98.9%
+      non-alternating                  23      0      0  100.0%
+      no evidence                      95      0      0  100.0%
+      (no alternation evidence)       118      0      0  100.0%
+  target velar: all P suffixes, derivatives internal formations only
+    base class                      pal  plain   both   % pal
+    alternating                     158      2      0   98.8%
+    non-alternating                  22      0      0  100.0%
+    no evidence                      94      3      0   96.9%
+    (no alternation evidence)       116      3      0   97.5%
+  target r (basis wikt), base x suffix units
+    suffix all P suffixes
+      base class                      pal  plain   both   % pal
+      alternating                      23      0      0  100.0%
+      non-alternating                   0      1      0    0.0%
+      no evidence                      33      2      0   94.3%
+      (no alternation evidence)        33      3      0   91.7%
+    suffix all P suffixes, without -ik(a) → -ický
+      base class                      pal  plain   both   % pal
+      alternating                      23      0      0  100.0%
+      non-alternating                   0      1      0    0.0%
+      no evidence                      33      2      0   94.3%
+      (no alternation evidence)        33      3      0   91.7%
+    suffix -it
+      base class                      pal  plain   both   % pal
+      alternating                       4      0      0  100.0%
+      non-alternating                   0      0      0       -
+      no evidence                       7      0      0  100.0%
+      (no alternation evidence)         7      0      0  100.0%
+    suffix -et
+      base class                      pal  plain   both   % pal
+      alternating                       0      0      0       -
+      non-alternating                   0      0      0       -
+      no evidence                       2      0      0  100.0%
+      (no alternation evidence)         2      0      0  100.0%
+    suffix -ní/-ný
+      base class                      pal  plain   both   % pal
+      alternating                       0      0      0       -
+      non-alternating                   0      0      0       -
+      no evidence                       1      0      0  100.0%
+      (no alternation evidence)         1      0      0  100.0%
+    suffix -ina
+      base class                      pal  plain   both   % pal
+      alternating                       1      0      0  100.0%
+      non-alternating                   0      0      0       -
+      no evidence                       2      0      0  100.0%
+      (no alternation evidence)         2      0      0  100.0%
+    suffix -í
+      base class                      pal  plain   both   % pal
+      alternating                      11      0      0  100.0%
+      non-alternating                   0      0      0       -
+      no evidence                      12      0      0  100.0%
+      (no alternation evidence)        12      0      0  100.0%
+    suffix -ek
+      base class                      pal  plain   both   % pal
+      alternating                       0      0      0       -
+      non-alternating                   0      0      0       -
+      no evidence                       1      0      0  100.0%
+      (no alternation evidence)         1      0      0  100.0%
+    suffix -ka
+      base class                      pal  plain   both   % pal
+      alternating                       1      0      0  100.0%
+      non-alternating                   0      1      0    0.0%
+      no evidence                       2      0      0  100.0%
+      (no alternation evidence)         2      1      0   66.7%
+    suffix -ík
+      base class                      pal  plain   both   % pal
+      alternating                       6      0      0  100.0%
+      non-alternating                   0      0      0       -
+      no evidence                       4      0      0  100.0%
+      (no alternation evidence)         4      0      0  100.0%
+    suffix -an
+      base class                      pal  plain   both   % pal
+      alternating                       0      0      0       -
+      non-alternating                   0      0      0       -
+      no evidence                       2      2      0   50.0%
+      (no alternation evidence)         2      2      0   50.0%
+  target r: by base stratum (all P suffixes)
+    base stratum inherited
+      base class                      pal  plain   both   % pal
+      alternating                      14      0      0  100.0%
+      non-alternating                   0      1      0    0.0%
+      no evidence                      20      1      0   95.2%
+      (no alternation evidence)        20      2      0   90.9%
+    base stratum borrowed whole
+      base class                      pal  plain   both   % pal
+      alternating                       0      0      0       -
+      non-alternating                   0      0      0       -
+      no evidence                       9      0      0  100.0%
+      (no alternation evidence)         9      0      0  100.0%
+    base stratum internal formation
+      base class                      pal  plain   both   % pal
+      alternating                       1      0      0  100.0%
+      non-alternating                   0      0      0       -
+      no evidence                       1      0      0  100.0%
+      (no alternation evidence)         1      0      0  100.0%
+    base stratum unknown
+      base class                      pal  plain   both   % pal
+      alternating                       8      0      0  100.0%
+      non-alternating                   0      0      0       -
+      no evidence                       3      1      0   75.0%
+      (no alternation evidence)         3      1      0   75.0%
+  target r: all P suffixes, derivatives internal formations only
+    base class                      pal  plain   both   % pal
+    alternating                      13      0      0  100.0%
+    non-alternating                   0      0      0       -
+    no evidence                      14      1      0   93.3%
+    (no alternation evidence)        14      1      0   93.3%
+  sensitivity (velar, all P suffixes):
+    basis linked
+      base class                      pal  plain   both   % pal
+      alternating                     394      2      0   99.5%
+      non-alternating                  37      0      0  100.0%
+      no evidence                     256      3      0   98.8%
+      (no alternation evidence)       293      3      0   99.0%
+    basis wikt+corpus
+      base class                      pal  plain   both   % pal
+      alternating                     512      2      0   99.6%
+      non-alternating                  47      0      0  100.0%
+      no evidence                     422      4      0   99.1%
+      (no alternation evidence)       469      4      0   99.2%
+  velar neuters on -ko/-go/-ho/-cho by base class: alternating 9, non-alternating 29, no evidence 318
+  velar neuters, all P suffixes:
+    base class                      pal  plain   both   % pal
+    alternating                       2      0      0  100.0%
+    non-alternating                   0      0      0       -
+    no evidence                       9      2      0   81.8%
+    (no alternation evidence)         9      2      0   81.8%
+
+tau = ge2pm
+------------------------------------------------------------------------
+  velar noun roots by base class: alternating 280, non-alternating 250, no evidence 7,765
+  r noun roots by base class: alternating 79, non-alternating 114, no evidence 1,419
+  target velar (basis wikt), base x suffix units
+    suffix all P suffixes
+      base class                      pal  plain   both   % pal
+      alternating                      75      0      0  100.0%
+      non-alternating                  62      4      0   93.9%
+      no evidence                     113      1      0   99.1%
+      (no alternation evidence)       175      5      0   97.2%
+    suffix all P suffixes, without -ik(a) → -ický
+      base class                      pal  plain   both   % pal
+      alternating                      64      0      0  100.0%
+      non-alternating                  62      4      0   93.9%
+      no evidence                      74      1      0   98.7%
+      (no alternation evidence)       136      5      0   96.5%
+    suffix -it
+      base class                      pal  plain   both   % pal
+      alternating                       7      0      0  100.0%
+      non-alternating                   4      0      0  100.0%
+      no evidence                       5      0      0  100.0%
+      (no alternation evidence)         9      0      0  100.0%
+    suffix -et
+      base class                      pal  plain   both   % pal
+      alternating                       0      0      0       -
+      non-alternating                   0      0      0       -
+      no evidence                       1      0      0  100.0%
+      (no alternation evidence)         1      0      0  100.0%
+    suffix -ní/-ný
+      base class                      pal  plain   both   % pal
+      alternating                      13      0      0  100.0%
+      non-alternating                  35      2      0   94.6%
+      no evidence                      21      1      0   95.5%
+      (no alternation evidence)        56      3      0   94.9%
+    suffix -ský/-cký
+      base class                      pal  plain   both   % pal
+      alternating                      23      0      0  100.0%
+      non-alternating                   1      1      0   50.0%
+      no evidence                      48      0      0  100.0%
+      (no alternation evidence)        49      1      0   98.0%
+    suffix -ina
+      base class                      pal  plain   both   % pal
+      alternating                       2      0      0  100.0%
+      non-alternating                   1      0      0  100.0%
+      no evidence                       0      0      0       -
+      (no alternation evidence)         1      0      0  100.0%
+    suffix -í
+      base class                      pal  plain   both   % pal
+      alternating                       6      0      0  100.0%
+      non-alternating                   1      0      0  100.0%
+      no evidence                       3      0      0  100.0%
+      (no alternation evidence)         4      0      0  100.0%
+    suffix -ek
+      base class                      pal  plain   both   % pal
+      alternating                       3      0      0  100.0%
+      non-alternating                  16      0      0  100.0%
+      no evidence                      13      0      0  100.0%
+      (no alternation evidence)        29      0      0  100.0%
+    suffix -ka
+      base class                      pal  plain   both   % pal
+      alternating                      16      0      0  100.0%
+      non-alternating                   3      0      0  100.0%
+      no evidence                      21      0      0  100.0%
+      (no alternation evidence)        24      0      0  100.0%
+    suffix -an
+      base class                      pal  plain   both   % pal
+      alternating                       0      0      0       -
+      non-alternating                   0      1      0    0.0%
+      no evidence                       0      0      0       -
+      (no alternation evidence)         0      1      0    0.0%
+    suffix -ník
+      base class                      pal  plain   both   % pal
+      alternating                       4      0      0  100.0%
+      non-alternating                   1      0      0  100.0%
+      no evidence                       1      0      0  100.0%
+      (no alternation evidence)         2      0      0  100.0%
+    suffix -nice
+      base class                      pal  plain   both   % pal
+      alternating                       1      0      0  100.0%
+      non-alternating                   0      0      0       -
+      no evidence                       0      0      0       -
+      (no alternation evidence)         0      0      0       -
+  target velar: by base stratum (all P suffixes)
+    base stratum inherited
+      base class                      pal  plain   both   % pal
+      alternating                      40      0      0  100.0%
+      non-alternating                  34      2      0   94.4%
+      no evidence                      32      0      0  100.0%
+      (no alternation evidence)        66      2      0   97.1%
+    base stratum borrowed whole
+      base class                      pal  plain   both   % pal
+      alternating                       2      0      0  100.0%
+      non-alternating                   2      0      0  100.0%
+      no evidence                      12      1      0   92.3%
+      (no alternation evidence)        14      1      0   93.3%
+    base stratum internal formation
+      base class                      pal  plain   both   % pal
+      alternating                      17      0      0  100.0%
+      non-alternating                  21      1      0   95.5%
+      no evidence                      21      0      0  100.0%
+      (no alternation evidence)        42      1      0   97.7%
+    base stratum unknown
+      base class                      pal  plain   both   % pal
+      alternating                      16      0      0  100.0%
+      non-alternating                   5      1      0   83.3%
+      no evidence                      48      0      0  100.0%
+      (no alternation evidence)        53      1      0   98.1%
+  target velar: all P suffixes, derivatives internal formations only
+    base class                      pal  plain   both   % pal
+    alternating                      38      0      0  100.0%
+    non-alternating                  35      4      0   89.7%
+    no evidence                      36      0      0  100.0%
+    (no alternation evidence)        71      4      0   94.7%
+  target r (basis wikt), base x suffix units
+    suffix all P suffixes
+      base class                      pal  plain   both   % pal
+      alternating                       4      0      0  100.0%
+      non-alternating                   3      0      0  100.0%
+      no evidence                       6      0      0  100.0%
+      (no alternation evidence)         9      0      0  100.0%
+    suffix all P suffixes, without -ik(a) → -ický
+      base class                      pal  plain   both   % pal
+      alternating                       4      0      0  100.0%
+      non-alternating                   3      0      0  100.0%
+      no evidence                       6      0      0  100.0%
+      (no alternation evidence)         9      0      0  100.0%
+    suffix -it
+      base class                      pal  plain   both   % pal
+      alternating                       1      0      0  100.0%
+      non-alternating                   1      0      0  100.0%
+      no evidence                       2      0      0  100.0%
+      (no alternation evidence)         3      0      0  100.0%
+    suffix -í
+      base class                      pal  plain   both   % pal
+      alternating                       2      0      0  100.0%
+      non-alternating                   1      0      0  100.0%
+      no evidence                       2      0      0  100.0%
+      (no alternation evidence)         3      0      0  100.0%
+    suffix -ek
+      base class                      pal  plain   both   % pal
+      alternating                       0      0      0       -
+      non-alternating                   0      0      0       -
+      no evidence                       1      0      0  100.0%
+      (no alternation evidence)         1      0      0  100.0%
+    suffix -ka
+      base class                      pal  plain   both   % pal
+      alternating                       1      0      0  100.0%
+      non-alternating                   0      0      0       -
+      no evidence                       0      0      0       -
+      (no alternation evidence)         0      0      0       -
+    suffix -ík
+      base class                      pal  plain   both   % pal
+      alternating                       0      0      0       -
+      non-alternating                   1      0      0  100.0%
+      no evidence                       1      0      0  100.0%
+      (no alternation evidence)         2      0      0  100.0%
+  target r: by base stratum (all P suffixes)
+    base stratum inherited
+      base class                      pal  plain   both   % pal
+      alternating                       3      0      0  100.0%
+      non-alternating                   2      0      0  100.0%
+      no evidence                       3      0      0  100.0%
+      (no alternation evidence)         5      0      0  100.0%
+    base stratum borrowed whole
+      base class                      pal  plain   both   % pal
+      alternating                       0      0      0       -
+      non-alternating                   1      0      0  100.0%
+      no evidence                       0      0      0       -
+      (no alternation evidence)         1      0      0  100.0%
+    base stratum unknown
+      base class                      pal  plain   both   % pal
+      alternating                       1      0      0  100.0%
+      non-alternating                   0      0      0       -
+      no evidence                       3      0      0  100.0%
+      (no alternation evidence)         3      0      0  100.0%
+  target r: all P suffixes, derivatives internal formations only
+    base class                      pal  plain   both   % pal
+    alternating                       0      0      0       -
+    non-alternating                   2      0      0  100.0%
+    no evidence                       1      0      0  100.0%
+    (no alternation evidence)         3      0      0  100.0%
+  sensitivity (velar, all P suffixes):
+    basis linked
+      base class                      pal  plain   both   % pal
+      alternating                      72      0      0  100.0%
+      non-alternating                  57      4      0   93.4%
+      no evidence                      94      0      0  100.0%
+      (no alternation evidence)       151      4      0   97.4%
+    basis wikt+corpus
+      base class                      pal  plain   both   % pal
+      alternating                      82      0      0  100.0%
+      non-alternating                  63      4      0   94.0%
+      no evidence                     124      1      0   99.2%
+      (no alternation evidence)       187      5      0   97.4%
+  velar neuters on -ko/-go/-ho/-cho by base class: alternating 1, non-alternating 18, no evidence 337
+  velar neuters, all P suffixes:
+    base class                      pal  plain   both   % pal
+    alternating                       1      0      0  100.0%
+    non-alternating                   0      1      0    0.0%
+    no evidence                       1      1      0   50.0%
+    (no alternation evidence)         1      2      0   33.3%
+
+tau = ge2pm_strict
+------------------------------------------------------------------------
+  velar noun roots by base class: alternating 244, non-alternating 8, no evidence 8,043
+  r noun roots by base class: alternating 65, non-alternating 1, no evidence 1,546
+  target velar (basis wikt), base x suffix units
+    suffix all P suffixes
+      base class                      pal  plain   both   % pal
+      alternating                      65      0      0  100.0%
+      non-alternating                   3      0      0  100.0%
+      no evidence                     182      5      0   97.3%
+      (no alternation evidence)       185      5      0   97.4%
+    suffix all P suffixes, without -ik(a) → -ický
+      base class                      pal  plain   both   % pal
+      alternating                      55      0      0  100.0%
+      non-alternating                   3      0      0  100.0%
+      no evidence                     142      5      0   96.6%
+      (no alternation evidence)       145      5      0   96.7%
+    suffix -it
+      base class                      pal  plain   both   % pal
+      alternating                       5      0      0  100.0%
+      non-alternating                   0      0      0       -
+      no evidence                      11      0      0  100.0%
+      (no alternation evidence)        11      0      0  100.0%
+    suffix -et
+      base class                      pal  plain   both   % pal
+      alternating                       0      0      0       -
+      non-alternating                   0      0      0       -
+      no evidence                       1      0      0  100.0%
+      (no alternation evidence)         1      0      0  100.0%
+    suffix -ní/-ný
+      base class                      pal  plain   both   % pal
+      alternating                      11      0      0  100.0%
+      non-alternating                   0      0      0       -
+      no evidence                      58      3      0   95.1%
+      (no alternation evidence)        58      3      0   95.1%
+    suffix -ský/-cký
+      base class                      pal  plain   both   % pal
+      alternating                      21      0      0  100.0%
+      non-alternating                   0      0      0       -
+      no evidence                      51      1      0   98.1%
+      (no alternation evidence)        51      1      0   98.1%
+    suffix -ina
+      base class                      pal  plain   both   % pal
+      alternating                       1      0      0  100.0%
+      non-alternating                   0      0      0       -
+      no evidence                       2      0      0  100.0%
+      (no alternation evidence)         2      0      0  100.0%
+    suffix -í
+      base class                      pal  plain   both   % pal
+      alternating                       5      0      0  100.0%
+      non-alternating                   0      0      0       -
+      no evidence                       5      0      0  100.0%
+      (no alternation evidence)         5      0      0  100.0%
+    suffix -ek
+      base class                      pal  plain   both   % pal
+      alternating                       2      0      0  100.0%
+      non-alternating                   0      0      0       -
+      no evidence                      30      0      0  100.0%
+      (no alternation evidence)        30      0      0  100.0%
+    suffix -ka
+      base class                      pal  plain   both   % pal
+      alternating                      15      0      0  100.0%
+      non-alternating                   3      0      0  100.0%
+      no evidence                      22      0      0  100.0%
+      (no alternation evidence)        25      0      0  100.0%
+    suffix -an
+      base class                      pal  plain   both   % pal
+      alternating                       0      0      0       -
+      non-alternating                   0      0      0       -
+      no evidence                       0      1      0    0.0%
+      (no alternation evidence)         0      1      0    0.0%
+    suffix -ník
+      base class                      pal  plain   both   % pal
+      alternating                       4      0      0  100.0%
+      non-alternating                   0      0      0       -
+      no evidence                       2      0      0  100.0%
+      (no alternation evidence)         2      0      0  100.0%
+    suffix -nice
+      base class                      pal  plain   both   % pal
+      alternating                       1      0      0  100.0%
+      non-alternating                   0      0      0       -
+      no evidence                       0      0      0       -
+      (no alternation evidence)         0      0      0       -
+  target velar: by base stratum (all P suffixes)
+    base stratum inherited
+      base class                      pal  plain   both   % pal
+      alternating                      33      0      0  100.0%
+      non-alternating                   0      0      0       -
+      no evidence                      73      2      0   97.3%
+      (no alternation evidence)        73      2      0   97.3%
+    base stratum borrowed whole
+      base class                      pal  plain   both   % pal
+      alternating                       1      0      0  100.0%
+      non-alternating                   0      0      0       -
+      no evidence                      15      1      0   93.8%
+      (no alternation evidence)        15      1      0   93.8%
+    base stratum internal formation
+      base class                      pal  plain   both   % pal
+      alternating                      15      0      0  100.0%
+      non-alternating                   1      0      0  100.0%
+      no evidence                      43      1      0   97.7%
+      (no alternation evidence)        44      1      0   97.8%
+    base stratum unknown
+      base class                      pal  plain   both   % pal
+      alternating                      16      0      0  100.0%
+      non-alternating                   2      0      0  100.0%
+      no evidence                      51      1      0   98.1%
+      (no alternation evidence)        53      1      0   98.1%
+  target velar: all P suffixes, derivatives internal formations only
+    base class                      pal  plain   both   % pal
+    alternating                      35      0      0  100.0%
+    non-alternating                   0      0      0       -
+    no evidence                      74      4      0   94.9%
+    (no alternation evidence)        74      4      0   94.9%
+  target r (basis wikt), base x suffix units
+    suffix all P suffixes
+      base class                      pal  plain   both   % pal
+      alternating                       2      0      0  100.0%
+      non-alternating                   0      0      0       -
+      no evidence                      11      0      0  100.0%
+      (no alternation evidence)        11      0      0  100.0%
+    suffix all P suffixes, without -ik(a) → -ický
+      base class                      pal  plain   both   % pal
+      alternating                       2      0      0  100.0%
+      non-alternating                   0      0      0       -
+      no evidence                      11      0      0  100.0%
+      (no alternation evidence)        11      0      0  100.0%
+    suffix -it
+      base class                      pal  plain   both   % pal
+      alternating                       0      0      0       -
+      non-alternating                   0      0      0       -
+      no evidence                       4      0      0  100.0%
+      (no alternation evidence)         4      0      0  100.0%
+    suffix -í
+      base class                      pal  plain   both   % pal
+      alternating                       1      0      0  100.0%
+      non-alternating                   0      0      0       -
+      no evidence                       4      0      0  100.0%
+      (no alternation evidence)         4      0      0  100.0%
+    suffix -ek
+      base class                      pal  plain   both   % pal
+      alternating                       0      0      0       -
+      non-alternating                   0      0      0       -
+      no evidence                       1      0      0  100.0%
+      (no alternation evidence)         1      0      0  100.0%
+    suffix -ka
+      base class                      pal  plain   both   % pal
+      alternating                       1      0      0  100.0%
+      non-alternating                   0      0      0       -
+      no evidence                       0      0      0       -
+      (no alternation evidence)         0      0      0       -
+    suffix -ík
+      base class                      pal  plain   both   % pal
+      alternating                       0      0      0       -
+      non-alternating                   0      0      0       -
+      no evidence                       2      0      0  100.0%
+      (no alternation evidence)         2      0      0  100.0%
+  target r: by base stratum (all P suffixes)
+    base stratum inherited
+      base class                      pal  plain   both   % pal
+      alternating                       1      0      0  100.0%
+      non-alternating                   0      0      0       -
+      no evidence                       7      0      0  100.0%
+      (no alternation evidence)         7      0      0  100.0%
+    base stratum borrowed whole
+      base class                      pal  plain   both   % pal
+      alternating                       0      0      0       -
+      non-alternating                   0      0      0       -
+      no evidence                       1      0      0  100.0%
+      (no alternation evidence)         1      0      0  100.0%
+    base stratum unknown
+      base class                      pal  plain   both   % pal
+      alternating                       1      0      0  100.0%
+      non-alternating                   0      0      0       -
+      no evidence                       3      0      0  100.0%
+      (no alternation evidence)         3      0      0  100.0%
+  target r: all P suffixes, derivatives internal formations only
+    base class                      pal  plain   both   % pal
+    alternating                       0      0      0       -
+    non-alternating                   0      0      0       -
+    no evidence                       3      0      0  100.0%
+    (no alternation evidence)         3      0      0  100.0%
+  sensitivity (velar, all P suffixes):
+    basis linked
+      base class                      pal  plain   both   % pal
+      alternating                      62      0      0  100.0%
+      non-alternating                   2      0      0  100.0%
+      no evidence                     159      4      0   97.5%
+      (no alternation evidence)       161      4      0   97.6%
+    basis wikt+corpus
+      base class                      pal  plain   both   % pal
+      alternating                      72      0      0  100.0%
+      non-alternating                   3      0      0  100.0%
+      no evidence                     194      5      0   97.5%
+      (no alternation evidence)       197      5      0   97.5%
+  velar neuters on -ko/-go/-ho/-cho by base class: alternating 0, non-alternating 0, no evidence 356
+  velar neuters, all P suffixes:
+    base class                      pal  plain   both   % pal
+    alternating                       0      0      0       -
+    non-alternating                   0      0      0       -
+    no evidence                       2      2      0   50.0%
+    (no alternation evidence)         2      2      0   50.0%
+
+NC sources (aggregates only): basis all (DeriNet-only pairs added),
+base strata Wiktionary > czetyl > DeriNet (R22)
+------------------------------------------------------------------------
+  tau = dictionary, velar, all P suffixes
+    base class                      pal  plain   both   % pal
+    alternating                    2445     18      0   99.3%
+    non-alternating                  57      3      0   95.0%
+    no evidence                      75      1      1   97.4%
+    (no alternation evidence)       132      4      1   96.4%
+    base stratum inherited
+      base class                      pal  plain   both   % pal
+      alternating                     602      8      0   98.7%
+      non-alternating                  13      0      0  100.0%
+      no evidence                       4      0      0  100.0%
+      (no alternation evidence)        17      0      0  100.0%
+    base stratum borrowed whole
+      base class                      pal  plain   both   % pal
+      alternating                     323      5      0   98.5%
+      non-alternating                  25      2      0   92.6%
+      no evidence                       8      0      1   88.9%
+      (no alternation evidence)        33      2      1   91.7%
+    base stratum internal formation
+      base class                      pal  plain   both   % pal
+      alternating                     881      1      0   99.9%
+      non-alternating                   4      1      0   80.0%
+      no evidence                      29      0      0  100.0%
+      (no alternation evidence)        33      1      0   97.1%
+    base stratum unknown
+      base class                      pal  plain   both   % pal
+      alternating                     639      4      0   99.4%
+      non-alternating                  15      0      0  100.0%
+      no evidence                      34      1      0   97.1%
+      (no alternation evidence)        49      1      0   98.0%
+  tau = ge1, velar, all P suffixes
+    base class                      pal  plain   both   % pal
+    alternating                     664      4      0   99.4%
+    non-alternating                 223      4      0   98.2%
+    no evidence                     256      2      0   99.2%
+    (no alternation evidence)       479      6      0   98.8%
+    base stratum inherited
+      base class                      pal  plain   both   % pal
+      alternating                     254      2      0   99.2%
+      non-alternating                  84      0      0  100.0%
+      no evidence                      46      0      0  100.0%
+      (no alternation evidence)       130      0      0  100.0%
+    base stratum borrowed whole
+      base class                      pal  plain   both   % pal
+      alternating                      83      1      0   98.8%
+      non-alternating                  31      1      0   96.9%
+      no evidence                      49      1      0   98.0%
+      (no alternation evidence)        80      2      0   97.6%
+    base stratum internal formation
+      base class                      pal  plain   both   % pal
+      alternating                     224      0      0  100.0%
+      non-alternating                  50      2      0   96.2%
+      no evidence                      66      0      0  100.0%
+      (no alternation evidence)       116      2      0   98.3%
+    base stratum unknown
+      base class                      pal  plain   both   % pal
+      alternating                     103      1      0   99.0%
+      non-alternating                  58      1      0   98.3%
+      no evidence                      95      1      0   99.0%
+      (no alternation evidence)       153      2      0   98.7%

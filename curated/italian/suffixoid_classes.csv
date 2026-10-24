@@ -1,0 +1,4 @@
+lexeme_id,learned_suffixoid,semantic_class,decided_by,note,guard_word,guard_pos,guard_first_gloss
+it:astrologo:noun:1:77130391,,person,"lexpipe-it data layer (Claude), 2026-10-23",both senses (astrologer; synonym of astronomo) name persons; the rule reads the second gloss as a thing,astrologo,noun,"astrologer, stargazer"
+it:nientologo:noun:0:fcaca6e6,,person,"lexpipe-it data layer (Claude), 2026-10-23",the gloss names a person without an agentive suffix,nientologo,noun,know-it-all
+it:spurgo:noun:1:dabf9772,False,,"lexpipe-it data layer (Claude), 2026-10-23","deverbal of spurgare (s- + purgare), not a Greek -urgo formation; Wiktionary gives no etymology",spurgo,noun,"clearing, cleaning, bleeding"

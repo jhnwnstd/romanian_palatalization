@@ -22,6 +22,12 @@ Two-pass structure:
 The output CSV gains a ``normalisations`` column so a downstream
 reader can filter out transcription-noise rows and focus on the
 residual.
+
+The residual classifiers test Romanian spellings (-ez, -ică, -șcă,
+-șt), so :func:`refine_category` is the Romanian categoriser: the
+default :attr:`phonology.profile.AnalysisProfile.categoriser`.
+Another analysis supplies its own function with the same call shape
+(:class:`phonology.profile.CategoriserFn`).
 """
 
 from __future__ import annotations
@@ -30,7 +36,13 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Final, Protocol
 
-from .compare import CompareResult, Normalisation, compare
+from .compare import (
+    ROMANIAN_NORMALISERS,
+    CompareResult,
+    Normalisation,
+    NormaliserCascade,
+    compare_ipa,
+)
 
 
 class RefinedCategory(StrEnum):
@@ -112,16 +124,22 @@ def refine_category(
     attested_field: str,
     boolean_predicted: bool,
     ur_built: bool,
+    *,
+    normalisers: NormaliserCascade = ROMANIAN_NORMALISERS,
 ) -> Categorisation:
     """Assign a :class:`RefinedCategory` to one mismatch row.
 
     The caller pre-computes whether the boolean prediction is right —
-    we don't re-derive here; we just categorise.
+    we don't re-derive here; we just categorise. ``normalisers`` drives
+    the normalisation pass; the validator passes its profile's cascade
+    so the NORM_* categories agree with its IPA match flag.
     """
     if not ur_built:
         return Categorisation(RefinedCategory.UR_BUILD_FAILED, (), 999.0, "")
 
-    cmp: CompareResult = compare(predicted_sr, attested_field)
+    cmp: CompareResult = compare_ipa(
+        predicted_sr, attested_field, normalisers=normalisers
+    )
     if cmp.matched and cmp.normalisation_applied:
         # Data-side normalisation succeeded — rules were right,
         # transcription differs.

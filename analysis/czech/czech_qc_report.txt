@@ -1,0 +1,76 @@
+Licence and attribution
+-----------------------
+Aggregate counts only: this report holds counts and statistics
+computed from the sources below, never their rows, word forms or
+text. Sources and licences:
+  morfflex       CC BY-NC-SA 4.0; MorfFlex CZ 2.1
+  wiktionary_cs  CC BY-SA 4.0 + GFDL; Czech Wiktionary (Wikislovník) via wiktextract
+  wiktionary_en  CC BY-SA 4.0 + GFDL; English Wiktionary via wiktextract (kaikki.org)
+Counts that rest on CC BY-NC-SA sources are tracked under the
+draft policy of DATA_LICENSE.md ('Aggregate counts from
+non-commercial sources'), pending the authors' decision; they
+may not be used commercially.
+
+Czech QC: Wiktionary cells against MorfFlex CZ 2.1
+====================================================
+
+MorfFlex is a generated dictionary: agreement is QC, not
+attestation (design R11). Aggregates only (R9).
+
+MorfFlex projection (data/czech/nc/czech_morfflex.sqlite)
+  rows matched by the NN/AAMP1 filter: 7852381
+  rows stored (lexicon lemmas or Leipzig forms): 722638
+  MorfFlex sha256: 7a908d3b272ff069b69a28121edaabf2ab0cf3d915289e8d23f546783094b38e
+
+Lexemes compared (in-domain, with a primary paradigm)
+  adj    13,325   joined to a MorfFlex lemma:   10,275 ( 77.1%)   with name labels: 27
+  noun   28,882   joined to a MorfFlex lemma:   24,641 ( 85.3%)   with name labels: 699
+
+Wiktionary forms by cell and status
+  cell                   present      styled_lemma  nonstandard_only            absent      cell_missing          no_lemma  morfflex_only
+  NOM.SG         17,416 ( 86.5%)    1,097 (  5.4%)        0 (  0.0%)       19 (  0.1%)       17 (  0.1%)    1,596 (  7.9%)             69
+  GEN.SG         21,659 ( 78.6%)    1,893 (  6.9%)       13 (  0.0%)      173 (  0.6%)       37 (  0.1%)    3,781 ( 13.7%)            299
+  DAT.SG         25,633 ( 77.9%)    2,272 (  6.9%)       11 (  0.0%)      189 (  0.6%)       37 (  0.1%)    4,756 ( 14.5%)            278
+  ACC.SG         20,109 ( 80.8%)    1,521 (  6.1%)        3 (  0.0%)      125 (  0.5%)       30 (  0.1%)    3,088 ( 12.4%)            169
+  VOC.SG         21,133 ( 78.3%)    1,816 (  6.7%)        8 (  0.0%)      391 (  1.4%)       56 (  0.2%)    3,587 ( 13.3%)            180
+  LOC.SG         26,315 ( 77.5%)    2,300 (  6.8%)       15 (  0.0%)      441 (  1.3%)       35 (  0.1%)    4,840 ( 14.3%)            698
+  INS.SG         22,431 ( 78.5%)    1,955 (  6.8%)        8 (  0.0%)       94 (  0.3%)       37 (  0.1%)    4,038 ( 14.1%)             82
+  NOM.PL         22,486 ( 77.6%)    1,967 (  6.8%)       57 (  0.2%)      289 (  1.0%)       77 (  0.3%)    4,101 ( 14.2%)          1,668
+  NOM.PL.M.AN     9,354 ( 77.1%)      182 (  1.5%)        0 (  0.0%)       42 (  0.3%)        0 (  0.0%)    2,549 ( 21.0%)             42
+  GEN.PL         22,208 ( 77.6%)    1,951 (  6.8%)        9 (  0.0%)      201 (  0.7%)       84 (  0.3%)    4,162 ( 14.5%)            676
+  DAT.PL         22,452 ( 77.8%)    1,966 (  6.8%)       12 (  0.0%)      149 (  0.5%)       82 (  0.3%)    4,211 ( 14.6%)            114
+  ACC.PL         21,470 ( 78.4%)    1,882 (  6.9%)        9 (  0.0%)      134 (  0.5%)       97 (  0.4%)    3,805 ( 13.9%)            242
+  VOC.PL         22,420 ( 77.5%)    1,962 (  6.8%)       59 (  0.2%)      312 (  1.1%)       99 (  0.3%)    4,063 ( 14.1%)          1,667
+  LOC.PL         22,651 ( 77.3%)    2,010 (  6.9%)       37 (  0.1%)      241 (  0.8%)       81 (  0.3%)    4,300 ( 14.7%)          1,728
+  INS.PL         22,407 ( 77.5%)    1,954 (  6.8%)       38 (  0.1%)      202 (  0.7%)       91 (  0.3%)    4,209 ( 14.6%)            169
+
+Cell agreement (set of Wiktionary vs standard MorfFlex forms)
+  cell                  agree    wikt_subset  wikt_superset        overlap       disjoint   cell_missing       no_lemma
+  NOM.SG               18,464             49              0              0             19             17          1,586
+  GEN.SG               23,059            207             97              3             84             35          3,718
+  DAT.SG               23,673            157            100             13             74             31          3,946
+  ACC.SG               21,415             94             52              2             72             29          3,052
+  VOC.SG               22,606             57            273              1            121             54          3,524
+  LOC.SG               23,004            575            346             14             78             30          3,946
+  INS.SG               24,249             31             50              0             50             36          4,012
+  NOM.PL               21,597          1,458            169             43            121             71          3,759
+  NOM.PL.M.AN           9,536              0              0              0             42              0          2,549
+  GEN.PL               23,285            550             80              1            120             81          4,114
+  DAT.PL               24,197             44             88              3             66             79          4,174
+  ACC.PL               23,063            160             61              2             77             86          3,764
+  VOC.PL               21,566          1,446            178             44            136             91          3,757
+  LOC.PL               22,573          1,554            122              8            143             77          4,174
+  INS.PL               24,085             61            126              3            103             85          4,154
+
+Form provenance (R11) by status
+  explicit          64,422 ( 58.4%)   11,015 ( 10.0%)      190 (  0.2%)    1,499 (  1.4%)      362 (  0.3%)   32,739 ( 29.7%)
+  module_default   255,722 ( 85.8%)   15,713 (  5.3%)       89 (  0.0%)    1,503 (  0.5%)      498 (  0.2%)   24,347 (  8.2%)
+
+Manual worklist (analysis/czech/czech_manual_worklist.csv)
+  rows: 560
+  DAT.SG            14
+  VOC.SG            30
+  LOC.SG           207
+  NOM.PL           136
+  NOM.PL.M.AN       39
+  LOC.PL           134

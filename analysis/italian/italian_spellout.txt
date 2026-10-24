@@ -1,0 +1,253 @@
+Italian spell-out TP on certain-specification roots (design R20)
+========================================================================
+
+Certain roots: dorsal roots whose -i plural is attested with
+-ci/-gi at tau (E0, dominant coding). N = certain roots with an
+attested derivative of the pair set; e = roots choosing only the
+non-palatalizing member; roots with both members are doublets
+coded by tokens (R19). theta = N/ln N. 'all' counts named links
+(etymology templates, derived lists, head forms); 'all+candidates'
+adds generated candidates (R21). Derivatives: dictionary-listed at
+tau = dictionary, corpus tokens (summed over their corpus forms)
+at the other thresholds. A verdict with fragility 1 flips with one
+more (or one fewer) exception: read it as a tie.
+
+Pair set verbalizer: -izzare, -eggiare, -ire, -are
+------------------------------------------------------------------------
+  pair set           subset                     tau        coding             N_target     N     e  theta tol? frag
+  verbalizer         all                        dictionary dominant               5551    44    25   11.6   no   14
+  verbalizer         all                        dictionary doublet_exception      5551    44    25   11.6   no   14
+  verbalizer         all                        dictionary doublet_excluded       5550    43    24   11.4   no   13
+  verbalizer         all                        ge1        dominant                980    17    11    6.0   no    5
+  verbalizer         all                        ge1        doublet_exception       980    17    11    6.0   no    5
+  verbalizer         all                        ge1        doublet_excluded        980    17    11    6.0   no    5
+  verbalizer         all                        ge0.5pm    dominant                305     9     6    4.1   no    2
+  verbalizer         all                        ge0.5pm    doublet_exception       305     9     6    4.1   no    2
+  verbalizer         all                        ge0.5pm    doublet_excluded        305     9     6    4.1   no    2
+  verbalizer         all                        ge2pm      dominant                135     6     5    3.3   no    2
+  verbalizer         all                        ge2pm      doublet_exception       135     6     5    3.3   no    2
+  verbalizer         all                        ge2pm      doublet_excluded        135     6     5    3.3   no    2
+  verbalizer         all+candidates             dictionary dominant               5551    57    38   14.1   no   24
+  verbalizer         all+candidates             dictionary doublet_exception      5551    57    38   14.1   no   24
+  verbalizer         all+candidates             dictionary doublet_excluded       5549    55    36   13.7   no   23
+  verbalizer         all+candidates             ge1        dominant                980    29    16    8.6   no    8
+  verbalizer         all+candidates             ge1        doublet_exception       980    29    16    8.6   no    8
+  verbalizer         all+candidates             ge1        doublet_excluded        980    29    16    8.6   no    8
+  verbalizer         all+candidates             ge0.5pm    dominant                305    13    10    5.1   no    5
+  verbalizer         all+candidates             ge0.5pm    doublet_exception       305    13    10    5.1   no    5
+  verbalizer         all+candidates             ge0.5pm    doublet_excluded        305    13    10    5.1   no    5
+  verbalizer         all+candidates             ge2pm      dominant                135     8     7    3.8   no    4
+  verbalizer         all+candidates             ge2pm      doublet_exception       135     8     7    3.8   no    4
+  verbalizer         all+candidates             ge2pm      doublet_excluded        135     8     7    3.8   no    4
+  verbalizer         all+candidates+other_base  dictionary dominant               5551    58    38   14.3   no   24
+  verbalizer         all+candidates+other_base  ge1        dominant                980    29    16    8.6   no    8
+  verbalizer         all+candidates+other_base  ge0.5pm    dominant                305    13    10    5.1   no    5
+  verbalizer         all+candidates+other_base  ge2pm      dominant                135     8     7    3.8   no    4
+  verbalizer         base:inherited             dictionary dominant                 20     6     6    3.3   no    3
+  verbalizer         base:inherited             ge1        dominant                 13     3     3    2.7   no    1
+  verbalizer         base:inherited             ge0.5pm    dominant                 13     1     1      -    -    -
+  verbalizer         base:inherited             ge2pm      dominant                  9     1     1      -    -    -
+  verbalizer         base:borrowed whole        dictionary dominant                461    34    17    9.6   no    8
+  verbalizer         base:borrowed whole        ge1        dominant                230    14     8    5.3   no    3
+  verbalizer         base:borrowed whole        ge0.5pm    dominant                127     8     5    3.8   no    2
+  verbalizer         base:borrowed whole        ge2pm      dominant                 69     5     4    3.1   no    1
+  verbalizer         base:internal formation    dictionary dominant               2877     1     1      -    -    -
+  verbalizer         base:internal formation    ge1        dominant                450     0     0      -    -    -
+  verbalizer         base:internal formation    ge0.5pm    dominant                 90     0     0      -    -    -
+  verbalizer         base:internal formation    ge2pm      dominant                 28     0     0      -    -    -
+  verbalizer         base:unknown               dictionary dominant               2193     3     1    2.7  yes    2
+  verbalizer         base:unknown               ge1        dominant                287     0     0      -    -    -
+  verbalizer         base:unknown               ge0.5pm    dominant                 75     0     0      -    -    -
+  verbalizer         base:unknown               ge2pm      dominant                 29     0     0      -    -    -
+  verbalizer         deriv:internal formation   dictionary dominant               5551    42    23   11.2   no   12
+  verbalizer         deriv:internal formation   ge1        dominant                980    14     8    5.3   no    3
+  verbalizer         deriv:internal formation   ge0.5pm    dominant                305     6     3    3.3  yes    1
+  verbalizer         deriv:internal formation   ge2pm      dominant                135     3     2    2.7  yes    1
+  verbalizer         contrast:nonalt            dictionary dominant               1041    88    87   19.7   no   68
+  verbalizer         contrast:nonalt            ge1        dominant                322    39    38   10.6   no   28
+  verbalizer         contrast:nonalt            ge0.5pm    dominant                174    25    25    7.8   no   18
+  verbalizer         contrast:nonalt            ge2pm      dominant                 96    12    12    4.8   no    8
+
+Pair set verbalizer_no_are: -izzare, -eggiare, -ire
+------------------------------------------------------------------------
+  pair set           subset                     tau        coding             N_target     N     e  theta tol? frag
+  verbalizer_no_are  all                        dictionary dominant               5551    26     7    8.0  yes    1
+  verbalizer_no_are  all                        dictionary doublet_exception      5551    26     7    8.0  yes    1
+  verbalizer_no_are  all                        dictionary doublet_excluded       5550    25     6    7.8  yes    2
+  verbalizer_no_are  all                        ge1        dominant                980     8     2    3.8  yes    2
+  verbalizer_no_are  all                        ge1        doublet_exception       980     8     2    3.8  yes    2
+  verbalizer_no_are  all                        ge1        doublet_excluded        980     8     2    3.8  yes    2
+  verbalizer_no_are  all                        ge0.5pm    dominant                305     3     0    2.7  yes    3
+  verbalizer_no_are  all                        ge0.5pm    doublet_exception       305     3     0    2.7  yes    3
+  verbalizer_no_are  all                        ge0.5pm    doublet_excluded        305     3     0    2.7  yes    3
+  verbalizer_no_are  all                        ge2pm      dominant                135     1     0      -    -    -
+  verbalizer_no_are  all                        ge2pm      doublet_exception       135     1     0      -    -    -
+  verbalizer_no_are  all                        ge2pm      doublet_excluded        135     1     0      -    -    -
+  verbalizer_no_are  all+candidates             dictionary dominant               5551    27     7    8.2  yes    2
+  verbalizer_no_are  all+candidates             dictionary doublet_exception      5551    27     7    8.2  yes    2
+  verbalizer_no_are  all+candidates             dictionary doublet_excluded       5550    26     6    8.0  yes    2
+  verbalizer_no_are  all+candidates             ge1        dominant                980    16     2    5.8  yes    4
+  verbalizer_no_are  all+candidates             ge1        doublet_exception       980    16     2    5.8  yes    4
+  verbalizer_no_are  all+candidates             ge1        doublet_excluded        980    16     2    5.8  yes    4
+  verbalizer_no_are  all+candidates             ge0.5pm    dominant                305     3     0    2.7  yes    3
+  verbalizer_no_are  all+candidates             ge0.5pm    doublet_exception       305     3     0    2.7  yes    3
+  verbalizer_no_are  all+candidates             ge0.5pm    doublet_excluded        305     3     0    2.7  yes    3
+  verbalizer_no_are  all+candidates             ge2pm      dominant                135     1     0      -    -    -
+  verbalizer_no_are  all+candidates             ge2pm      doublet_exception       135     1     0      -    -    -
+  verbalizer_no_are  all+candidates             ge2pm      doublet_excluded        135     1     0      -    -    -
+  verbalizer_no_are  all+candidates+other_base  dictionary dominant               5551    28     7    8.4  yes    2
+  verbalizer_no_are  all+candidates+other_base  ge1        dominant                980    16     2    5.8  yes    4
+  verbalizer_no_are  all+candidates+other_base  ge0.5pm    dominant                305     3     0    2.7  yes    3
+  verbalizer_no_are  all+candidates+other_base  ge2pm      dominant                135     1     0      -    -    -
+  verbalizer_no_are  base:inherited             dictionary dominant                 20     2     2    2.9  yes    -
+  verbalizer_no_are  base:inherited             ge1        dominant                 13     1     1      -    -    -
+  verbalizer_no_are  base:inherited             ge0.5pm    dominant                 13     0     0      -    -    -
+  verbalizer_no_are  base:inherited             ge2pm      dominant                  9     0     0      -    -    -
+  verbalizer_no_are  base:borrowed whole        dictionary dominant                461    22     5    7.1  yes    3
+  verbalizer_no_are  base:borrowed whole        ge1        dominant                230     7     1    3.6  yes    3
+  verbalizer_no_are  base:borrowed whole        ge0.5pm    dominant                127     3     0    2.7  yes    3
+  verbalizer_no_are  base:borrowed whole        ge2pm      dominant                 69     1     0      -    -    -
+  verbalizer_no_are  base:internal formation    dictionary dominant               2877     0     0      -    -    -
+  verbalizer_no_are  base:internal formation    ge1        dominant                450     0     0      -    -    -
+  verbalizer_no_are  base:internal formation    ge0.5pm    dominant                 90     0     0      -    -    -
+  verbalizer_no_are  base:internal formation    ge2pm      dominant                 28     0     0      -    -    -
+  verbalizer_no_are  base:unknown               dictionary dominant               2193     2     0    2.9  yes    -
+  verbalizer_no_are  base:unknown               ge1        dominant                287     0     0      -    -    -
+  verbalizer_no_are  base:unknown               ge0.5pm    dominant                 75     0     0      -    -    -
+  verbalizer_no_are  base:unknown               ge2pm      dominant                 29     0     0      -    -    -
+  verbalizer_no_are  deriv:internal formation   dictionary dominant               5551    26     7    8.0  yes    1
+  verbalizer_no_are  deriv:internal formation   ge1        dominant                980     8     2    3.8  yes    2
+  verbalizer_no_are  deriv:internal formation   ge0.5pm    dominant                305     3     0    2.7  yes    3
+  verbalizer_no_are  deriv:internal formation   ge2pm      dominant                135     1     0      -    -    -
+  verbalizer_no_are  contrast:nonalt            dictionary dominant               1041    27    25    8.2   no   17
+  verbalizer_no_are  contrast:nonalt            ge1        dominant                322     8     7    3.8   no    4
+  verbalizer_no_are  contrast:nonalt            ge0.5pm    dominant                174     3     3    2.7   no    1
+  verbalizer_no_are  contrast:nonalt            ge2pm      dominant                 96     2     2    2.9  yes    -
+
+Pair set ista_ismo_ita: -ista, -ismo, -ità
+------------------------------------------------------------------------
+  pair set           subset                     tau        coding             N_target     N     e  theta tol? frag
+  ista_ismo_ita      all                        dictionary dominant               5551   231     0   42.4  yes   43
+  ista_ismo_ita      all                        dictionary doublet_exception      5551   231     0   42.4  yes   43
+  ista_ismo_ita      all                        dictionary doublet_excluded       5551   231     0   42.4  yes   43
+  ista_ismo_ita      all                        ge1        dominant                980    73     0   17.0  yes   18
+  ista_ismo_ita      all                        ge1        doublet_exception       980    73     0   17.0  yes   18
+  ista_ismo_ita      all                        ge1        doublet_excluded        980    73     0   17.0  yes   18
+  ista_ismo_ita      all                        ge0.5pm    dominant                305    20     0    6.7  yes    7
+  ista_ismo_ita      all                        ge0.5pm    doublet_exception       305    20     0    6.7  yes    7
+  ista_ismo_ita      all                        ge0.5pm    doublet_excluded        305    20     0    6.7  yes    7
+  ista_ismo_ita      all                        ge2pm      dominant                135     9     0    4.1  yes    5
+  ista_ismo_ita      all                        ge2pm      doublet_exception       135     9     0    4.1  yes    5
+  ista_ismo_ita      all                        ge2pm      doublet_excluded        135     9     0    4.1  yes    5
+  ista_ismo_ita      all+candidates             dictionary dominant               5551   255     0   46.0  yes   47
+  ista_ismo_ita      all+candidates             dictionary doublet_exception      5551   255     0   46.0  yes   47
+  ista_ismo_ita      all+candidates             dictionary doublet_excluded       5551   255     0   46.0  yes   47
+  ista_ismo_ita      all+candidates             ge1        dominant                980    88     0   19.7  yes   20
+  ista_ismo_ita      all+candidates             ge1        doublet_exception       980    88     0   19.7  yes   20
+  ista_ismo_ita      all+candidates             ge1        doublet_excluded        980    88     0   19.7  yes   20
+  ista_ismo_ita      all+candidates             ge0.5pm    dominant                305    23     0    7.3  yes    8
+  ista_ismo_ita      all+candidates             ge0.5pm    doublet_exception       305    23     0    7.3  yes    8
+  ista_ismo_ita      all+candidates             ge0.5pm    doublet_excluded        305    23     0    7.3  yes    8
+  ista_ismo_ita      all+candidates             ge2pm      dominant                135    11     0    4.6  yes    5
+  ista_ismo_ita      all+candidates             ge2pm      doublet_exception       135    11     0    4.6  yes    5
+  ista_ismo_ita      all+candidates             ge2pm      doublet_excluded        135    11     0    4.6  yes    5
+  ista_ismo_ita      all+candidates+other_base  dictionary dominant               5551   263     0   47.2  yes   48
+  ista_ismo_ita      all+candidates+other_base  ge1        dominant                980    91     0   20.2  yes   21
+  ista_ismo_ita      all+candidates+other_base  ge0.5pm    dominant                305    24     0    7.6  yes    8
+  ista_ismo_ita      all+candidates+other_base  ge2pm      dominant                135    12     0    4.8  yes    5
+  ista_ismo_ita      base:inherited             dictionary dominant                 20     4     0    2.9  yes    3
+  ista_ismo_ita      base:inherited             ge1        dominant                 13     2     0    2.9  yes    -
+  ista_ismo_ita      base:inherited             ge0.5pm    dominant                 13     1     0      -    -    -
+  ista_ismo_ita      base:inherited             ge2pm      dominant                  9     0     0      -    -    -
+  ista_ismo_ita      base:borrowed whole        dictionary dominant                461   104     0   22.4  yes   23
+  ista_ismo_ita      base:borrowed whole        ge1        dominant                230    48     0   12.4  yes   13
+  ista_ismo_ita      base:borrowed whole        ge0.5pm    dominant                127    17     0    6.0  yes    7
+  ista_ismo_ita      base:borrowed whole        ge2pm      dominant                 69     8     0    3.8  yes    4
+  ista_ismo_ita      base:internal formation    dictionary dominant               2877    64     0   15.4  yes   16
+  ista_ismo_ita      base:internal formation    ge1        dominant                450    10     0    4.3  yes    5
+  ista_ismo_ita      base:internal formation    ge0.5pm    dominant                 90     0     0      -    -    -
+  ista_ismo_ita      base:internal formation    ge2pm      dominant                 28     0     0      -    -    -
+  ista_ismo_ita      base:unknown               dictionary dominant               2193    59     0   14.5  yes   15
+  ista_ismo_ita      base:unknown               ge1        dominant                287    13     0    5.1  yes    6
+  ista_ismo_ita      base:unknown               ge0.5pm    dominant                 75     2     0    2.9  yes    -
+  ista_ismo_ita      base:unknown               ge2pm      dominant                 29     1     0      -    -    -
+  ista_ismo_ita      deriv:internal formation   dictionary dominant               5551   220     0   40.8  yes   41
+  ista_ismo_ita      deriv:internal formation   ge1        dominant                980    69     0   16.3  yes   17
+  ista_ismo_ita      deriv:internal formation   ge0.5pm    dominant                305    18     0    6.2  yes    7
+  ista_ismo_ita      deriv:internal formation   ge2pm      dominant                135     8     0    3.8  yes    4
+  ista_ismo_ita      contrast:nonalt            dictionary dominant               1041    23    18    7.3   no   11
+  ista_ismo_ita      contrast:nonalt            ge1        dominant                322     3     2    2.7  yes    1
+  ista_ismo_ita      contrast:nonalt            ge0.5pm    dominant                174     2     1    2.9  yes    -
+  ista_ismo_ita      contrast:nonalt            ge2pm      dominant                 96     1     1      -    -    -
+
+Pair set learned: -issimo, -izzare, -ista, -ismo, -esimo, -ità, -izia, -ia
+------------------------------------------------------------------------
+  pair set           subset                     tau        coding             N_target     N     e  theta tol? frag
+  learned            all                        dictionary dominant               5551   235     0   43.0  yes   44
+  learned            all                        dictionary doublet_exception      5551   235     0   43.0  yes   44
+  learned            all                        dictionary doublet_excluded       5551   235     0   43.0  yes   44
+  learned            all                        ge1        dominant                980    78     0   17.9  yes   18
+  learned            all                        ge1        doublet_exception       980    78     0   17.9  yes   18
+  learned            all                        ge1        doublet_excluded        980    78     0   17.9  yes   18
+  learned            all                        ge0.5pm    dominant                305    23     0    7.3  yes    8
+  learned            all                        ge0.5pm    doublet_exception       305    23     0    7.3  yes    8
+  learned            all                        ge0.5pm    doublet_excluded        305    23     0    7.3  yes    8
+  learned            all                        ge2pm      dominant                135    10     0    4.3  yes    5
+  learned            all                        ge2pm      doublet_exception       135    10     0    4.3  yes    5
+  learned            all                        ge2pm      doublet_excluded        135    10     0    4.3  yes    5
+  learned            all+candidates             dictionary dominant               5551   258     1   46.5  yes   46
+  learned            all+candidates             dictionary doublet_exception      5551   258     1   46.5  yes   46
+  learned            all+candidates             dictionary doublet_excluded       5551   258     1   46.5  yes   46
+  learned            all+candidates             ge1        dominant                980    98     1   21.4  yes   21
+  learned            all+candidates             ge1        doublet_exception       980    98     1   21.4  yes   21
+  learned            all+candidates             ge1        doublet_excluded        980    98     1   21.4  yes   21
+  learned            all+candidates             ge0.5pm    dominant                305    26     0    8.0  yes    8
+  learned            all+candidates             ge0.5pm    doublet_exception       305    26     0    8.0  yes    8
+  learned            all+candidates             ge0.5pm    doublet_excluded        305    26     0    8.0  yes    8
+  learned            all+candidates             ge2pm      dominant                135    12     0    4.8  yes    5
+  learned            all+candidates             ge2pm      doublet_exception       135    12     0    4.8  yes    5
+  learned            all+candidates             ge2pm      doublet_excluded        135    12     0    4.8  yes    5
+  learned            all+candidates+other_base  dictionary dominant               5551   267     1   47.8  yes   47
+  learned            all+candidates+other_base  ge1        dominant                980   101     1   21.9  yes   21
+  learned            all+candidates+other_base  ge0.5pm    dominant                305    27     0    8.2  yes    9
+  learned            all+candidates+other_base  ge2pm      dominant                135    13     0    5.1  yes    6
+  learned            base:inherited             dictionary dominant                 20     5     0    3.1  yes    4
+  learned            base:inherited             ge1        dominant                 13     3     0    2.7  yes    3
+  learned            base:inherited             ge0.5pm    dominant                 13     1     0      -    -    -
+  learned            base:inherited             ge2pm      dominant                  9     0     0      -    -    -
+  learned            base:borrowed whole        dictionary dominant                461   106     0   22.7  yes   23
+  learned            base:borrowed whole        ge1        dominant                230    51     0   13.0  yes   13
+  learned            base:borrowed whole        ge0.5pm    dominant                127    19     0    6.5  yes    7
+  learned            base:borrowed whole        ge2pm      dominant                 69     9     0    4.1  yes    5
+  learned            base:internal formation    dictionary dominant               2877    64     0   15.4  yes   16
+  learned            base:internal formation    ge1        dominant                450    11     0    4.6  yes    5
+  learned            base:internal formation    ge0.5pm    dominant                 90     1     0      -    -    -
+  learned            base:internal formation    ge2pm      dominant                 28     0     0      -    -    -
+  learned            base:unknown               dictionary dominant               2193    60     0   14.7  yes   15
+  learned            base:unknown               ge1        dominant                287    13     0    5.1  yes    6
+  learned            base:unknown               ge0.5pm    dominant                 75     2     0    2.9  yes    -
+  learned            base:unknown               ge2pm      dominant                 29     1     0      -    -    -
+  learned            deriv:internal formation   dictionary dominant               5551   223     0   41.2  yes   42
+  learned            deriv:internal formation   ge1        dominant                980    71     0   16.7  yes   17
+  learned            deriv:internal formation   ge0.5pm    dominant                305    20     0    6.7  yes    7
+  learned            deriv:internal formation   ge2pm      dominant                135     9     0    4.1  yes    5
+  learned            contrast:nonalt            dictionary dominant               1041    35    28    9.8   no   19
+  learned            contrast:nonalt            ge1        dominant                322    13    10    5.1   no    5
+  learned            contrast:nonalt            ge0.5pm    dominant                174     9     7    4.1   no    3
+  learned            contrast:nonalt            ge2pm      dominant                 96     5     4    3.1   no    1
+
+Examples (verbalizer pair, tau = dictionary; words only)
+------------------------------------------------------------------------
+  palatalized -izzare only [19 roots]: anglico (anglicizzare); arcaico (arcaicizzare); attico (atticizzare); automatico (automaticizzare); cattolico (cattolicizzare); comico (comicizzare); cronico (cronicizzare); elastico (elasticizzare); eroico (eroicizzare); gallico (gallicizzare); laico (laicizzare); lirico (liricizzare); … (+7)
+  non-palatalizing member only [24 roots]: angelico (angelicare); astrologo (astrologare); caustico (causticare); chierico (schiericare); critico (criticare); domestico (addomesticare, domesticare); equivoco (equivocare); estrinseco (estrinsecare); fanatico (fanaticare, infanatichire); fantastico (fantasticare); farnetico (farneticare); grammatico (sgrammaticare); … (+12)
+  both [1 roots]: classico (classicheggiare, classicizzare)
+
+Not counted: truncated stem edges (tau = dictionary, named links)
+------------------------------------------------------------------------
+  verbalizer: 28 truncated derivatives of 28 certain roots not counted (acromatizzare, anestetizzare, antropizzare, aramaizzare, arcaizzare, assiomatizzare, burocratizzare, democratizzare, ebraizzare, elettrizzare, enfatizzare, erotizzare, …)
+  verbalizer_no_are: 28 truncated derivatives of 28 certain roots not counted (acromatizzare, anestetizzare, antropizzare, aramaizzare, arcaizzare, assiomatizzare, burocratizzare, democratizzare, ebraizzare, elettrizzare, enfatizzare, erotizzare, …)
+  ista_ismo_ita: 14 truncated derivatives of 14 certain roots not counted (agrammatismo, apocromatismo, arcaismo, ceramista, cinematismo, clinostatismo, eclettismo, esoterismo, estetista, irenismo, istrionismo, medianità, …)
+  learned: 43 truncated derivatives of 42 certain roots not counted (acromatizzare, agrammatismo, anestetizzare, antropizzare, apocromatismo, aramaizzare, arcaismo, arcaizzare, assiomatizzare, burocratizzare, ceramista, cinematismo, …)
+
+Learners and fragility: fragility = fewest item changes that flip
+the verdict (lexpipe.learners.fragility); rows are in italian_tp_long.csv (table spellout).

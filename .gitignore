@@ -57,8 +57,21 @@ venv.bak/
 
 # Data directory: ignore all contents except romanian_lexicon_raw.csv
 *.json
+# ...but track the feature inventories at the repo root
+# (romanian_features.json, italian_features.json, czech_features.json).
+!*_features.json
 data/*
 !data/romanian_lexicon_raw.csv
+# Italian and Czech raw lexicons are tracked; everything else under
+# data/<language>/ stays ignored. Git cannot re-include a file whose
+# parent directory is excluded, so re-include the directory, ignore
+# its contents, then re-include the one file.
+!data/italian/
+data/italian/*
+!data/italian/italian_lexicon_raw.csv
+!data/czech/
+data/czech/*
+!data/czech/czech_lexicon_raw.csv
 
 # DEX HTML cache: lives in repo root as a SQLite k/v store.
 # Together with its journal/WAL/SHM sidecar files (created by SQLite at
@@ -68,9 +81,18 @@ dex_cache.db-journal
 dex_cache.db-shm
 dex_cache.db-wal
 
-# Documentation directory: ignore contents but track data_dict.md
+# Documentation directory: ignore contents but track data_dict.md, the
+# sha256 lock of external sources (written by lexpipe.sources), the
+# multilingual design and runbooks, and the per-language data
+# dictionaries and notes (docs/<language>/). tests/test_repo_guards.py
+# checks these with git check-ignore.
 docs/*
 !docs/data_dict.md
+!docs/sources_lock.tsv
+!docs/multilingual_design.md
+!docs/runbooks.md
+!docs/italian/
+!docs/czech/
 
 # Temporary files
 *.tmp

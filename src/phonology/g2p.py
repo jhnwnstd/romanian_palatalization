@@ -33,6 +33,13 @@ Three transformations turn the lemma into a UR:
    we test palatalisation given the morphologically attested suffix.
    Spell-out's choice can be verified separately by comparing the
    stem-final's features to the P condition (see driver).
+
+All of this is the Romanian UR builder. :func:`build_ur_from_row`
+adapts it to the ``(row, inventory)`` contract of
+:attr:`phonology.profile.AnalysisProfile.ur_builder`, whose default it
+is; another analysis supplies its own builder there. The lemma IPA is
+tokenized with :data:`~phonology.segments.ROMANIAN_TOKENIZER`, the
+default :attr:`~phonology.profile.AnalysisProfile.tokenizer`.
 """
 
 from __future__ import annotations
@@ -41,7 +48,8 @@ from typing import Final, Mapping
 
 from .diagnostics.compare import split_variants
 from .inventory import FeatureInventory
-from .segments import Segment, Word, tokenize_ipa
+from .lexicon import LexRow
+from .segments import ROMANIAN_TOKENIZER, Segment, Word, tokenize_ipa
 
 # Vowels and vocoids that break a consonantal cluster. /j/, /w/ and
 # their diphthong-tie variants count as vocoids here so a preceding
@@ -209,7 +217,12 @@ def build_ur(
         from romanian_processor_lib import to_ipa
 
         hint = to_ipa(lemma)
-    tokens = list(tokenize_ipa(pick_variant(lemma_ipa, stem_final, hint=hint)))
+    tokens = list(
+        tokenize_ipa(
+            pick_variant(lemma_ipa, stem_final, hint=hint),
+            tokenizer=ROMANIAN_TOKENIZER,
+        )
+    )
     if not tokens:
         return None
 
@@ -300,8 +313,28 @@ def build_ur(
     return tuple(segs)
 
 
+def build_ur_from_row(
+    row: LexRow,
+    inventory: FeatureInventory,
+) -> Word | None:
+    """:func:`build_ur` applied to the fields of one lexicon row.
+
+    The default :attr:`~phonology.profile.AnalysisProfile.ur_builder`:
+    the validator and the perturbation search reach :func:`build_ur`
+    through it, with exactly the arguments they always passed.
+    """
+    return build_ur(
+        row.ipa_lemma,
+        row.opportunity,
+        inventory,
+        stem_final=row.stem_final,
+        lemma=row.lemma,
+    )
+
+
 __all__: Final[tuple[str, ...]] = (
     "SUFFIX_TOKENS",
     "build_ur",
+    "build_ur_from_row",
     "pick_variant",
 )

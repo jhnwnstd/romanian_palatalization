@@ -1,0 +1,158 @@
+Romanian co-variation: plural class x verbalizer choice (design R23)
+========================================================================
+
+Unit: noun root x the verbalizer pair -i vs -a/-ui. Base class P:
+the plural alternates (attested at tau); N: the attested plural
+avoids (-uri) or resists the trigger. Choice: P (only -i verbs
+attested at tau), N (only -a/-ui), both. 2x2: rows base P / N,
+columns choice P / N. OR = sample odds ratio (Woolf interval).
+Permutations: 10,000, seed 20080715. Statistics: lexpipe.stats,
+the code of the Italian and Czech co-variation reports.
+
+dorsal, tau = dictionary
+------------------------------------------------------------------------
+  167 units: base N choice N 28, base N choice P 9, base N choice both 2, base P choice N 42, base P choice P 72, base P choice both 14
+    both excluded: P:P 72 P:N 42 N:P 9 N:N 28; OR 5.33 [2.3, 12.4], Fisher p = 5.01e-05
+      Mantel-Haenszel OR 5.34 [2.29, 12.5] over 3 strata (class x base stratum; statsmodels)
+      stratified permutation (seed 20080715, 10,000/10,000 valid): p(OR_MH >= observed) = 0; null median 0.98, 97.5% 2.04
+    both as P: P:P 86 P:N 42 N:P 11 N:N 28; OR 5.21 [2.37, 11.5], Fisher p = 2.97e-05
+      Mantel-Haenszel OR 5.1 [2.31, 11.2] over 3 strata (class x base stratum; statsmodels)
+      stratified permutation (seed 20080715, 10,000/10,000 valid): p(OR_MH >= observed) = 0; null median 0.952, 97.5% 2.14
+    both as N: P:P 72 P:N 56 N:P 9 N:N 30; OR 4.29 [1.88, 9.76], Fisher p = 0.000415
+      Mantel-Haenszel OR 4.17 [1.84, 9.49] over 3 strata (class x base stratum; statsmodels)
+      stratified permutation (seed 20080715, 10,000/10,000 valid): p(OR_MH >= observed) = 0.0003; null median 0.968, 97.5% 2.22
+    logistic model (R23: deriv_pal ~ base_class + log_lemma_freq + base_stratum + deriv_stratum; 151 units, 151 bases, reference strata base=unknown, deriv=unknown):
+      Intercept -0.811 (se 0.468, p 0.0827); base_class 1.57 (se 0.459, p 0.000641); log_lemma_freq -0.108 (se 0.0738, p 0.144); base_stratum[borrowed] 0.518 (se 0.548, p 0.345); base_stratum[latin_unresolved] -0.6 (se 0.751, p 0.424)
+      one level, no term: deriv_stratum (all unknown)
+    base P choosing -a/-ui: [42] aplică → aplica; arcă → arca; balegă → balega; baligă → băliga; biserică → biserica; butică → butica; chingă → chinga/închinga; clică → clica; … (+34)
+    base N choosing -i: [9] amurg → amurgi; boc → boci; buluc → buluci; meșteșug → meșteșugi; mijloc → mijloci; putregai → putregai; stoc → stoci; strung → strunji; … (+1)
+
+coronal, tau = dictionary
+------------------------------------------------------------------------
+  167 units: base N choice N 80, base N choice P 27, base N choice both 3, base P choice N 33, base P choice P 22, base P choice both 2
+    both excluded: P:P 22 P:N 33 N:P 27 N:N 80; OR 1.98 [0.987, 3.95], Fisher p = 0.0705
+      Mantel-Haenszel OR 2.13 [1.03, 4.41] over 3 strata (class x base stratum; statsmodels)
+      stratified permutation (seed 20080715, 10,000/10,000 valid): p(OR_MH >= observed) = 0.0188; null median 0.94, 97.5% 2.11
+    both as P: P:P 24 P:N 33 N:P 30 N:N 80; OR 1.94 [0.99, 3.8], Fisher p = 0.0572
+      Mantel-Haenszel OR 2.11 [1.04, 4.28] over 3 strata (class x base stratum; statsmodels)
+      stratified permutation (seed 20080715, 10,000/10,000 valid): p(OR_MH >= observed) = 0.0148; null median 0.971, 97.5% 2.07
+    both as N: P:P 22 P:N 35 N:P 27 N:N 83; OR 1.93 [0.971, 3.84], Fisher p = 0.0733
+      Mantel-Haenszel OR 2.08 [1.01, 4.27] over 3 strata (class x base stratum; statsmodels)
+      stratified permutation (seed 20080715, 10,000/10,000 valid): p(OR_MH >= observed) = 0.0243; null median 1.06, 97.5% 2.07
+    logistic model (R23: deriv_pal ~ base_class + log_lemma_freq + base_stratum + deriv_stratum; 162 units, 162 bases, reference strata base=unknown, deriv=unknown):
+      Intercept -0.968 (se 0.376, p 0.01); base_class 0.745 (se 0.374, p 0.0465); log_lemma_freq -0.0196 (se 0.0719, p 0.786); base_stratum[borrowed] -0.147 (se 0.556, p 0.791); base_stratum[latin_unresolved] -0.431 (se 0.573, p 0.452)
+      one level, no term: deriv_stratum (all unknown)
+    base P choosing -a/-ui: [33] arendă → arenda/arendui; bastard → bastarda; bărbat → îmbărbăta; cască → căsca; celebritate → celebra; conte → conta; curte → curta; căcat → căca; … (+25)
+    base N choosing -i: [27] amănunt → amănunți; avut → înavuți; bold → îmboldi; but → buti; clint → clinti; dichis → dichisi; dos → dosi; gând → gândi; … (+19)
+
+z, tau = dictionary
+------------------------------------------------------------------------
+  21 units: base N choice N 11, base N choice P 9, base P choice P 1
+    both excluded: P:P 1 P:N 0 N:P 9 N:N 11; OR inf [nan, inf], Fisher p = 0.476
+      Mantel-Haenszel OR inf [nan, nan] over 3 strata (class x base stratum; lexpipe)
+      stratified permutation: skipped (OR_MH 0 or inf)
+    both as P: P:P 1 P:N 0 N:P 9 N:N 11; OR inf [nan, inf], Fisher p = 0.476
+      Mantel-Haenszel OR inf [nan, nan] over 3 strata (class x base stratum; lexpipe)
+      stratified permutation: skipped (OR_MH 0 or inf)
+    both as N: P:P 1 P:N 0 N:P 9 N:N 11; OR inf [nan, inf], Fisher p = 0.476
+      Mantel-Haenszel OR inf [nan, nan] over 3 strata (class x base stratum; lexpipe)
+      stratified permutation: skipped (OR_MH 0 or inf)
+    logistic model (R23: deriv_pal ~ base_class + log_lemma_freq + base_stratum + deriv_stratum; 21 units, 21 bases, reference strata base=unknown, deriv=unknown):
+      Intercept -0.637 (se 0.786, p 0.418); base_class 21.2 (se 1.39, p 1.33e-52); log_lemma_freq 0.116 (se 0.243, p 0.632); base_stratum[borrowed] 0.596 (se 1.75, p 0.733); base_stratum[latin_unresolved] 20.5 (se 1.57, p 4.28e-39)
+      one level, no term: deriv_stratum (all unknown)
+      quasi-complete separation on base_class, base_stratum[latin_unresolved]: the maximum-likelihood estimate does not exist; the value is where the fit stopped
+    base P choosing -a/-ui: [0] 
+    base N choosing -i: [9] auz → auzi; brânză → brânzi; brînză → brînzi; bulz → îmbulzi; burghez → burghezi; călăuz → călăuzi; necaz → necăji; prânz → prânzi; … (+1)
+
+all, tau = dictionary
+------------------------------------------------------------------------
+  355 units: base N choice N 119, base N choice P 45, base N choice both 5, base P choice N 75, base P choice P 95, base P choice both 16
+    both excluded: P:P 95 P:N 75 N:P 45 N:N 119; OR 3.35 [2.12, 5.29], Fisher p = 1.57e-07
+      Mantel-Haenszel OR 3.3 [1.93, 5.64] over 9 strata (class x base stratum; statsmodels)
+      stratified permutation (seed 20080715, 10,000/10,000 valid): p(OR_MH >= observed) = 0; null median 0.996, 97.5% 1.69
+    both as P: P:P 111 P:N 75 N:P 50 N:N 119; OR 3.52 [2.27, 5.48], Fisher p = 1.29e-08
+      Mantel-Haenszel OR 3.24 [1.94, 5.42] over 9 strata (class x base stratum; statsmodels)
+      stratified permutation (seed 20080715, 10,000/10,000 valid): p(OR_MH >= observed) = 0; null median 0.998, 97.5% 1.65
+    both as N: P:P 95 P:N 91 N:P 45 N:N 124; OR 2.88 [1.84, 4.49], Fisher p = 2.71e-06
+      Mantel-Haenszel OR 2.95 [1.73, 5.01] over 9 strata (class x base stratum; statsmodels)
+      stratified permutation (seed 20080715, 10,000/10,000 valid): p(OR_MH >= observed) = 0; null median 0.982, 97.5% 1.66
+    logistic model (R23: deriv_pal ~ base_class + log_lemma_freq + base_stratum + deriv_stratum; 334 units, 334 bases, reference strata base=unknown, deriv=unknown):
+      Intercept -0.671 (se 0.239, p 0.00501); base_class 1.16 (se 0.244, p 2.07e-06); log_lemma_freq -0.0785 (se 0.0466, p 0.0919); base_stratum[borrowed] 0.0994 (se 0.359, p 0.782); base_stratum[latin_unresolved] -0.505 (se 0.45, p 0.261)
+      one level, no term: deriv_stratum (all unknown)
+    base P choosing -a/-ui: [75] aplică → aplica; arcă → arca; arendă → arenda/arendui; balegă → balega; baligă → băliga; bastard → bastarda; biserică → biserica; butică → butica; … (+67)
+    base N choosing -i: [45] amurg → amurgi; amănunt → amănunți; auz → auzi; avut → înavuți; boc → boci; bold → îmboldi; brânză → brânzi; brînză → brînzi; … (+37)
+
+dorsal, tau = ge1
+------------------------------------------------------------------------
+  92 units: base N choice N 13, base N choice P 2, base P choice N 25, base P choice P 41, base P choice both 11
+    both excluded: P:P 41 P:N 25 N:P 2 N:N 13; OR 10.7 [2.22, 51.2], Fisher p = 0.00104
+      Mantel-Haenszel OR 13.7 [2.51, 74.5] over 3 strata (class x base stratum; statsmodels)
+      stratified permutation (seed 20080715, 10,000/10,000 valid): p(OR_MH >= observed) = 0.0003; null median 1.04, 97.5% 3.03
+    both as P: P:P 52 P:N 25 N:P 2 N:N 13; OR 13.5 [2.83, 64.5], Fisher p = 0.000126
+      Mantel-Haenszel OR 17.7 [3.21, 97] over 3 strata (class x base stratum; statsmodels)
+      stratified permutation (seed 20080715, 10,000/10,000 valid): p(OR_MH >= observed) = 0; null median 0.988, 97.5% 2.74
+    both as N: P:P 41 P:N 36 N:P 2 N:N 13; OR 7.4 [1.56, 35], Fisher p = 0.0048
+      Mantel-Haenszel OR 8.15 [1.66, 39.9] over 3 strata (class x base stratum; statsmodels)
+      stratified permutation (seed 20080715, 10,000/10,000 valid): p(OR_MH >= observed) = 0.0016; null median 1.05, 97.5% 3.05
+    logistic model (R23: deriv_pal ~ base_class + log_lemma_freq + base_stratum + deriv_stratum; 81 units, 81 bases, reference strata base=unknown, deriv=unknown):
+      Intercept -1.41 (se 1.06, p 0.182); base_class 2.25 (se 0.907, p 0.0131); log_lemma_freq -0.122 (se 0.12, p 0.307); base_stratum[borrowed] 0.923 (se 0.875, p 0.292); base_stratum[latin_unresolved] -1.19 (se 0.969, p 0.222)
+      one level, no term: deriv_stratum (all unknown)
+    base P choosing -a/-ui: [25] aplică → aplica; arcă → arca; balegă → balega; biserică → biserica; chingă → chinga; clică → clica; curcă → încurca; drac → drăcui; … (+17)
+    base N choosing -i: [2] meșteșug → meșteșugi; suc → suci
+
+coronal, tau = ge1
+------------------------------------------------------------------------
+  90 units: base N choice N 42, base N choice P 12, base P choice N 20, base P choice P 14, base P choice both 2
+    both excluded: P:P 14 P:N 20 N:P 12 N:N 42; OR 2.45 [0.96, 6.25], Fisher p = 0.0919
+      Mantel-Haenszel OR 2.31 [0.874, 6.11] over 3 strata (class x base stratum; statsmodels)
+      stratified permutation (seed 20080715, 10,000/10,000 valid): p(OR_MH >= observed) = 0.048; null median 1.1, 97.5% 2.75
+    both as P: P:P 16 P:N 20 N:P 12 N:N 42; OR 2.8 [1.12, 7.02], Fisher p = 0.0363
+      Mantel-Haenszel OR 2.62 [1.01, 6.79] over 3 strata (class x base stratum; statsmodels)
+      stratified permutation (seed 20080715, 10,000/10,000 valid): p(OR_MH >= observed) = 0.0246; null median 1.03, 97.5% 2.57
+    both as N: P:P 14 P:N 22 N:P 12 N:N 42; OR 2.23 [0.881, 5.63], Fisher p = 0.101
+      Mantel-Haenszel OR 2.11 [0.803, 5.53] over 3 strata (class x base stratum; statsmodels)
+      stratified permutation (seed 20080715, 10,000/10,000 valid): p(OR_MH >= observed) = 0.0563; null median 1.02, 97.5% 2.67
+    logistic model (R23: deriv_pal ~ base_class + log_lemma_freq + base_stratum + deriv_stratum; 88 units, 88 bases, reference strata base=unknown, deriv=unknown):
+      Intercept -1.12 (se 0.791, p 0.157); base_class 0.824 (se 0.516, p 0.11); log_lemma_freq -0.0343 (se 0.13, p 0.792); base_stratum[borrowed] 0.364 (se 0.732, p 0.619); base_stratum[latin_unresolved] 0.208 (se 0.748, p 0.782)
+      one level, no term: deriv_stratum (all unknown)
+    base P choosing -a/-ui: [20] bărbat → îmbărbăta; cască → căsca; curte → curta; daltă → dăltui; dinte → dința; frunte → înfrunta; garant → garanta; ghid → ghida; … (+12)
+    base N choosing -i: [12] but → buti; dos → dosi; gând → gândi; lipsă → lipsi; miros → mirosi; neliniște → neliniști; piștă → piști; rost → rosti; … (+4)
+
+z, tau = ge1
+------------------------------------------------------------------------
+  8 units: base N choice N 4, base N choice P 4
+    both excluded: P:P 0 P:N 0 N:P 4 N:N 4; OR undefined (empty margin)
+      Mantel-Haenszel: undefined (no informative stratum)
+    both as P: P:P 0 P:N 0 N:P 4 N:N 4; OR undefined (empty margin)
+      Mantel-Haenszel: undefined (no informative stratum)
+    both as N: P:P 0 P:N 0 N:P 4 N:N 4; OR undefined (empty margin)
+      Mantel-Haenszel: undefined (no informative stratum)
+    logistic model (R23: deriv_pal ~ base_class + log_lemma_freq + base_stratum + deriv_stratum; 8 units, 8 bases, reference strata base=unknown, deriv=unknown):
+      Intercept 0.315 (se 1.5, p 0.833); log_lemma_freq -0.238 (se 0.396, p 0.548); base_stratum[latin_unresolved] 21.7 (se 2.03, p 1.07e-26)
+      one level, no term: deriv_stratum (all unknown)
+      aliased (constant or collinear, NA): base_class
+      quasi-complete separation on base_stratum[latin_unresolved]: the maximum-likelihood estimate does not exist; the value is where the fit stopped
+    base P choosing -a/-ui: [0] 
+    base N choosing -i: [4] brânză → brânzi; burghez → burghezi; călăuz → călăuzi; necaz → necăji
+
+all, tau = ge1
+------------------------------------------------------------------------
+  190 units: base N choice N 59, base N choice P 18, base P choice N 45, base P choice P 55, base P choice both 13
+    both excluded: P:P 55 P:N 45 N:P 18 N:N 59; OR 4.01 [2.07, 7.74], Fisher p = 2.78e-05
+      Mantel-Haenszel OR 4.09 [1.85, 9.06] over 8 strata (class x base stratum; statsmodels)
+      stratified permutation (seed 20080715, 10,000/10,000 valid): p(OR_MH >= observed) = 0; null median 1.07, 97.5% 2.13
+    both as P: P:P 68 P:N 45 N:P 18 N:N 59; OR 4.95 [2.59, 9.47], Fisher p = 7.06e-07
+      Mantel-Haenszel OR 4.74 [2.17, 10.4] over 8 strata (class x base stratum; statsmodels)
+      stratified permutation (seed 20080715, 10,000/10,000 valid): p(OR_MH >= observed) = 0; null median 1.01, 97.5% 2
+    both as N: P:P 55 P:N 58 N:P 18 N:N 59; OR 3.11 [1.63, 5.92], Fisher p = 0.000467
+      Mantel-Haenszel OR 3.35 [1.52, 7.38] over 8 strata (class x base stratum; statsmodels)
+      stratified permutation (seed 20080715, 10,000/10,000 valid): p(OR_MH >= observed) = 0.0005; null median 1.03, 97.5% 2.07
+    logistic model (R23: deriv_pal ~ base_class + log_lemma_freq + base_stratum + deriv_stratum; 177 units, 177 bases, reference strata base=unknown, deriv=unknown):
+      Intercept -0.555 (se 0.45, p 0.217); base_class 1.19 (se 0.369, p 0.00122); log_lemma_freq -0.136 (se 0.0735, p 0.064); base_stratum[borrowed] 0.458 (se 0.5, p 0.359); base_stratum[latin_unresolved] -0.21 (se 0.61, p 0.731)
+      one level, no term: deriv_stratum (all unknown)
+    base P choosing -a/-ui: [45] aplică → aplica; arcă → arca; balegă → balega; biserică → biserica; bărbat → îmbărbăta; cască → căsca; chingă → chinga; clică → clica; … (+37)
+    base N choosing -i: [18] brânză → brânzi; burghez → burghezi; but → buti; călăuz → călăuzi; dos → dosi; gând → gândi; lipsă → lipsi; meșteșug → meșteșugi; … (+10)
+
+Data: noun roots of data/romanian_lexicon_with_freq.csv; derived
+verbs from its derived_verbs/deriv_suffixes columns; attestation in
+ron_news_2024_1M (lowercased table; aggregates only here, R9).

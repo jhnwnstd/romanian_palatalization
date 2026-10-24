@@ -1,0 +1,121 @@
+Czech -log/-urg/-graf/-fil table (design R27): aggregates
+========================================================================
+
+Classifiers: the shared ones of lexpipe.suffixoids (the same for
+Italian and Romanian): learned suffixoid or lookalike (R26
+etymology/category evidence, the English gloss's reflex, -olog
+professions), person/thing on the first gloss (Czech gloss rules
+when the English ones say unknown), curated decisions in
+curated/czech/suffixoid_classes.csv. A noun counts at tau when the
+cell has a form attested at tau (Leipzig ces_news_2024_1M;
+dictionary = any form).
+
+Lookalikes left out of the aggregates (1): profil
+
+Learned suffixoid nouns by suffixoid and class:
+  -fil   person       9
+  -fil   unknown      9
+  -graf  person      11
+  -graf  thing        7
+  -graf  unknown     12
+  -log   person     107
+  -log   thing        9
+  -urg   person       4
+  -urg   unknown      1
+
+tau = dictionary: allomorphs of the attested cells
+  nom_pl
+    -fil   person   -i|-ové                2
+    -fil   person   -ové                   7
+    -fil   unknown  -ové                   5
+    -fil   unknown  -y                     3
+    -graf  person   -ové                  10
+    -graf  thing    -y                     7
+    -graf  unknown  -y                    10
+    -log   person   -i|-ové                3
+    -log   person   -ové                 101
+    -log   person   -y                     1
+    -log   thing    -y                     9
+    -urg   person   -ové                   4
+    -urg   unknown  -ové                   1
+  loc_sg
+    -fil   person   -ovi|-u                1
+    -fil   person   -u|-ovi                8
+    -fil   unknown  -ovi|-u                5
+    -fil   unknown  -u                     3
+    -graf  person   -ovi|-u               10
+    -graf  thing    -u                     7
+    -graf  unknown  -u                    10
+    -log   person   -ovi|-u               97
+    -log   person   -u                     1
+    -log   person   -u|-ovi                7
+    -log   thing    -u                     9
+    -urg   person   -ovi|-u                4
+    -urg   unknown  -ovi|-u                1
+  loc_pl
+    -fil   person   -ech                   9
+    -fil   unknown  -ech                   8
+    -graf  person   -ech                  10
+    -graf  thing    -ech                   7
+    -graf  unknown  -ech                  10
+    -log   person   -ech                   2
+    -log   person   -ích                 103
+    -log   thing    -ích                   9
+    -urg   person   -ích                   4
+    -urg   unknown  -ích                   1
+
+tau = ge1: allomorphs of the attested cells
+  nom_pl
+    -fil   person   -ové                   1
+    -fil   unknown  -ové                   1
+    -graf  person   -ové                   6
+    -graf  thing    -y                     3
+    -log   person   -ové                  41
+    -log   thing    -y                     5
+    -urg   person   -ové                   2
+    -urg   unknown  -ové                   1
+  loc_sg
+    -fil   unknown  -ovi|-u                1
+    -graf  person   -ovi|-u                3
+    -graf  thing    -u                     5
+    -graf  unknown  -u                     1
+    -log   person   -ovi|-u               17
+    -log   thing    -u                     7
+    -urg   person   -ovi|-u                2
+    -urg   unknown  -ovi|-u                1
+  loc_pl
+    -fil   unknown  -ech                   1
+    -graf  person   -ech                   1
+    -graf  thing    -ech                   3
+    -log   person   -ích                   2
+    -log   thing    -ích                   4
+
+tau = ge0.5pm: allomorphs of the attested cells
+  nom_pl
+    -graf  person   -ové                   2
+    -graf  thing    -y                     1
+    -log   person   -ové                  10
+    -log   thing    -y                     2
+    -urg   person   -ové                   1
+    -urg   unknown  -ové                   1
+  loc_sg
+    -graf  person   -ovi|-u                2
+    -graf  thing    -u                     2
+    -log   person   -ovi|-u                2
+    -log   thing    -u                     3
+
+tau = ge2pm: allomorphs of the attested cells
+  nom_pl
+    -graf  person   -ové                   1
+    -log   person   -ové                   5
+    -log   thing    -y                     1
+    -urg   person   -ové                   1
+  loc_sg
+    -graf  thing    -u                     1
+    -log   thing    -u                     2
+
+LOC.PL palatalized (-lozích, -rzích) among -log/-urg nouns:
+  dictionary person:None 2, person:True 107, thing:True 9, unknown:True 1
+  ge1        person:True 2, thing:True 4
+  ge0.5pm    -
+  ge2pm      -

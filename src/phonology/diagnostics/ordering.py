@@ -22,10 +22,11 @@ of nine rules is 362,880 — usable but wasteful. Strategies:
   - ``FULL`` — every permutation of the rule tuple. Prohibitive at
     N > 8 unless bounded by ``limit``.
 
-The success predicate is :func:`phonology.diagnostics.compare.compare`,
-so an ordering "works" iff the SR it produces matches the attested
-IPA under the shared normalisation stack — the same standard the
-driver uses for the mismatch report.
+The success predicate is
+:func:`phonology.diagnostics.compare.compare_ipa`, so an ordering
+"works" iff the SR it produces matches the attested IPA under the
+profile's normaliser cascade — the same standard the validator uses
+for the mismatch report.
 """
 
 from __future__ import annotations
@@ -39,10 +40,10 @@ from ..inventory import FeatureInventory
 from ..pipeline import RulePipeline
 from ..rules import ResolverFn, Rule
 from ..segments import Word, segments_to_ipa
-from .compare import compare_ipa
+from .compare import ROMANIAN_NORMALISERS, NormaliserCascade, compare_ipa
 
 if TYPE_CHECKING:
-    from ..analyses.romanian_palatalization import AnalysisProfile
+    from ..profile import AnalysisProfile
 
 
 class OrderingStrategy(StrEnum):
@@ -154,6 +155,8 @@ def find_valid_orderings(
     strategy: OrderingStrategy = OrderingStrategy.ADJACENT_SWAP,
     movable_indices: Sequence[int] | None = None,
     limit: int | None = None,
+    *,
+    normalisers: NormaliserCascade = ROMANIAN_NORMALISERS,
 ) -> OrderingSearchResult:
     """Search rule orderings for ones that produce ``expected_field``.
 
@@ -162,7 +165,8 @@ def find_valid_orderings(
     :class:`AnalysisProfile` and unpacks it for you.
 
     ``expected_field`` accepts a pipe-separated raw string OR a tuple
-    of variants (see :func:`compare_ipa`).
+    of variants (see :func:`compare_ipa`); ``normalisers`` is the
+    cascade the success predicate compares under.
     """
     rules_tuple = tuple(rules)
     n = len(rules_tuple)
@@ -188,7 +192,7 @@ def find_valid_orderings(
         except Exception:
             continue
         sr = segments_to_ipa(deriv.sr, base)
-        cmp = compare_ipa(sr, expected_field)
+        cmp = compare_ipa(sr, expected_field, normalisers=normalisers)
         cand = OrderingCandidate(
             permutation=perm,
             rule_names=tuple(r.name for r in permuted),
@@ -231,7 +235,7 @@ def search_orderings(
     limit: int | None = None,
 ) -> OrderingSearchResult:
     """Ergonomic wrapper: takes an :class:`AnalysisProfile` and
-    unpacks its rules/inventory/resolver for you.
+    unpacks its rules/inventory/resolver/normalisers for you.
 
     Prefer this over :func:`find_valid_orderings` in new code.
     """
@@ -245,6 +249,7 @@ def search_orderings(
         strategy=strategy,
         movable_indices=movable_indices,
         limit=limit,
+        normalisers=profile.normalisers,
     )
 
 

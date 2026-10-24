@@ -1,0 +1,872 @@
+Italian co-variation: base masculine plural x derivative palatalization (design R23)
+========================================================================
+
+Unit: base root x suffix x derivative stratum (outcome P = only
+palatalized derivatives, N = only velar, both). Base class: the
+root's -i plural at tau (P = attested -ci/-gi, N = attested
+-chi/-ghi; E0, dominant coding). Table rows: base P, base N;
+columns: derivative P/N. OR = sample odds ratio (Woolf interval),
+Fisher two-sided p, Mantel-Haenszel OR over suffix x stratum.
+
+tau = dictionary; links: named; learned set
+  ----------------------------------------------------------------------
+  units by derivative stratum: inherited 0, borrowed whole 6, internal formation 285, unknown 37
+  internal formations (the co-variation set, §5):
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -issimo            1/0         0/1     0  OR inf [nan, inf]; Fisher p = 1
+    -izzare           20/0         2/3     0  OR inf [nan, inf]; Fisher p = 0.00435
+    -ista             10/0         0/9     0  OR inf [nan, inf]; Fisher p = 1.08e-05
+    -ismo             20/0         2/6     0  OR inf [nan, inf]; Fisher p = 7.43e-05
+    -ità             207/0         1/2     0  OR inf [nan, inf]; Fisher p = 0.000137
+    -ia                0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+  internal formations without -ic- bases (251 of 285 units have an -ic- base, abulico → abulicità):
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -issimo            0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -izzare            0/0         2/3     0  OR undefined (empty row or column); Fisher p = 1
+    -ista              1/0         0/9     0  OR inf [nan, inf]; Fisher p = 0.1
+    -ismo              1/0         2/6     0  OR inf [nan, inf]; Fisher p = 0.333
+    -ità               5/0         1/2     0  OR inf [nan, inf]; Fisher p = 0.107
+    -ia                0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+  all strata pooled (sensitivity):
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -issimo            9/0        1/12     0  OR inf [nan, inf]; Fisher p = 2.01e-05
+    -izzare           20/0         2/3     0  OR inf [nan, inf]; Fisher p = 0.00435
+    -ista             10/0        0/13     0  OR inf [nan, inf]; Fisher p = 8.74e-07
+    -ismo             26/0         2/6     0  OR inf [nan, inf]; Fisher p = 2.08e-05
+    -ità             215/0         3/4     0  OR inf [nan, inf]; Fisher p = 3.55e-07
+    -izia              0/0         1/0     0  OR undefined (empty row or column); Fisher p = 1
+    -ia                0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+  stratum borrowed whole:
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -ismo              1/0         0/0     0  OR undefined (empty row or column); Fisher p = 1
+    -ità               1/0         2/1     0  OR inf [nan, inf]; Fisher p = 1
+    -izia              0/0         1/0     0  OR undefined (empty row or column); Fisher p = 1
+  stratum unknown:
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -issimo            8/0        1/11     0  OR inf [nan, inf]; Fisher p = 7.14e-05
+    -ista              0/0         0/4     0  OR undefined (empty row or column); Fisher p = 1
+    -ismo              5/0         0/0     0  OR undefined (empty row or column); Fisher p = 1
+    -ità               7/0         0/1     0  OR inf [nan, inf]; Fisher p = 0.125
+  pooled:
+    internal formations: MH OR inf [nan, nan] over 6 strata (lexpipe)
+    internal, -ic- bases dropped: MH OR inf [nan, nan] over 6 strata (lexpipe)
+    internal, -ic- base as a stratum: MH OR inf [nan, nan] over 11 strata (lexpipe)
+    all strata: MH OR inf [nan, nan] over 13 strata (lexpipe)
+    internal, both = P: MH OR inf [nan, nan] over 6 strata (lexpipe)
+    internal, both = N: MH OR inf [nan, nan] over 6 strata (lexpipe)
+    internal, feminine named bases dropped: MH OR inf [nan, nan] over 6 strata (lexpipe)
+    stratified permutation (base class shuffled within suffix x stratum; 10000/10000 valid shuffles, seed 20080715): observed MH OR inf, p = 0 (< 0.0001: no shuffle reached it), null median 0.964, 97.5% 2.77
+    logistic model (R23: deriv_pal ~ base_class + log_lemma_freq + base_stratum + deriv_stratum; 285 units, 244 bases, reference strata base=borrowed whole, deriv=internal formation):
+      Intercept -2.47 (se NA, p NA); base_class 45.7 (se NA, p NA); log_lemma_freq 0.0773 (se NA, p NA); base_stratum[inherited] 1.13 (se NA, p NA); base_stratum[internal formation] -18.6 (se NA, p NA); base_stratum[unknown] 24.3 (se NA, p NA)
+      one level, no term: deriv_stratum (all internal formation)
+      quasi-complete separation on base_class, base_stratum[unknown]: the maximum-likelihood estimate does not exist; the values are where the fit stopped, and no standard error or p-value is reported (NA)
+      fit warnings: RuntimeWarning: divide by zero encountered in divide; RuntimeWarning: invalid value encountered in multiply
+  examples (internal formations; words only):
+    P base, velar derivative [0]: 
+    N base, palatal derivative [5]: dialogo → dialogizzare; mago → magismo; opaco → opacizzare; panico → panicità; valgo → valgismo
+    P base, palatal derivative [258]: abulico → abulicità; acquatico → acquaticità; acritico → acriticità; acustoelastico → acustoelasticità; acustoelettrico → acustoelettricità; adiabatico → adiabaticità; aerodinamico → aerodinamicità; agrammatico → agrammaticità; … (+250)
+    N base, velar derivative [22]: abaco → abachista; affresco → affreschista; almanacco → almanacchista; antico → antichità; antico → antichizzare; barocco → barocchismo; blocco → blocchista; calanco → calanchismo; … (+14)
+    both [0]: 
+
+tau = dictionary; links: named; native control
+  ----------------------------------------------------------------------
+  units by derivative stratum: inherited 2, borrowed whole 4, internal formation 131, unknown 17
+  internal formations (the co-variation set, §5):
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -ezza              0/7        0/16     0  OR undefined (empty row or column); Fisher p = 1
+    -etto              0/1        0/30     0  OR undefined (empty row or column); Fisher p = 1
+    -ino               0/1        2/10     0  OR 0 [0, nan]; Fisher p = 1
+    -erello            0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -eria              0/5        0/13     0  OR undefined (empty row or column); Fisher p = 1
+    -essa              0/2         0/3     0  OR undefined (empty row or column); Fisher p = 1
+    -evole             0/2         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -eggiare           0/3        0/12     0  OR undefined (empty row or column); Fisher p = 1
+    -ire               0/4        0/11     0  OR undefined (empty row or column); Fisher p = 1
+    -ese               0/1         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -iere              0/1         0/4     0  OR undefined (empty row or column); Fisher p = 1
+  internal formations without -ic- bases (21 of 131 units have an -ic- base, abulico → abulicità):
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -ezza              0/0        0/16     0  OR undefined (empty row or column); Fisher p = 1
+    -etto              0/0        0/30     0  OR undefined (empty row or column); Fisher p = 1
+    -ino               0/1        2/10     0  OR 0 [0, nan]; Fisher p = 1
+    -erello            0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -eria              0/1        0/13     0  OR undefined (empty row or column); Fisher p = 1
+    -essa              0/1         0/3     0  OR undefined (empty row or column); Fisher p = 1
+    -evole             0/2         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -eggiare           0/1        0/12     0  OR undefined (empty row or column); Fisher p = 1
+    -ire               0/0        0/11     0  OR undefined (empty row or column); Fisher p = 1
+    -ese               0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -iere              0/0         0/4     0  OR undefined (empty row or column); Fisher p = 1
+  all strata pooled (sensitivity):
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -ezza              0/7        0/17     0  OR undefined (empty row or column); Fisher p = 1
+    -etto              0/2        0/33     0  OR undefined (empty row or column); Fisher p = 1
+    -ino               1/2        3/13     0  OR 2.17 [0.144, 32.5]; Fisher p = 0.53
+    -erello            0/0         0/2     0  OR undefined (empty row or column); Fisher p = 1
+    -ello              0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -eria              0/6        0/15     0  OR undefined (empty row or column); Fisher p = 1
+    -essa              0/2         0/3     0  OR undefined (empty row or column); Fisher p = 1
+    -evole             0/3         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -eggiare           0/3        0/13     0  OR undefined (empty row or column); Fisher p = 1
+    -ire               0/4        0/12     0  OR undefined (empty row or column); Fisher p = 1
+    -ese               0/1         0/2     0  OR undefined (empty row or column); Fisher p = 1
+    -iere              0/1         1/6     0  OR 0 [0, nan]; Fisher p = 1
+  stratum inherited:
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -ino               1/0         0/0     0  OR undefined (empty row or column); Fisher p = 1
+    -evole             0/1         0/0     0  OR undefined (empty row or column); Fisher p = 1
+  stratum borrowed whole:
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -ezza              0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -ese               0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -iere              0/0         1/1     0  OR undefined (empty row or column); Fisher p = 1
+  stratum unknown:
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -etto              0/1         0/3     0  OR undefined (empty row or column); Fisher p = 1
+    -ino               0/1         1/3     0  OR 0 [0, nan]; Fisher p = 1
+    -erello            0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -ello              0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -eria              0/1         0/2     0  OR undefined (empty row or column); Fisher p = 1
+    -eggiare           0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -ire               0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -iere              0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+  pooled:
+    internal formations: MH OR 0 [nan, nan] over 11 strata (lexpipe)
+    internal, -ic- bases dropped: MH OR 0 [nan, nan] over 11 strata (lexpipe)
+    internal, -ic- base as a stratum: MH OR 0 [nan, nan] over 19 strata (lexpipe)
+    all strata: MH OR 0 [nan, nan] over 24 strata (lexpipe)
+    internal, both = P: MH OR 0 [nan, nan] over 11 strata (lexpipe)
+    internal, both = N: MH OR 0 [nan, nan] over 11 strata (lexpipe)
+    internal, feminine named bases dropped: MH OR undefined
+    stratified permutation (base class shuffled within suffix x stratum; 10000/10000 valid shuffles, seed 20080715): observed MH OR 0, p = 1, null median 0, 97.5% inf
+    logistic model (R23: deriv_pal ~ base_class + log_lemma_freq + base_stratum + deriv_stratum; 131 units, 95 bases, reference strata base=borrowed whole, deriv=internal formation):
+      Intercept -23.8 (se NA, p NA); base_class -20 (se NA, p NA); log_lemma_freq -0.0672 (se NA, p NA); base_stratum[inherited] 21.1 (se NA, p NA); base_stratum[internal formation] -0.177 (se NA, p NA); base_stratum[unknown] -0.479 (se NA, p NA)
+      one level, no term: deriv_stratum (all internal formation)
+      quasi-complete separation on base_class, base_stratum[inherited], base_stratum[internal formation], base_stratum[unknown]: the maximum-likelihood estimate does not exist; the values are where the fit stopped, and no standard error or p-value is reported (NA)
+  examples (internal formations; words only):
+    P base, velar derivative [27]: chierico → chierichetto; chimico → chimichiera; classico → classicheggiare; domestico → domestichezza; fanatico → infanatichire; greco → grecheggiare; medico → medichessa; metafisico → metafisicheria; … (+19)
+    N base, palatal derivative [2]: fungo → fungino; manco → mancino
+    P base, palatal derivative [0]: 
+    N base, velar derivative [102]: albergo → alberghetto; allocco → alloccherello; allocco → allocchire; antico → anticheggiare; arco → archeggiare; banco → banchetto; banco → banchiere; banco → banchina; … (+94)
+    both [0]: 
+
+tau = dictionary; links: named+candidates; learned set
+  ----------------------------------------------------------------------
+  units by derivative stratum: inherited 0, borrowed whole 6, internal formation 285, unknown 97
+  internal formations (the co-variation set, §5):
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -issimo            1/0         0/1     0  OR inf [nan, inf]; Fisher p = 1
+    -izzare           20/0         2/3     0  OR inf [nan, inf]; Fisher p = 0.00435
+    -ista             10/0         0/9     0  OR inf [nan, inf]; Fisher p = 1.08e-05
+    -ismo             20/0         2/6     0  OR inf [nan, inf]; Fisher p = 7.43e-05
+    -ità             207/0         1/2     0  OR inf [nan, inf]; Fisher p = 0.000137
+    -ia                0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+  internal formations without -ic- bases (251 of 285 units have an -ic- base, abulico → abulicità):
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -issimo            0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -izzare            0/0         2/3     0  OR undefined (empty row or column); Fisher p = 1
+    -ista              1/0         0/9     0  OR inf [nan, inf]; Fisher p = 0.1
+    -ismo              1/0         2/6     0  OR inf [nan, inf]; Fisher p = 0.333
+    -ità               5/0         1/2     0  OR inf [nan, inf]; Fisher p = 0.107
+    -ia                0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+  all strata pooled (sensitivity):
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -issimo            9/0        1/12     0  OR inf [nan, inf]; Fisher p = 2.01e-05
+    -izzare           21/0         3/3     0  OR inf [nan, inf]; Fisher p = 0.00684
+    -ista             21/0        3/17     0  OR inf [nan, inf]; Fisher p = 7.52e-09
+    -ismo             45/0         4/8     0  OR inf [nan, inf]; Fisher p = 3e-07
+    -esimo             1/1         0/0     0  OR undefined (empty row or column); Fisher p = 1
+    -ità             225/0         6/5     0  OR inf [nan, inf]; Fisher p = 7.9e-08
+    -izia              0/0         2/0     0  OR undefined (empty row or column); Fisher p = 1
+    -ia                0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+  stratum borrowed whole:
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -ismo              1/0         0/0     0  OR undefined (empty row or column); Fisher p = 1
+    -ità               1/0         2/1     0  OR inf [nan, inf]; Fisher p = 1
+    -izia              0/0         1/0     0  OR undefined (empty row or column); Fisher p = 1
+  stratum unknown:
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -issimo            8/0        1/11     0  OR inf [nan, inf]; Fisher p = 7.14e-05
+    -izzare            1/0         1/0     0  OR undefined (empty row or column); Fisher p = 1
+    -ista             11/0         3/8     0  OR inf [nan, inf]; Fisher p = 0.00103
+    -ismo             24/0         2/2     0  OR inf [nan, inf]; Fisher p = 0.0159
+    -esimo             1/1         0/0     0  OR undefined (empty row or column); Fisher p = 1
+    -ità              17/0         3/2     0  OR inf [nan, inf]; Fisher p = 0.0433
+    -izia              0/0         1/0     0  OR undefined (empty row or column); Fisher p = 1
+  pooled:
+    internal formations: MH OR inf [nan, nan] over 6 strata (lexpipe)
+    internal, -ic- bases dropped: MH OR inf [nan, nan] over 6 strata (lexpipe)
+    internal, -ic- base as a stratum: MH OR inf [nan, nan] over 11 strata (lexpipe)
+    all strata: MH OR inf [nan, nan] over 16 strata (lexpipe)
+    internal, both = P: MH OR inf [nan, nan] over 6 strata (lexpipe)
+    internal, both = N: MH OR inf [nan, nan] over 6 strata (lexpipe)
+    internal, feminine named bases dropped: MH OR inf [nan, nan] over 6 strata (lexpipe)
+    stratified permutation (base class shuffled within suffix x stratum; 10000/10000 valid shuffles, seed 20080715): observed MH OR inf, p = 0 (< 0.0001: no shuffle reached it), null median 0.964, 97.5% 2.77
+    logistic model (R23: deriv_pal ~ base_class + log_lemma_freq + base_stratum + deriv_stratum; 285 units, 244 bases, reference strata base=borrowed whole, deriv=internal formation):
+      Intercept -2.47 (se NA, p NA); base_class 45.7 (se NA, p NA); log_lemma_freq 0.0773 (se NA, p NA); base_stratum[inherited] 1.13 (se NA, p NA); base_stratum[internal formation] -18.6 (se NA, p NA); base_stratum[unknown] 24.3 (se NA, p NA)
+      one level, no term: deriv_stratum (all internal formation)
+      quasi-complete separation on base_class, base_stratum[unknown]: the maximum-likelihood estimate does not exist; the values are where the fit stopped, and no standard error or p-value is reported (NA)
+      fit warnings: RuntimeWarning: divide by zero encountered in divide; RuntimeWarning: invalid value encountered in multiply
+  examples (internal formations; words only):
+    P base, velar derivative [0]: 
+    N base, palatal derivative [5]: dialogo → dialogizzare; mago → magismo; opaco → opacizzare; panico → panicità; valgo → valgismo
+    P base, palatal derivative [258]: abulico → abulicità; acquatico → acquaticità; acritico → acriticità; acustoelastico → acustoelasticità; acustoelettrico → acustoelettricità; adiabatico → adiabaticità; aerodinamico → aerodinamicità; agrammatico → agrammaticità; … (+250)
+    N base, velar derivative [22]: abaco → abachista; affresco → affreschista; almanacco → almanacchista; antico → antichità; antico → antichizzare; barocco → barocchismo; blocco → blocchista; calanco → calanchismo; … (+14)
+    both [0]: 
+
+tau = dictionary; links: named+candidates; native control
+  ----------------------------------------------------------------------
+  units by derivative stratum: inherited 2, borrowed whole 4, internal formation 131, unknown 97
+  internal formations (the co-variation set, §5):
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -ezza              0/7        0/16     0  OR undefined (empty row or column); Fisher p = 1
+    -etto              0/1        0/30     0  OR undefined (empty row or column); Fisher p = 1
+    -ino               0/1        2/10     0  OR 0 [0, nan]; Fisher p = 1
+    -erello            0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -eria              0/5        0/13     0  OR undefined (empty row or column); Fisher p = 1
+    -essa              0/2         0/3     0  OR undefined (empty row or column); Fisher p = 1
+    -evole             0/2         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -eggiare           0/3        0/12     0  OR undefined (empty row or column); Fisher p = 1
+    -ire               0/4        0/11     0  OR undefined (empty row or column); Fisher p = 1
+    -ese               0/1         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -iere              0/1         0/4     0  OR undefined (empty row or column); Fisher p = 1
+  internal formations without -ic- bases (21 of 131 units have an -ic- base, abulico → abulicità):
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -ezza              0/0        0/16     0  OR undefined (empty row or column); Fisher p = 1
+    -etto              0/0        0/30     0  OR undefined (empty row or column); Fisher p = 1
+    -ino               0/1        2/10     0  OR 0 [0, nan]; Fisher p = 1
+    -erello            0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -eria              0/1        0/13     0  OR undefined (empty row or column); Fisher p = 1
+    -essa              0/1         0/3     0  OR undefined (empty row or column); Fisher p = 1
+    -evole             0/2         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -eggiare           0/1        0/12     0  OR undefined (empty row or column); Fisher p = 1
+    -ire               0/0        0/11     0  OR undefined (empty row or column); Fisher p = 1
+    -ese               0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -iere              0/0         0/4     0  OR undefined (empty row or column); Fisher p = 1
+  all strata pooled (sensitivity):
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -ezza              0/7        0/18     0  OR undefined (empty row or column); Fisher p = 1
+    -etto              0/6        0/48     0  OR undefined (empty row or column); Fisher p = 1
+    -ino               7/3        8/26     1  OR 7.58 [1.58, 36.4]; Fisher p = 0.0187
+    -erello            0/0         0/4     0  OR undefined (empty row or column); Fisher p = 1
+    -ello              1/1         2/3     1  OR 1.5 [0.0554, 40.6]; Fisher p = 1
+    -eria             0/12        0/20     0  OR undefined (empty row or column); Fisher p = 1
+    -essa              0/2         0/3     0  OR undefined (empty row or column); Fisher p = 1
+    -evole             0/3         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -eggiare           0/4        0/14     0  OR undefined (empty row or column); Fisher p = 1
+    -ire               0/4        0/14     0  OR undefined (empty row or column); Fisher p = 1
+    -ese               0/2         2/3     0  OR 0 [0, nan]; Fisher p = 1
+    -iere              0/2        1/11     0  OR 0 [0, nan]; Fisher p = 1
+  stratum inherited:
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -ino               1/0         0/0     0  OR undefined (empty row or column); Fisher p = 1
+    -evole             0/1         0/0     0  OR undefined (empty row or column); Fisher p = 1
+  stratum borrowed whole:
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -ezza              0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -ese               0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -iere              0/0         1/1     0  OR undefined (empty row or column); Fisher p = 1
+  stratum unknown:
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -ezza              0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -etto              0/5        0/18     0  OR undefined (empty row or column); Fisher p = 1
+    -ino               6/2        6/16     1  OR 8 [1.25, 51.1]; Fisher p = 0.0342
+    -erello            0/0         0/3     0  OR undefined (empty row or column); Fisher p = 1
+    -ello              1/1         2/3     1  OR 1.5 [0.0554, 40.6]; Fisher p = 1
+    -eria              0/7         0/7     0  OR undefined (empty row or column); Fisher p = 1
+    -eggiare           0/1         0/2     0  OR undefined (empty row or column); Fisher p = 1
+    -ire               0/0         0/3     0  OR undefined (empty row or column); Fisher p = 1
+    -ese               0/1         2/1     0  OR 0 [0, nan]; Fisher p = 1
+    -iere              0/1         0/6     0  OR undefined (empty row or column); Fisher p = 1
+  pooled:
+    internal formations: MH OR 0 [nan, nan] over 11 strata (lexpipe)
+    internal, -ic- bases dropped: MH OR 0 [nan, nan] over 11 strata (lexpipe)
+    internal, -ic- base as a stratum: MH OR 0 [nan, nan] over 19 strata (lexpipe)
+    all strata: MH OR 2.71 [0.722, 10.2] over 26 strata (statsmodels)
+    internal, both = P: MH OR 0 [nan, nan] over 11 strata (lexpipe)
+    internal, both = N: MH OR 0 [nan, nan] over 11 strata (lexpipe)
+    internal, feminine named bases dropped: MH OR undefined
+    stratified permutation (base class shuffled within suffix x stratum; 10000/10000 valid shuffles, seed 20080715): observed MH OR 0, p = 1, null median 0, 97.5% inf
+    logistic model (R23: deriv_pal ~ base_class + log_lemma_freq + base_stratum + deriv_stratum; 131 units, 95 bases, reference strata base=borrowed whole, deriv=internal formation):
+      Intercept -23.8 (se NA, p NA); base_class -20 (se NA, p NA); log_lemma_freq -0.0672 (se NA, p NA); base_stratum[inherited] 21.1 (se NA, p NA); base_stratum[internal formation] -0.177 (se NA, p NA); base_stratum[unknown] -0.479 (se NA, p NA)
+      one level, no term: deriv_stratum (all internal formation)
+      quasi-complete separation on base_class, base_stratum[inherited], base_stratum[internal formation], base_stratum[unknown]: the maximum-likelihood estimate does not exist; the values are where the fit stopped, and no standard error or p-value is reported (NA)
+  examples (internal formations; words only):
+    P base, velar derivative [27]: chierico → chierichetto; chimico → chimichiera; classico → classicheggiare; domestico → domestichezza; fanatico → infanatichire; greco → grecheggiare; medico → medichessa; metafisico → metafisicheria; … (+19)
+    N base, palatal derivative [2]: fungo → fungino; manco → mancino
+    P base, palatal derivative [0]: 
+    N base, velar derivative [102]: albergo → alberghetto; allocco → alloccherello; allocco → allocchire; antico → anticheggiare; arco → archeggiare; banco → banchetto; banco → banchiere; banco → banchina; … (+94)
+    both [0]: 
+
+tau = dictionary; links: named+candidates+other_base; learned set
+  ----------------------------------------------------------------------
+  units by derivative stratum: inherited 0, borrowed whole 6, internal formation 285, unknown 110
+  internal formations (the co-variation set, §5):
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -issimo            1/0         0/1     0  OR inf [nan, inf]; Fisher p = 1
+    -izzare           20/0         2/3     0  OR inf [nan, inf]; Fisher p = 0.00435
+    -ista             10/0         0/9     0  OR inf [nan, inf]; Fisher p = 1.08e-05
+    -ismo             20/0         2/6     0  OR inf [nan, inf]; Fisher p = 7.43e-05
+    -ità             207/0         1/2     0  OR inf [nan, inf]; Fisher p = 0.000137
+    -ia                0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+  internal formations without -ic- bases (251 of 285 units have an -ic- base, abulico → abulicità):
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -issimo            0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -izzare            0/0         2/3     0  OR undefined (empty row or column); Fisher p = 1
+    -ista              1/0         0/9     0  OR inf [nan, inf]; Fisher p = 0.1
+    -ismo              1/0         2/6     0  OR inf [nan, inf]; Fisher p = 0.333
+    -ità               5/0         1/2     0  OR inf [nan, inf]; Fisher p = 0.107
+    -ia                0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+  all strata pooled (sensitivity):
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -issimo            9/0        1/12     0  OR inf [nan, inf]; Fisher p = 2.01e-05
+    -izzare           22/0         3/3     0  OR inf [nan, inf]; Fisher p = 0.00611
+    -ista             25/0        4/17     0  OR inf [nan, inf]; Fisher p = 3.42e-09
+    -ismo             49/0         7/8     0  OR inf [nan, inf]; Fisher p = 1.45e-06
+    -esimo             1/1         0/0     0  OR undefined (empty row or column); Fisher p = 1
+    -ità             225/0         6/5     0  OR inf [nan, inf]; Fisher p = 7.9e-08
+    -izia              0/0         2/0     0  OR undefined (empty row or column); Fisher p = 1
+    -ia                0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+  stratum borrowed whole:
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -ismo              1/0         0/0     0  OR undefined (empty row or column); Fisher p = 1
+    -ità               1/0         2/1     0  OR inf [nan, inf]; Fisher p = 1
+    -izia              0/0         1/0     0  OR undefined (empty row or column); Fisher p = 1
+  stratum unknown:
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -issimo            8/0        1/11     0  OR inf [nan, inf]; Fisher p = 7.14e-05
+    -izzare            2/0         1/0     0  OR undefined (empty row or column); Fisher p = 1
+    -ista             15/0         4/8     0  OR inf [nan, inf]; Fisher p = 0.000223
+    -ismo             28/0         5/2     0  OR inf [nan, inf]; Fisher p = 0.0353
+    -esimo             1/1         0/0     0  OR undefined (empty row or column); Fisher p = 1
+    -ità              17/0         3/2     0  OR inf [nan, inf]; Fisher p = 0.0433
+    -izia              0/0         1/0     0  OR undefined (empty row or column); Fisher p = 1
+  pooled:
+    internal formations: MH OR inf [nan, nan] over 6 strata (lexpipe)
+    internal, -ic- bases dropped: MH OR inf [nan, nan] over 6 strata (lexpipe)
+    internal, -ic- base as a stratum: MH OR inf [nan, nan] over 11 strata (lexpipe)
+    all strata: MH OR inf [nan, nan] over 16 strata (lexpipe)
+    internal, both = P: MH OR inf [nan, nan] over 6 strata (lexpipe)
+    internal, both = N: MH OR inf [nan, nan] over 6 strata (lexpipe)
+    internal, feminine named bases dropped: MH OR inf [nan, nan] over 6 strata (lexpipe)
+    stratified permutation (base class shuffled within suffix x stratum; 10000/10000 valid shuffles, seed 20080715): observed MH OR inf, p = 0 (< 0.0001: no shuffle reached it), null median 0.964, 97.5% 2.77
+    logistic model (R23: deriv_pal ~ base_class + log_lemma_freq + base_stratum + deriv_stratum; 285 units, 244 bases, reference strata base=borrowed whole, deriv=internal formation):
+      Intercept -2.47 (se NA, p NA); base_class 45.7 (se NA, p NA); log_lemma_freq 0.0773 (se NA, p NA); base_stratum[inherited] 1.13 (se NA, p NA); base_stratum[internal formation] -18.6 (se NA, p NA); base_stratum[unknown] 24.3 (se NA, p NA)
+      one level, no term: deriv_stratum (all internal formation)
+      quasi-complete separation on base_class, base_stratum[unknown]: the maximum-likelihood estimate does not exist; the values are where the fit stopped, and no standard error or p-value is reported (NA)
+      fit warnings: RuntimeWarning: divide by zero encountered in divide; RuntimeWarning: invalid value encountered in multiply
+  examples (internal formations; words only):
+    P base, velar derivative [0]: 
+    N base, palatal derivative [5]: dialogo → dialogizzare; mago → magismo; opaco → opacizzare; panico → panicità; valgo → valgismo
+    P base, palatal derivative [258]: abulico → abulicità; acquatico → acquaticità; acritico → acriticità; acustoelastico → acustoelasticità; acustoelettrico → acustoelettricità; adiabatico → adiabaticità; aerodinamico → aerodinamicità; agrammatico → agrammaticità; … (+250)
+    N base, velar derivative [22]: abaco → abachista; affresco → affreschista; almanacco → almanacchista; antico → antichità; antico → antichizzare; barocco → barocchismo; blocco → blocchista; calanco → calanchismo; … (+14)
+    both [0]: 
+
+tau = dictionary; links: named+candidates+other_base; native control
+  ----------------------------------------------------------------------
+  units by derivative stratum: inherited 2, borrowed whole 4, internal formation 131, unknown 110
+  internal formations (the co-variation set, §5):
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -ezza              0/7        0/16     0  OR undefined (empty row or column); Fisher p = 1
+    -etto              0/1        0/30     0  OR undefined (empty row or column); Fisher p = 1
+    -ino               0/1        2/10     0  OR 0 [0, nan]; Fisher p = 1
+    -erello            0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -eria              0/5        0/13     0  OR undefined (empty row or column); Fisher p = 1
+    -essa              0/2         0/3     0  OR undefined (empty row or column); Fisher p = 1
+    -evole             0/2         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -eggiare           0/3        0/12     0  OR undefined (empty row or column); Fisher p = 1
+    -ire               0/4        0/11     0  OR undefined (empty row or column); Fisher p = 1
+    -ese               0/1         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -iere              0/1         0/4     0  OR undefined (empty row or column); Fisher p = 1
+  internal formations without -ic- bases (21 of 131 units have an -ic- base, abulico → abulicità):
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -ezza              0/0        0/16     0  OR undefined (empty row or column); Fisher p = 1
+    -etto              0/0        0/30     0  OR undefined (empty row or column); Fisher p = 1
+    -ino               0/1        2/10     0  OR 0 [0, nan]; Fisher p = 1
+    -erello            0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -eria              0/1        0/13     0  OR undefined (empty row or column); Fisher p = 1
+    -essa              0/1         0/3     0  OR undefined (empty row or column); Fisher p = 1
+    -evole             0/2         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -eggiare           0/1        0/12     0  OR undefined (empty row or column); Fisher p = 1
+    -ire               0/0        0/11     0  OR undefined (empty row or column); Fisher p = 1
+    -ese               0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -iere              0/0         0/4     0  OR undefined (empty row or column); Fisher p = 1
+  all strata pooled (sensitivity):
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -ezza              0/7        0/18     0  OR undefined (empty row or column); Fisher p = 1
+    -etto              0/6        2/48     0  OR 0 [0, nan]; Fisher p = 1
+    -ino               8/3       12/26     1  OR 5.78 [1.3, 25.7]; Fisher p = 0.0333
+    -erello            0/0         0/4     0  OR undefined (empty row or column); Fisher p = 1
+    -ello              1/1         3/2     2  OR 0.667 [0.0246, 18.1]; Fisher p = 1
+    -eria             0/12        0/20     0  OR undefined (empty row or column); Fisher p = 1
+    -essa              0/2         0/3     0  OR undefined (empty row or column); Fisher p = 1
+    -evole             0/3         1/1     0  OR 0 [0, nan]; Fisher p = 0.4
+    -eggiare           0/4        0/14     0  OR undefined (empty row or column); Fisher p = 1
+    -ire               0/4        0/14     0  OR undefined (empty row or column); Fisher p = 1
+    -ese               0/2         3/3     0  OR 0 [0, nan]; Fisher p = 0.464
+    -iere              0/2        4/11     0  OR 0 [0, nan]; Fisher p = 1
+  stratum inherited:
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -ino               1/0         0/0     0  OR undefined (empty row or column); Fisher p = 1
+    -evole             0/1         0/0     0  OR undefined (empty row or column); Fisher p = 1
+  stratum borrowed whole:
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -ezza              0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -ese               0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -iere              0/0         1/1     0  OR undefined (empty row or column); Fisher p = 1
+  stratum unknown:
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -ezza              0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -etto              0/5        2/18     0  OR 0 [0, nan]; Fisher p = 1
+    -ino               7/2       10/16     1  OR 5.6 [0.965, 32.5]; Fisher p = 0.0599
+    -erello            0/0         0/3     0  OR undefined (empty row or column); Fisher p = 1
+    -ello              1/1         3/2     2  OR 0.667 [0.0246, 18.1]; Fisher p = 1
+    -eria              0/7         0/7     0  OR undefined (empty row or column); Fisher p = 1
+    -evole             0/0         1/0     0  OR undefined (empty row or column); Fisher p = 1
+    -eggiare           0/1         0/2     0  OR undefined (empty row or column); Fisher p = 1
+    -ire               0/0         0/3     0  OR undefined (empty row or column); Fisher p = 1
+    -ese               0/1         3/1     0  OR 0 [0, nan]; Fisher p = 0.4
+    -iere              0/1         3/6     0  OR 0 [0, nan]; Fisher p = 1
+  pooled:
+    internal formations: MH OR 0 [nan, nan] over 11 strata (lexpipe)
+    internal, -ic- bases dropped: MH OR 0 [nan, nan] over 11 strata (lexpipe)
+    internal, -ic- base as a stratum: MH OR 0 [nan, nan] over 19 strata (lexpipe)
+    all strata: MH OR 1.42 [0.455, 4.44] over 27 strata (statsmodels)
+    internal, both = P: MH OR 0 [nan, nan] over 11 strata (lexpipe)
+    internal, both = N: MH OR 0 [nan, nan] over 11 strata (lexpipe)
+    internal, feminine named bases dropped: MH OR undefined
+    stratified permutation (base class shuffled within suffix x stratum; 10000/10000 valid shuffles, seed 20080715): observed MH OR 0, p = 1, null median 0, 97.5% inf
+    logistic model (R23: deriv_pal ~ base_class + log_lemma_freq + base_stratum + deriv_stratum; 131 units, 95 bases, reference strata base=borrowed whole, deriv=internal formation):
+      Intercept -23.8 (se NA, p NA); base_class -20 (se NA, p NA); log_lemma_freq -0.0672 (se NA, p NA); base_stratum[inherited] 21.1 (se NA, p NA); base_stratum[internal formation] -0.177 (se NA, p NA); base_stratum[unknown] -0.479 (se NA, p NA)
+      one level, no term: deriv_stratum (all internal formation)
+      quasi-complete separation on base_class, base_stratum[inherited], base_stratum[internal formation], base_stratum[unknown]: the maximum-likelihood estimate does not exist; the values are where the fit stopped, and no standard error or p-value is reported (NA)
+  examples (internal formations; words only):
+    P base, velar derivative [27]: chierico → chierichetto; chimico → chimichiera; classico → classicheggiare; domestico → domestichezza; fanatico → infanatichire; greco → grecheggiare; medico → medichessa; metafisico → metafisicheria; … (+19)
+    N base, palatal derivative [2]: fungo → fungino; manco → mancino
+    P base, palatal derivative [0]: 
+    N base, velar derivative [102]: albergo → alberghetto; allocco → alloccherello; allocco → allocchire; antico → anticheggiare; arco → archeggiare; banco → banchetto; banco → banchiere; banco → banchina; … (+94)
+    both [0]: 
+
+tau = ge1; links: named; learned set
+  ----------------------------------------------------------------------
+  units by derivative stratum: inherited 0, borrowed whole 3, internal formation 84, unknown 18
+  internal formations (the co-variation set, §5):
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -issimo            0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -izzare            6/0         1/0     0  OR undefined (empty row or column); Fisher p = 1
+    -ista              4/0         0/1     0  OR inf [nan, inf]; Fisher p = 0.2
+    -ismo              5/0         0/1     0  OR inf [nan, inf]; Fisher p = 0.167
+    -ità              63/0         0/1     0  OR inf [nan, inf]; Fisher p = 0.0156
+    -ia                0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+  internal formations without -ic- bases (77 of 84 units have an -ic- base, abulico → abulicità):
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -issimo            0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -izzare            0/0         1/0     0  OR undefined (empty row or column); Fisher p = 1
+    -ista              1/0         0/1     0  OR inf [nan, inf]; Fisher p = 1
+    -ismo              0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -ità               0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -ia                0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+  all strata pooled (sensitivity):
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -issimo            6/0         0/9     0  OR inf [nan, inf]; Fisher p = 0.0002
+    -izzare            6/0         1/0     0  OR undefined (empty row or column); Fisher p = 1
+    -ista              4/0         0/1     0  OR inf [nan, inf]; Fisher p = 0.2
+    -ismo              7/0         0/1     0  OR inf [nan, inf]; Fisher p = 0.125
+    -ità              66/0         1/1     0  OR inf [nan, inf]; Fisher p = 0.0294
+    -izia              0/0         1/0     0  OR undefined (empty row or column); Fisher p = 1
+    -ia                0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+  stratum borrowed whole:
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -ità               1/0         1/0     0  OR undefined (empty row or column); Fisher p = 1
+    -izia              0/0         1/0     0  OR undefined (empty row or column); Fisher p = 1
+  stratum unknown:
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -issimo            6/0         0/8     0  OR inf [nan, inf]; Fisher p = 0.000333
+    -ismo              2/0         0/0     0  OR undefined (empty row or column); Fisher p = 1
+    -ità               2/0         0/0     0  OR undefined (empty row or column); Fisher p = 1
+  pooled:
+    internal formations: MH OR inf [nan, nan] over 6 strata (lexpipe)
+    internal, -ic- bases dropped: MH OR inf [nan, nan] over 6 strata (lexpipe)
+    internal, -ic- base as a stratum: MH OR inf [nan, nan] over 10 strata (lexpipe)
+    all strata: MH OR inf [nan, nan] over 11 strata (lexpipe)
+    internal, both = P: MH OR inf [nan, nan] over 6 strata (lexpipe)
+    internal, both = N: MH OR inf [nan, nan] over 6 strata (lexpipe)
+    internal, feminine named bases dropped: MH OR inf [nan, nan] over 6 strata (lexpipe)
+    stratified permutation (base class shuffled within suffix x stratum; 10000/10000 valid shuffles, seed 20080715): observed MH OR inf, p = 0.0009, null median 0, 97.5% 105
+    logistic model (R23: deriv_pal ~ base_class + log_lemma_freq + base_stratum + deriv_stratum; 84 units, 76 bases, reference strata base=borrowed whole, deriv=internal formation):
+      Intercept 94 (se NA, p NA); base_class 122 (se NA, p NA); log_lemma_freq -18.4 (se NA, p NA); base_stratum[inherited] -85.9 (se NA, p NA); base_stratum[internal formation] -121 (se NA, p NA); base_stratum[unknown] -79.2 (se NA, p NA)
+      one level, no term: deriv_stratum (all internal formation)
+      quasi-complete separation on base_class, base_stratum[internal formation], base_stratum[unknown]: the maximum-likelihood estimate does not exist; the values are where the fit stopped, and no standard error or p-value is reported (NA)
+      fit warnings: PerfectSeparationWarning: Perfect separation or prediction detected, parameter may not be identified; RuntimeWarning: divide by zero encountered in divide; RuntimeWarning: invalid value encountered in multiply
+  examples (internal formations; words only):
+    P base, velar derivative [0]: 
+    N base, palatal derivative [1]: opaco → opacizzare
+    P base, palatal derivative [78]: acquatico → acquaticità; aerodinamico → aerodinamicità; apolitico → apoliticità; aromatico → aromaticità; atipico → atipicità; canonico → canonicità; caustico → causticità; ciclico → ciclicità; … (+70)
+    N base, velar derivative [5]: antico → antichità; fosco → foschia; franco → franchismo; franco → franchista; fresco → freschissimo
+    both [0]: 
+
+tau = ge1; links: named; native control
+  ----------------------------------------------------------------------
+  units by derivative stratum: inherited 2, borrowed whole 3, internal formation 60, unknown 3
+  internal formations (the co-variation set, §5):
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -ezza              0/0        0/10     0  OR undefined (empty row or column); Fisher p = 1
+    -etto              0/1        0/22     0  OR undefined (empty row or column); Fisher p = 1
+    -ino               0/0         2/5     0  OR undefined (empty row or column); Fisher p = 1
+    -eria              0/1         0/4     0  OR undefined (empty row or column); Fisher p = 1
+    -essa              0/0         0/2     0  OR undefined (empty row or column); Fisher p = 1
+    -evole             0/1         0/0     0  OR undefined (empty row or column); Fisher p = 1
+    -eggiare           0/0         0/6     0  OR undefined (empty row or column); Fisher p = 1
+    -ire               0/2         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -ese               0/1         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -iere              0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+  internal formations without -ic- bases (4 of 60 units have an -ic- base, abulico → abulicità):
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -ezza              0/0        0/10     0  OR undefined (empty row or column); Fisher p = 1
+    -etto              0/0        0/22     0  OR undefined (empty row or column); Fisher p = 1
+    -ino               0/0         2/5     0  OR undefined (empty row or column); Fisher p = 1
+    -eria              0/1         0/4     0  OR undefined (empty row or column); Fisher p = 1
+    -essa              0/0         0/2     0  OR undefined (empty row or column); Fisher p = 1
+    -evole             0/1         0/0     0  OR undefined (empty row or column); Fisher p = 1
+    -eggiare           0/0         0/6     0  OR undefined (empty row or column); Fisher p = 1
+    -ire               0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -ese               0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -iere              0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+  all strata pooled (sensitivity):
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -ezza              0/0        0/11     0  OR undefined (empty row or column); Fisher p = 1
+    -etto              0/2        0/23     0  OR undefined (empty row or column); Fisher p = 1
+    -ino               1/0         2/5     0  OR inf [nan, inf]; Fisher p = 0.375
+    -eria              0/1         0/4     0  OR undefined (empty row or column); Fisher p = 1
+    -essa              0/0         0/2     0  OR undefined (empty row or column); Fisher p = 1
+    -evole             0/2         0/0     0  OR undefined (empty row or column); Fisher p = 1
+    -eggiare           0/0         0/6     0  OR undefined (empty row or column); Fisher p = 1
+    -ire               0/2         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -ese               0/1         0/2     0  OR undefined (empty row or column); Fisher p = 1
+    -iere              0/0         1/2     0  OR undefined (empty row or column); Fisher p = 1
+  stratum inherited:
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -ino               1/0         0/0     0  OR undefined (empty row or column); Fisher p = 1
+    -evole             0/1         0/0     0  OR undefined (empty row or column); Fisher p = 1
+  stratum borrowed whole:
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -ezza              0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -ese               0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -iere              0/0         1/0     0  OR undefined (empty row or column); Fisher p = 1
+  stratum unknown:
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -etto              0/1         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -iere              0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+  pooled:
+    internal formations: MH OR undefined
+    internal, -ic- bases dropped: MH OR undefined
+    internal, -ic- base as a stratum: MH OR undefined
+    all strata: MH OR undefined
+    internal, both = P: MH OR undefined
+    internal, both = N: MH OR undefined
+    internal, feminine named bases dropped: MH OR undefined
+    stratified permutation: not computed (observed MH odds ratio undefined)
+    logistic model (R23: deriv_pal ~ base_class + log_lemma_freq + base_stratum + deriv_stratum; 60 units, 47 bases, reference strata base=borrowed whole, deriv=internal formation):
+      Intercept -21.4 (se NA, p NA); base_class -23 (se NA, p NA); log_lemma_freq -0.636 (se NA, p NA); base_stratum[inherited] 22.5 (se NA, p NA); base_stratum[internal formation] -0.219 (se NA, p NA); base_stratum[unknown] -1.27 (se NA, p NA)
+      one level, no term: deriv_stratum (all internal formation)
+      quasi-complete separation on base_class, base_stratum[inherited], base_stratum[internal formation], base_stratum[unknown]: the maximum-likelihood estimate does not exist; the values are where the fit stopped, and no standard error or p-value is reported (NA)
+  examples (internal formations; words only):
+    P base, velar derivative [6]: chierico → chierichetto; politico → politichese; porco → porcheria; pratico → impratichire; selvatico → inselvatichire; stomaco → stomachevole
+    N base, palatal derivative [2]: fungo → fungino; manco → mancino
+    P base, palatal derivative [0]: 
+    N base, velar derivative [52]: albergo → alberghetto; banco → banchetto; banco → banchiere; banco → banchina; bianco → biancheria; bianco → bianchezza; blocco → blocchetto; borgo → borghese; … (+44)
+    both [0]: 
+
+tau = ge1; links: named+candidates; learned set
+  ----------------------------------------------------------------------
+  units by derivative stratum: inherited 0, borrowed whole 3, internal formation 84, unknown 62
+  internal formations (the co-variation set, §5):
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -issimo            0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -izzare            6/0         1/0     0  OR undefined (empty row or column); Fisher p = 1
+    -ista              4/0         0/1     0  OR inf [nan, inf]; Fisher p = 0.2
+    -ismo              5/0         0/1     0  OR inf [nan, inf]; Fisher p = 0.167
+    -ità              63/0         0/1     0  OR inf [nan, inf]; Fisher p = 0.0156
+    -ia                0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+  internal formations without -ic- bases (77 of 84 units have an -ic- base, abulico → abulicità):
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -issimo            0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -izzare            0/0         1/0     0  OR undefined (empty row or column); Fisher p = 1
+    -ista              1/0         0/1     0  OR inf [nan, inf]; Fisher p = 1
+    -ismo              0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -ità               0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -ia                0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+  all strata pooled (sensitivity):
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -issimo           10/0        0/14     0  OR inf [nan, inf]; Fisher p = 5.1e-07
+    -izzare           13/0         1/0     0  OR undefined (empty row or column); Fisher p = 1
+    -ista              9/0         0/7     0  OR inf [nan, inf]; Fisher p = 8.74e-05
+    -ismo             11/0         1/1     0  OR inf [nan, inf]; Fisher p = 0.154
+    -esimo             1/1         0/0     0  OR undefined (empty row or column); Fisher p = 1
+    -ità              76/0         1/1     0  OR inf [nan, inf]; Fisher p = 0.0256
+    -izia              0/0         1/0     0  OR undefined (empty row or column); Fisher p = 1
+    -ia                0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+  stratum borrowed whole:
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -ità               1/0         1/0     0  OR undefined (empty row or column); Fisher p = 1
+    -izia              0/0         1/0     0  OR undefined (empty row or column); Fisher p = 1
+  stratum unknown:
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -issimo           10/0        0/13     0  OR inf [nan, inf]; Fisher p = 8.74e-07
+    -izzare            7/0         0/0     0  OR undefined (empty row or column); Fisher p = 1
+    -ista              5/0         0/6     0  OR inf [nan, inf]; Fisher p = 0.00216
+    -ismo              6/0         1/0     0  OR undefined (empty row or column); Fisher p = 1
+    -esimo             1/1         0/0     0  OR undefined (empty row or column); Fisher p = 1
+    -ità              12/0         0/0     0  OR undefined (empty row or column); Fisher p = 1
+  pooled:
+    internal formations: MH OR inf [nan, nan] over 6 strata (lexpipe)
+    internal, -ic- bases dropped: MH OR inf [nan, nan] over 6 strata (lexpipe)
+    internal, -ic- base as a stratum: MH OR inf [nan, nan] over 10 strata (lexpipe)
+    all strata: MH OR inf [nan, nan] over 14 strata (lexpipe)
+    internal, both = P: MH OR inf [nan, nan] over 6 strata (lexpipe)
+    internal, both = N: MH OR inf [nan, nan] over 6 strata (lexpipe)
+    internal, feminine named bases dropped: MH OR inf [nan, nan] over 6 strata (lexpipe)
+    stratified permutation (base class shuffled within suffix x stratum; 10000/10000 valid shuffles, seed 20080715): observed MH OR inf, p = 0.0009, null median 0, 97.5% 105
+    logistic model (R23: deriv_pal ~ base_class + log_lemma_freq + base_stratum + deriv_stratum; 84 units, 76 bases, reference strata base=borrowed whole, deriv=internal formation):
+      Intercept 94 (se NA, p NA); base_class 122 (se NA, p NA); log_lemma_freq -18.4 (se NA, p NA); base_stratum[inherited] -85.9 (se NA, p NA); base_stratum[internal formation] -121 (se NA, p NA); base_stratum[unknown] -79.2 (se NA, p NA)
+      one level, no term: deriv_stratum (all internal formation)
+      quasi-complete separation on base_class, base_stratum[internal formation], base_stratum[unknown]: the maximum-likelihood estimate does not exist; the values are where the fit stopped, and no standard error or p-value is reported (NA)
+      fit warnings: PerfectSeparationWarning: Perfect separation or prediction detected, parameter may not be identified; RuntimeWarning: divide by zero encountered in divide; RuntimeWarning: invalid value encountered in multiply
+  examples (internal formations; words only):
+    P base, velar derivative [0]: 
+    N base, palatal derivative [1]: opaco → opacizzare
+    P base, palatal derivative [78]: acquatico → acquaticità; aerodinamico → aerodinamicità; apolitico → apoliticità; aromatico → aromaticità; atipico → atipicità; canonico → canonicità; caustico → causticità; ciclico → ciclicità; … (+70)
+    N base, velar derivative [5]: antico → antichità; fosco → foschia; franco → franchismo; franco → franchista; fresco → freschissimo
+    both [0]: 
+
+tau = ge1; links: named+candidates; native control
+  ----------------------------------------------------------------------
+  units by derivative stratum: inherited 2, borrowed whole 3, internal formation 60, unknown 41
+  internal formations (the co-variation set, §5):
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -ezza              0/0        0/10     0  OR undefined (empty row or column); Fisher p = 1
+    -etto              0/1        0/22     0  OR undefined (empty row or column); Fisher p = 1
+    -ino               0/0         2/5     0  OR undefined (empty row or column); Fisher p = 1
+    -eria              0/1         0/4     0  OR undefined (empty row or column); Fisher p = 1
+    -essa              0/0         0/2     0  OR undefined (empty row or column); Fisher p = 1
+    -evole             0/1         0/0     0  OR undefined (empty row or column); Fisher p = 1
+    -eggiare           0/0         0/6     0  OR undefined (empty row or column); Fisher p = 1
+    -ire               0/2         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -ese               0/1         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -iere              0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+  internal formations without -ic- bases (4 of 60 units have an -ic- base, abulico → abulicità):
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -ezza              0/0        0/10     0  OR undefined (empty row or column); Fisher p = 1
+    -etto              0/0        0/22     0  OR undefined (empty row or column); Fisher p = 1
+    -ino               0/0         2/5     0  OR undefined (empty row or column); Fisher p = 1
+    -eria              0/1         0/4     0  OR undefined (empty row or column); Fisher p = 1
+    -essa              0/0         0/2     0  OR undefined (empty row or column); Fisher p = 1
+    -evole             0/1         0/0     0  OR undefined (empty row or column); Fisher p = 1
+    -eggiare           0/0         0/6     0  OR undefined (empty row or column); Fisher p = 1
+    -ire               0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -ese               0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -iere              0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+  all strata pooled (sensitivity):
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -ezza              0/0        0/11     0  OR undefined (empty row or column); Fisher p = 1
+    -etto              0/7        1/38     0  OR 0 [0, nan]; Fisher p = 1
+    -ino               2/1         4/6     0  OR 3 [0.199, 45.2]; Fisher p = 0.559
+    -erello            0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -ello              0/0         1/0     0  OR undefined (empty row or column); Fisher p = 1
+    -eria              0/2         0/4     0  OR undefined (empty row or column); Fisher p = 1
+    -essa              0/0         0/2     0  OR undefined (empty row or column); Fisher p = 1
+    -evole             0/2         0/0     0  OR undefined (empty row or column); Fisher p = 1
+    -eggiare           0/0         0/8     0  OR undefined (empty row or column); Fisher p = 1
+    -ire               1/2         0/1     0  OR inf [nan, inf]; Fisher p = 1
+    -ese               0/3         0/4     0  OR undefined (empty row or column); Fisher p = 1
+    -iere              0/0         1/4     0  OR undefined (empty row or column); Fisher p = 1
+  stratum inherited:
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -ino               1/0         0/0     0  OR undefined (empty row or column); Fisher p = 1
+    -evole             0/1         0/0     0  OR undefined (empty row or column); Fisher p = 1
+  stratum borrowed whole:
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -ezza              0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -ese               0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -iere              0/0         1/0     0  OR undefined (empty row or column); Fisher p = 1
+  stratum unknown:
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -etto              0/6        1/16     0  OR 0 [0, nan]; Fisher p = 1
+    -ino               1/1         2/1     0  OR 0.5 [0.0128, 19.6]; Fisher p = 1
+    -erello            0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -ello              0/0         1/0     0  OR undefined (empty row or column); Fisher p = 1
+    -eria              0/1         0/0     0  OR undefined (empty row or column); Fisher p = 1
+    -eggiare           0/0         0/2     0  OR undefined (empty row or column); Fisher p = 1
+    -ire               1/0         0/0     0  OR undefined (empty row or column); Fisher p = 1
+    -ese               0/2         0/2     0  OR undefined (empty row or column); Fisher p = 1
+    -iere              0/0         0/3     0  OR undefined (empty row or column); Fisher p = 1
+  pooled:
+    internal formations: MH OR undefined
+    internal, -ic- bases dropped: MH OR undefined
+    internal, -ic- base as a stratum: MH OR undefined
+    all strata: MH OR 0.303 [0.00954, 9.6] over 24 strata (statsmodels)
+    internal, both = P: MH OR undefined
+    internal, both = N: MH OR undefined
+    internal, feminine named bases dropped: MH OR undefined
+    stratified permutation: not computed (observed MH odds ratio undefined)
+    logistic model (R23: deriv_pal ~ base_class + log_lemma_freq + base_stratum + deriv_stratum; 60 units, 47 bases, reference strata base=borrowed whole, deriv=internal formation):
+      Intercept -21.4 (se NA, p NA); base_class -23 (se NA, p NA); log_lemma_freq -0.636 (se NA, p NA); base_stratum[inherited] 22.5 (se NA, p NA); base_stratum[internal formation] -0.219 (se NA, p NA); base_stratum[unknown] -1.27 (se NA, p NA)
+      one level, no term: deriv_stratum (all internal formation)
+      quasi-complete separation on base_class, base_stratum[inherited], base_stratum[internal formation], base_stratum[unknown]: the maximum-likelihood estimate does not exist; the values are where the fit stopped, and no standard error or p-value is reported (NA)
+  examples (internal formations; words only):
+    P base, velar derivative [6]: chierico → chierichetto; politico → politichese; porco → porcheria; pratico → impratichire; selvatico → inselvatichire; stomaco → stomachevole
+    N base, palatal derivative [2]: fungo → fungino; manco → mancino
+    P base, palatal derivative [0]: 
+    N base, velar derivative [52]: albergo → alberghetto; banco → banchetto; banco → banchiere; banco → banchina; bianco → biancheria; bianco → bianchezza; blocco → blocchetto; borgo → borghese; … (+44)
+    both [0]: 
+
+tau = ge1; links: named+candidates+other_base; learned set
+  ----------------------------------------------------------------------
+  units by derivative stratum: inherited 0, borrowed whole 3, internal formation 84, unknown 65
+  internal formations (the co-variation set, §5):
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -issimo            0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -izzare            6/0         1/0     0  OR undefined (empty row or column); Fisher p = 1
+    -ista              4/0         0/1     0  OR inf [nan, inf]; Fisher p = 0.2
+    -ismo              5/0         0/1     0  OR inf [nan, inf]; Fisher p = 0.167
+    -ità              63/0         0/1     0  OR inf [nan, inf]; Fisher p = 0.0156
+    -ia                0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+  internal formations without -ic- bases (77 of 84 units have an -ic- base, abulico → abulicità):
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -issimo            0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -izzare            0/0         1/0     0  OR undefined (empty row or column); Fisher p = 1
+    -ista              1/0         0/1     0  OR inf [nan, inf]; Fisher p = 1
+    -ismo              0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -ità               0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -ia                0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+  all strata pooled (sensitivity):
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -issimo           10/0        0/14     0  OR inf [nan, inf]; Fisher p = 5.1e-07
+    -izzare           13/0         1/0     0  OR undefined (empty row or column); Fisher p = 1
+    -ista             10/0         0/7     0  OR inf [nan, inf]; Fisher p = 5.14e-05
+    -ismo             13/0         1/1     0  OR inf [nan, inf]; Fisher p = 0.133
+    -esimo             1/1         0/0     0  OR undefined (empty row or column); Fisher p = 1
+    -ità              76/0         1/1     0  OR inf [nan, inf]; Fisher p = 0.0256
+    -izia              0/0         1/0     0  OR undefined (empty row or column); Fisher p = 1
+    -ia                0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+  stratum borrowed whole:
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -ità               1/0         1/0     0  OR undefined (empty row or column); Fisher p = 1
+    -izia              0/0         1/0     0  OR undefined (empty row or column); Fisher p = 1
+  stratum unknown:
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -issimo           10/0        0/13     0  OR inf [nan, inf]; Fisher p = 8.74e-07
+    -izzare            7/0         0/0     0  OR undefined (empty row or column); Fisher p = 1
+    -ista              6/0         0/6     0  OR inf [nan, inf]; Fisher p = 0.00216
+    -ismo              8/0         1/0     0  OR undefined (empty row or column); Fisher p = 1
+    -esimo             1/1         0/0     0  OR undefined (empty row or column); Fisher p = 1
+    -ità              12/0         0/0     0  OR undefined (empty row or column); Fisher p = 1
+  pooled:
+    internal formations: MH OR inf [nan, nan] over 6 strata (lexpipe)
+    internal, -ic- bases dropped: MH OR inf [nan, nan] over 6 strata (lexpipe)
+    internal, -ic- base as a stratum: MH OR inf [nan, nan] over 10 strata (lexpipe)
+    all strata: MH OR inf [nan, nan] over 14 strata (lexpipe)
+    internal, both = P: MH OR inf [nan, nan] over 6 strata (lexpipe)
+    internal, both = N: MH OR inf [nan, nan] over 6 strata (lexpipe)
+    internal, feminine named bases dropped: MH OR inf [nan, nan] over 6 strata (lexpipe)
+    stratified permutation (base class shuffled within suffix x stratum; 10000/10000 valid shuffles, seed 20080715): observed MH OR inf, p = 0.0009, null median 0, 97.5% 105
+    logistic model (R23: deriv_pal ~ base_class + log_lemma_freq + base_stratum + deriv_stratum; 84 units, 76 bases, reference strata base=borrowed whole, deriv=internal formation):
+      Intercept 94 (se NA, p NA); base_class 122 (se NA, p NA); log_lemma_freq -18.4 (se NA, p NA); base_stratum[inherited] -85.9 (se NA, p NA); base_stratum[internal formation] -121 (se NA, p NA); base_stratum[unknown] -79.2 (se NA, p NA)
+      one level, no term: deriv_stratum (all internal formation)
+      quasi-complete separation on base_class, base_stratum[internal formation], base_stratum[unknown]: the maximum-likelihood estimate does not exist; the values are where the fit stopped, and no standard error or p-value is reported (NA)
+      fit warnings: PerfectSeparationWarning: Perfect separation or prediction detected, parameter may not be identified; RuntimeWarning: divide by zero encountered in divide; RuntimeWarning: invalid value encountered in multiply
+  examples (internal formations; words only):
+    P base, velar derivative [0]: 
+    N base, palatal derivative [1]: opaco → opacizzare
+    P base, palatal derivative [78]: acquatico → acquaticità; aerodinamico → aerodinamicità; apolitico → apoliticità; aromatico → aromaticità; atipico → atipicità; canonico → canonicità; caustico → causticità; ciclico → ciclicità; … (+70)
+    N base, velar derivative [5]: antico → antichità; fosco → foschia; franco → franchismo; franco → franchista; fresco → freschissimo
+    both [0]: 
+
+tau = ge1; links: named+candidates+other_base; native control
+  ----------------------------------------------------------------------
+  units by derivative stratum: inherited 2, borrowed whole 3, internal formation 60, unknown 49
+  internal formations (the co-variation set, §5):
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -ezza              0/0        0/10     0  OR undefined (empty row or column); Fisher p = 1
+    -etto              0/1        0/22     0  OR undefined (empty row or column); Fisher p = 1
+    -ino               0/0         2/5     0  OR undefined (empty row or column); Fisher p = 1
+    -eria              0/1         0/4     0  OR undefined (empty row or column); Fisher p = 1
+    -essa              0/0         0/2     0  OR undefined (empty row or column); Fisher p = 1
+    -evole             0/1         0/0     0  OR undefined (empty row or column); Fisher p = 1
+    -eggiare           0/0         0/6     0  OR undefined (empty row or column); Fisher p = 1
+    -ire               0/2         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -ese               0/1         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -iere              0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+  internal formations without -ic- bases (4 of 60 units have an -ic- base, abulico → abulicità):
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -ezza              0/0        0/10     0  OR undefined (empty row or column); Fisher p = 1
+    -etto              0/0        0/22     0  OR undefined (empty row or column); Fisher p = 1
+    -ino               0/0         2/5     0  OR undefined (empty row or column); Fisher p = 1
+    -eria              0/1         0/4     0  OR undefined (empty row or column); Fisher p = 1
+    -essa              0/0         0/2     0  OR undefined (empty row or column); Fisher p = 1
+    -evole             0/1         0/0     0  OR undefined (empty row or column); Fisher p = 1
+    -eggiare           0/0         0/6     0  OR undefined (empty row or column); Fisher p = 1
+    -ire               0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -ese               0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -iere              0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+  all strata pooled (sensitivity):
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -ezza              0/0        0/11     0  OR undefined (empty row or column); Fisher p = 1
+    -etto              0/7        3/38     0  OR 0 [0, nan]; Fisher p = 1
+    -ino               3/1         8/6     0  OR 2.25 [0.185, 27.4]; Fisher p = 1
+    -erello            0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -ello              0/0         1/0     0  OR undefined (empty row or column); Fisher p = 1
+    -eria              0/2         0/4     0  OR undefined (empty row or column); Fisher p = 1
+    -essa              0/0         0/2     0  OR undefined (empty row or column); Fisher p = 1
+    -evole             0/2         0/0     0  OR undefined (empty row or column); Fisher p = 1
+    -eggiare           0/0         0/8     0  OR undefined (empty row or column); Fisher p = 1
+    -ire               1/2         0/1     0  OR inf [nan, inf]; Fisher p = 1
+    -ese               0/3         0/4     0  OR undefined (empty row or column); Fisher p = 1
+    -iere              0/0         2/3     1  OR undefined (empty row or column); Fisher p = 1
+  stratum inherited:
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -ino               1/0         0/0     0  OR undefined (empty row or column); Fisher p = 1
+    -evole             0/1         0/0     0  OR undefined (empty row or column); Fisher p = 1
+  stratum borrowed whole:
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -ezza              0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -ese               0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -iere              0/0         1/0     0  OR undefined (empty row or column); Fisher p = 1
+  stratum unknown:
+    suffix      P-base:P/N  N-base:P/N  both  statistics
+    -etto              0/6        3/16     0  OR 0 [0, nan]; Fisher p = 0.554
+    -ino               2/1         6/1     0  OR 0.333 [0.0136, 8.18]; Fisher p = 1
+    -erello            0/0         0/1     0  OR undefined (empty row or column); Fisher p = 1
+    -ello              0/0         1/0     0  OR undefined (empty row or column); Fisher p = 1
+    -eria              0/1         0/0     0  OR undefined (empty row or column); Fisher p = 1
+    -eggiare           0/0         0/2     0  OR undefined (empty row or column); Fisher p = 1
+    -ire               1/0         0/0     0  OR undefined (empty row or column); Fisher p = 1
+    -ese               0/2         0/2     0  OR undefined (empty row or column); Fisher p = 1
+    -iere              0/0         1/2     1  OR undefined (empty row or column); Fisher p = 1
+  pooled:
+    internal formations: MH OR undefined
+    internal, -ic- bases dropped: MH OR undefined
+    internal, -ic- base as a stratum: MH OR undefined
+    all strata: MH OR 0.152 [0.00717, 3.2] over 24 strata (statsmodels)
+    internal, both = P: MH OR undefined
+    internal, both = N: MH OR undefined
+    internal, feminine named bases dropped: MH OR undefined
+    stratified permutation: not computed (observed MH odds ratio undefined)
+    logistic model (R23: deriv_pal ~ base_class + log_lemma_freq + base_stratum + deriv_stratum; 60 units, 47 bases, reference strata base=borrowed whole, deriv=internal formation):
+      Intercept -21.4 (se NA, p NA); base_class -23 (se NA, p NA); log_lemma_freq -0.636 (se NA, p NA); base_stratum[inherited] 22.5 (se NA, p NA); base_stratum[internal formation] -0.219 (se NA, p NA); base_stratum[unknown] -1.27 (se NA, p NA)
+      one level, no term: deriv_stratum (all internal formation)
+      quasi-complete separation on base_class, base_stratum[inherited], base_stratum[internal formation], base_stratum[unknown]: the maximum-likelihood estimate does not exist; the values are where the fit stopped, and no standard error or p-value is reported (NA)
+  examples (internal formations; words only):
+    P base, velar derivative [6]: chierico → chierichetto; politico → politichese; porco → porcheria; pratico → impratichire; selvatico → inselvatichire; stomaco → stomachevole
+    N base, palatal derivative [2]: fungo → fungino; manco → mancino
+    P base, palatal derivative [0]: 
+    N base, velar derivative [52]: albergo → alberghetto; banco → banchetto; banco → banchiere; banco → banchina; bianco → biancheria; bianco → bianchezza; blocco → blocchetto; borgo → borghese; … (+44)
+    both [0]: 
+
+Fact-check cases (it_phon.json verification) as coded:
+  grecizzare: base greco (noun m), -izzare, palatal, candidate_headword, rejected:named_other_base, derivative stratum internal formation
+  politichese: base politica (noun f), -ese, velar, template, accepted, derivative stratum internal formation
+  musicista: base musico (noun m), -ista, palatal, candidate_headword, rejected:named_other_base, derivative stratum internal formation; base musica (noun f), -ista, palatal, template, accepted, derivative stratum internal formation
+  porcino: base porco (noun m), -ino, palatal, template, accepted, derivative stratum inherited
+  porcello: base porco (noun m), -ello, palatal, candidate_headword, rejected:etymology_unrelated, derivative stratum inherited
+  porcile: base porco (noun m), -ile, palatal, template, accepted, derivative stratum inherited

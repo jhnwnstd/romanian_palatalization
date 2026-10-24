@@ -1,0 +1,70 @@
+Analysis: italian-palatalization (lexical)
+Target-stem rows validated: 7,338
+BOOLEAN mutation match: 7,303/7,338  (99.52%)
+SURFACE-IPA match: 7,303/7,338  (99.52%)
+
+========================================================================
+Per (stem_final × opportunity)  bool match / mismatch / rate
+========================================================================
+  ('c', 'e'   )      3256 /      3    99.91%
+  ('c', 'i'   )      3524 /     19    99.46%
+  ('g', 'e'   )       186 /      0   100.00%
+  ('g', 'i'   )       337 /     13    96.29%
+
+========================================================================
+Cluster-specific verification
+========================================================================
+  +e -fago adjective    17 /     0   100.00%
+  +e -fago animate     4 /     0   100.00%
+  +e -fago person     5 /     0   100.00%
+  +e -fago thing     6 /     0   100.00%
+  +e -logo adjective     3 /     0   100.00%
+  +e -logo thing     1 /     0   100.00%
+  +e nde:occhio    76 /     0   100.00%
+  +e root, stress unknown     1 /     0   100.00%
+  +e root, velar not post-tonic  1213 /     3    99.75%
+  +e root, velar post-tonic   642 /     0   100.00%
+  +e suffix -iaco     9 /     0   100.00%
+  +e suffix -ico  1465 /     0   100.00%
+  +i -fago adjective    17 /     1    94.44%
+  +i -fago animate     8 /     0   100.00%
+  +i -fago person    11 /     2    84.62%
+  +i -fago thing    15 /     1    93.75%
+  +i -fago unknown     2 /     0   100.00%
+  +i -logo adjective     3 /     0   100.00%
+  +i -logo person    66 /     5    92.96%
+  +i -logo thing     9 /     0   100.00%
+  +i -logo unknown     1 /     0   100.00%
+  +i -urgo person    10 /     4    71.43%
+  +i nde:occhio   131 /     0   100.00%
+  +i nde:psiche     3 /     0   100.00%
+  +i root, stress unknown     2 /     0   100.00%
+  +i root, velar not post-tonic  1192 /    10    99.17%
+  +i root, velar post-tonic   802 /     9    98.89%
+  +i suffix -iaco    13 /     0   100.00%
+  +i suffix -ico  1576 /     0   100.00%
+
+========================================================================
+Refined mismatch breakdown (NORM_* = data-side transcription noise; RULE_FAILURE = residual)
+========================================================================
+
+  [RULE_FAILURE]  n = 35
+    anatomopatologo    → anatomopatologhi    (g, opp=i)  rules→T, data→F
+      predicted='anatomopatɔlod͡ʒi'    attested='aˌna.to.mo.paˈtɔ.lo.ɡi' d=2.6
+    astrologo          → astrologhi          (g, opp=i)  rules→T, data→F
+      predicted='astrɔlod͡ʒi'          attested='asˈtrɔ.lo.ɡi'         d=1.8
+    australopiteco     → australopitechi     (c, opp=i)  rules→T, data→F
+      predicted='awstralopitɛt͡ʃi'     attested='ˌaws.tra.lo.piˈtɛ.ki' d=2.4
+    bolscevico         → bolscevichi         (c, opp=i)  rules→T, data→F
+      predicted='bolʃevit͡ʃi'          attested='bol.ʃeˈvi.ki'         d=1.8
+    bolscevico         → bolscevichi         (c, opp=i)  rules→T, data→F
+      predicted='bolʃevit͡ʃi'          attested='bol.ʃeˈvi.ki'         d=1.8
+    cerusico           → cerusichi           (c, opp=i)  rules→T, data→F
+      predicted='t͡ʃeruzit͡ʃi'         attested='t͡ʃeˈru.zi.ki'        d=1.8
+    ... and 29 more
+
+========================================================================
+Distance-to-working histogram
+========================================================================
+  1.0–2.0 (a few features off)        n=   25  ( 71.4%)  ex: chirurgo
+  2.0–4.0 (structural gap)            n=   10  ( 28.6%)  ex: elettrochimica

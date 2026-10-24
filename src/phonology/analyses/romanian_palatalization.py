@@ -1,8 +1,14 @@
 """Romanian palatalization analysis — the paper as data.
 
 This module instantiates the framework for the analysis in
-``latex.tex``. Editing the analysis is editing this one file; the rest
-of ``src/phonology/`` knows nothing about Romanian.
+``latex.tex``. Editing the analysis is editing this one file. The
+Romanian-specific helpers it plugs into its profile's hooks live
+beside the shared code they serve: the UR builder in
+:mod:`phonology.g2p`, the lexicon schema, cluster tagger and cluster
+buckets in :mod:`phonology.lexicon`, the normaliser cascade and the
+mismatch categoriser in :mod:`phonology.diagnostics`. They are also
+the hooks' defaults; see :mod:`phonology.profile`, where
+:class:`AnalysisProfile` now lives (it is re-exported here).
 
 Three things live here:
 
@@ -41,14 +47,22 @@ The ``/t͡ʃ/`` and ``/d͡ʒ/`` inventory entries are patched to
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from pathlib import Path
 from types import MappingProxyType
-from typing import Callable, Final, Mapping, cast
+from typing import Final, Mapping, cast
 
-from ..inventory import FeatureInventory, FeaturePatch, UnderspecifiedSegment
-from ..lexicon import ClusterTag, LexRow
+from ..diagnostics.categorise import refine_category
+from ..diagnostics.compare import ROMANIAN_NORMALISERS
+from ..g2p import build_ur_from_row
+from ..inventory import (
+    FeatureInventory,
+    FeaturePatch,
+    UnderspecifiedSegment,
+    inventory_path,
+    load_inventory_file,
+)
+from ..lexicon import ClusterTag, LexRow, romanian_cluster_key
 from ..lp import NaturalClass, natural_class
+from ..profile import AnalysisProfile
 from ..rules import (
     DeletionRule,
     GlideFormationRule,
@@ -56,7 +70,7 @@ from ..rules import (
     UnificationRule,
 )
 from ..search import Direction, Search
-from ..segments import Segment
+from ..segments import ROMANIAN_TOKENIZER, Segment
 
 
 def _frozen(d: dict[str, str]) -> Mapping[str, str]:
@@ -210,15 +224,16 @@ UNDERSPEC: Final[tuple[UnderspecifiedSegment, ...]] = (
 # Inventory factory
 # ---------------------------------------------------------------------------
 
-_INVENTORY_JSON: Final[Path] = (
-    Path(__file__).resolve().parents[3] / "romanian_features.json"
-)
+# Resolved by phonology.inventory.inventory_path. romanian_features.json
+# predates phonology/inventories/ and stays at the repository root,
+# where the lookup for this name falls back to it.
+_INVENTORY_NAME: Final[str] = "romanian"
 
 
 def load_inventory() -> FeatureInventory:
     """Load the base JSON inventory with this analysis's patches applied."""
-    return FeatureInventory.load(
-        json_path=_INVENTORY_JSON,
+    return load_inventory_file(
+        _INVENTORY_NAME,
         patches=PATCHES,
         underspec=UNDERSPEC,
     )
@@ -630,44 +645,8 @@ def fallback_predict(row: LexRow) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# AnalysisProfile — the "one object to pass around" bundle
+# AnalysisProfile (class in phonology.profile)
 # ---------------------------------------------------------------------------
-
-
-@dataclass(frozen=True, slots=True)
-class AnalysisProfile:
-    """Everything an analysis run needs, bundled into one immutable
-    object so downstream API functions take a single argument.
-
-    Fields:
-
-      - ``name`` — human-readable analysis name.
-      - ``inventory`` — the constructed :class:`FeatureInventory`.
-      - ``patches`` / ``underspec`` — the source-of-truth tuples used
-        to build ``inventory`` (needed by the perturbation searcher
-        to reload the inventory with tweaks).
-      - ``rules`` — the ordered rule tuple.
-      - ``inventory_json`` — path to the JSON that ``patches`` were
-        applied on top of (used by perturb to reload).
-      - ``target_stems`` — orthographic stem-finals this analysis
-        wants to see; passed to :func:`iter_lexicon_rows`.
-      - ``palatalization_rule_names`` — which rule names count as
-        "mutation-producing"; passed to distance.score.
-      - ``expected_firings`` — the rule-firing oracle (per-row).
-      - ``fallback_predict`` — the boolean predictor for rows the
-        pipeline can't process.
-    """
-
-    name: str
-    inventory: FeatureInventory
-    patches: tuple[FeaturePatch, ...]
-    underspec: tuple[UnderspecifiedSegment, ...]
-    rules: tuple[Rule, ...]
-    inventory_json: Path
-    target_stems: frozenset[str]
-    palatalization_rule_names: frozenset[str]
-    expected_firings: Callable[[LexRow], frozenset[str]]
-    fallback_predict: Callable[[LexRow], bool]
 
 
 def build_profile() -> AnalysisProfile:
@@ -676,6 +655,9 @@ def build_profile() -> AnalysisProfile:
     Preferred entry point over :func:`load_inventory` alone — callers
     of the API pass the returned profile to
     :func:`phonology.validation.run_validation` etc.
+
+    The hooks are spelled out even though they equal the profile's
+    defaults, so the Romanian wiring stays explicit.
     """
     inv = load_inventory()
     return AnalysisProfile(
@@ -684,11 +666,17 @@ def build_profile() -> AnalysisProfile:
         patches=PATCHES,
         underspec=UNDERSPEC,
         rules=RULES_FROM_PAPER,
-        inventory_json=_INVENTORY_JSON,
+        inventory_json=inventory_path(_INVENTORY_NAME),
         target_stems=TARGET_STEMS,
         palatalization_rule_names=PALATALIZATION_RULE_NAMES,
         expected_firings=expected_firings,
         fallback_predict=fallback_predict,
+        ur_builder=build_ur_from_row,
+        cluster_key=romanian_cluster_key,
+        normalisers=ROMANIAN_NORMALISERS,
+        categoriser=refine_category,
+        row_factory=LexRow.from_dict,
+        tokenizer=ROMANIAN_TOKENIZER,
     )
 
 

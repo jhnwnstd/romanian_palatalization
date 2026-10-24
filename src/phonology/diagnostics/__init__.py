@@ -19,9 +19,12 @@ derivation:
   off data-side transcription noise before naming residual rule
   failures.
 
-The diagnostics package depends on the core framework but not the
-other way around: `phonology.diagnostics.*` is opt-in and safe to
-remove without touching any analysis.
+The diagnostics package depends on the core engine but not the other
+way around. :mod:`compare` and :mod:`categorise` also hold the
+Romanian defaults of two :class:`~phonology.profile.AnalysisProfile`
+hooks (the normaliser cascade and the categoriser), so
+:mod:`phonology.profile`, :mod:`phonology.g2p` and
+:mod:`phonology.validation` import from this package.
 """
 
 from __future__ import annotations

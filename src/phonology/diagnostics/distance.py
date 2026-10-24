@@ -22,6 +22,12 @@ The score has three components (see :class:`DistanceWeights`):
 ``total`` is a weighted sum. Featural edits are weighted highest
 because they're the most actionable diagnostic (a patch or clear-set
 edit); rule firings next; IPA edit distance last as a tiebreaker.
+
+Two analysis conventions enter the score as keyword arguments, both
+defaulting to Romanian: ``normalisers`` decides whether the IPA
+component counts as a match, and ``tokenizer`` splits the attested
+IPA into inventory labels for the feature component. The validator
+passes its profile's ``normalisers`` and ``tokenizer``.
 """
 
 from __future__ import annotations
@@ -32,8 +38,20 @@ from typing import Final, Iterable, Mapping
 
 from ..inventory import FeatureInventory
 from ..pipeline import Derivation
-from ..segments import Segment, Word, tokenize_ipa
-from .compare import CompareStatus, compare_ipa, split_variants
+from ..segments import (
+    ROMANIAN_TOKENIZER,
+    Segment,
+    TokenizerConfig,
+    Word,
+    tokenize_ipa,
+)
+from .compare import (
+    ROMANIAN_NORMALISERS,
+    CompareStatus,
+    NormaliserCascade,
+    compare_ipa,
+    split_variants,
+)
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -94,15 +112,18 @@ def _last_stem_consonant(word: Word) -> Segment | None:
 def _attested_last_consonant_features(
     attested_ipa: str,
     inventory: FeatureInventory,
+    *,
+    tokenizer: TokenizerConfig = ROMANIAN_TOKENIZER,
 ) -> Mapping[str, str] | None:
     """Return the feature map of the last +Consonantal inventory
     segment in the first attested variant, or None if none is
-    findable in the inventory.
+    findable in the inventory. ``tokenizer`` splits the variant into
+    inventory labels.
     """
     variants = split_variants(attested_ipa)
     if not variants:
         return None
-    tokens = tokenize_ipa(variants[0])
+    tokens = tokenize_ipa(variants[0], tokenizer=tokenizer)
     for tok in reversed(tokens):
         feats = inventory.base.get(tok)
         if feats is None:
@@ -116,6 +137,8 @@ def feature_edit_distance(
     predicted_last_cons: Segment,
     attested_ipa: str,
     inventory: FeatureInventory,
+    *,
+    tokenizer: TokenizerConfig = ROMANIAN_TOKENIZER,
 ) -> float:
     """Count feature-value differences between the predicted last-
     stem consonant and the last consonant of the attested plural.
@@ -123,11 +146,14 @@ def feature_edit_distance(
     Returns ``UNKNOWN_DISTANCE`` if the attested last-consonant can't
     be located in the inventory (unusual characters, foreign IPA
     only, etc.). Callers must check for infinity before treating the
-    score as comparable.
+    score as comparable. ``tokenizer`` splits the attested IPA into
+    inventory labels (callers scoring for a profile pass
+    ``profile.tokenizer``).
     """
     attested_feats = _attested_last_consonant_features(
         attested_ipa,
         inventory,
+        tokenizer=tokenizer,
     )
     if attested_feats is None:
         return UNKNOWN_DISTANCE
@@ -170,14 +196,20 @@ def score(
     inventory: FeatureInventory,
     palatalization_rules: frozenset[str],
     weights: DistanceWeights = DEFAULT_WEIGHTS,
+    *,
+    normalisers: NormaliserCascade = ROMANIAN_NORMALISERS,
+    tokenizer: TokenizerConfig = ROMANIAN_TOKENIZER,
 ) -> DistanceScore:
     """Compute the composite distance score for one row.
 
     ``expected_fired`` is the rule-firing oracle for this row (the
     analysis module's ``expected_firings(row)`` — passed in so this
-    module stays analysis-agnostic).
+    module stays analysis-agnostic). ``normalisers`` decides whether
+    the IPA component counts as a match and ``tokenizer`` splits the
+    attested IPA for the feature component (the validator passes its
+    profile's cascade and tokenizer).
     """
-    cmp = compare_ipa(predicted_sr, attested_field)
+    cmp = compare_ipa(predicted_sr, attested_field, normalisers=normalisers)
     if cmp.status is CompareStatus.MATCH:
         ipa: float = 0.0
     elif cmp.status is CompareStatus.MISMATCH:
@@ -190,7 +222,12 @@ def score(
     if derivation is not None:
         last = _last_stem_consonant(derivation.sr)
         if last is not None and attested_field:
-            feat = feature_edit_distance(last, attested_field, inventory)
+            feat = feature_edit_distance(
+                last,
+                attested_field,
+                inventory,
+                tokenizer=tokenizer,
+            )
         rule = rule_firing_distance(
             derivation,
             expected_fired,

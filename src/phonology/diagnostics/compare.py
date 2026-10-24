@@ -17,6 +17,12 @@ semantics across ordering search, perturbation search, and the
 mismatch report. If ordering search calls the SR "matching" but
 the driver's CSV calls it "IPA_SEGMENT_MISMATCH", the two
 disagree — bugs like that are exactly what this module prevents.
+
+The normalisations above are Romanian transcription conventions.
+They are bundled as :data:`ROMANIAN_NORMALISERS`, the default
+:class:`NormaliserCascade`. Another analysis supplies its own through
+:attr:`phonology.profile.AnalysisProfile.normalisers`, and every
+comparison made for that profile uses it.
 """
 
 from __future__ import annotations
@@ -236,11 +242,30 @@ def split_variants(attested_field: str) -> tuple[str, ...]:
     return tuple(p for p in parts if p and not is_foreign_annotation(p))
 
 
-# The normaliser cascade — a module-level constant so we don't rebuild
-# the list per compare() call. Each entry is (label, fn) where fn takes
-# (pred, attested) and returns a possibly-transformed pred. Entries are
-# applied in order; the first arrangement that makes pred == attested
-# wins.
+@dataclass(frozen=True, slots=True)
+class NormaliserCascade:
+    """One analysis's predicted-vs-attested comparison convention.
+
+    ``strip`` runs on both sides before anything is compared and
+    removes marks that never count as a difference. It is the
+    analysis's compare-strip set (design rule R8): it reaches every
+    comparison through the profile with the rest of the cascade, so a
+    language with contrastive length supplies a ``strip`` that keeps
+    the length mark ː (Romanian's drops it). ``steps`` are
+    ``(label, fn)`` pairs where ``fn(pred, attested)`` returns a
+    possibly-transformed ``pred``; they are applied in order and the
+    first arrangement that makes pred equal attested wins. The labels
+    of the steps that changed pred are reported in
+    :attr:`CompareResult.normalisation_applied`, so a step that needs
+    a new label adds a member to :class:`Normalisation`.
+    """
+
+    strip: Callable[[str], str]
+    steps: tuple[tuple[Normalisation, Callable[[str, str], str]], ...]
+
+
+# The Romanian cascade steps — a module-level constant so we don't
+# rebuild the list per compare() call.
 _NORMALISERS: Final[
     tuple[tuple[Normalisation, Callable[[str, str], str]], ...]
 ] = (
@@ -252,12 +277,21 @@ _NORMALISERS: Final[
     (Normalisation.OA_MONOPHTHONG, _normalise_oa_monophthong),
 )
 
+# The default cascade of every comparison API. Romanian has no
+# phonemic length, so ``strip`` drops the length mark ː along with
+# the stress marks.
+ROMANIAN_NORMALISERS: Final[NormaliserCascade] = NormaliserCascade(
+    strip=_strip_marks,
+    steps=_NORMALISERS,
+)
+
 
 def compare_ipa(
     predicted: str,
     attested: str | Sequence[str],
     *,
     strict: bool = False,
+    normalisers: NormaliserCascade = ROMANIAN_NORMALISERS,
 ) -> CompareResult:
     """Compare ``predicted`` to ``attested`` under successive
     normalisations.
@@ -276,7 +310,9 @@ def compare_ipa(
     data" as "matches at distance 0".
 
     Set ``strict=True`` to skip the normalisation cascade — only
-    byte-for-byte matches count.
+    byte-for-byte matches count. Otherwise ``normalisers`` is the
+    cascade to apply (callers comparing for a profile pass
+    ``profile.normalisers``).
     """
     if not predicted:
         return CompareResult(
@@ -320,13 +356,13 @@ def compare_ipa(
             edit_distance=float(_levenshtein(predicted, best_variant)),
         )
 
-    pred_stripped = _strip_marks(predicted)
+    pred_stripped = normalisers.strip(predicted)
 
     for v in variants:
-        v_stripped = _strip_marks(v)
+        v_stripped = normalisers.strip(v)
         applied: list[Normalisation] = []
         cur = pred_stripped
-        for label, fn in _NORMALISERS:
+        for label, fn in normalisers.steps:
             if cur == v_stripped:
                 return CompareResult(
                     matched=True,
@@ -366,9 +402,11 @@ def compare(predicted: str, attested_field: str) -> CompareResult:
 
 
 __all__: Final[tuple[str, ...]] = (
+    "ROMANIAN_NORMALISERS",
     "CompareResult",
     "CompareStatus",
     "Normalisation",
+    "NormaliserCascade",
     "compare",
     "compare_ipa",
     "is_foreign_annotation",

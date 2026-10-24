@@ -1,0 +1,10 @@
+top-1000 -uri dorsals with -i verbs: [('mijloc', 'mijlocuri', 'mijloci', 'pal'), ('boc', 'bocuri', 'boci', 'pal'), ('suc', 'sucuri', 'suci', 'pal'), ('stoc', 'stocuri', 'stoci', 'pal')]
+full -uri dorsals with -i verbs: [('mijloc', 'mijlocuri', 'mijloci', 'pal'), ('boc', 'bocuri', 'boci', 'pal'), ('suc', 'sucuri', 'suci', 'pal'), ('stoc', 'stocuri', 'stoci', 'pal'), ('meșteșug', 'meșteșuguri', 'meșteșugi', 'pal'), ('deochi', 'deochiuri', 'deochi', 'nonpal'), ('buluc', 'bulucuri', 'buluci', 'pal'), ('putregai', 'putregaiuri', 'putregai', None), ('amurg', 'amurguri', 'amurgi', 'pal'), ('strung', 'strunguri', 'strunji', None), ('vac', 'vacuri', 'vaci', 'pal'), ('zgău', 'zgăuri', 'zgâi', None)]
+
+top-1000 t: alternating-plural stems with unpalatalized -i verb: [('plată', 'plăți', 'plăti'), ('nuntă', 'nunți', 'nunti')]
+top-1000 d: alternating-plural stems with unpalatalized -i verb: [('dobândă', 'dobânzi', 'dobândi'), ('oglindă', 'oglinzi', 'oglindi'), ('grămadă', 'grămezi', 'îngrămădi')]
+top-1000 s: alternating-plural stems with unpalatalized -i verb: [('poveste', 'povești', 'povesti'), ('prost', 'proști', 'prosti'), ('urs', 'urși', 'ursi')]
+
+Fisher, confirmed no-plural vs alternating-plural, dorsal pal-vs-not: SignificanceResult(statistic=np.float64(0.13148148148148148), pvalue=np.float64(0.0485762417768137))
+Fisher, confirmed no-plural vs non-alternating, dorsal: SignificanceResult(statistic=np.float64(0.8541666666666666), pvalue=1.0)
+Fisher, coronal no-plural vs alternating: SignificanceResult(statistic=np.float64(0.0), pvalue=np.float64(0.33696585568670845))

@@ -23,11 +23,24 @@ The diphthong-tie character ``o̯`` is tokenised as a single segment
 ``͡`` ties the affricate pair into a single segment label like
 ``t͡ʃ``. The palatalization marker ``ʲ`` is a separate segment of its
 own, attached after glide formation.
+
+How :func:`tokenize_ipa` splits IPA into those labels is a per-analysis
+convention, a :class:`TokenizerConfig`: which marks to skip, which
+tokens to fold onto the inventory's symbols, whether combining
+diacritics stay on their base, and what to do with the length mark
+``ː``. The default, :data:`ROMANIAN_TOKENIZER`, is the Romanian
+convention (drop ``ː``; fold ``ɛ``/``ɔ``/``g`` to ``e``/``o``/``ɡ``),
+so every call without a config behaves as it always has. Another
+analysis supplies its config as
+:attr:`phonology.profile.AnalysisProfile.tokenizer` (design rule R8).
 """
 
 from __future__ import annotations
 
+import unicodedata
 from dataclasses import dataclass, field, replace
+from enum import StrEnum
+from types import MappingProxyType
 from typing import Final, Mapping
 
 FeatureValue = str  # one of "+", "-", "0"
@@ -39,6 +52,23 @@ UNSPEC: Final[FeatureValue] = "0"
 _TIE_BAR: Final[str] = "͡"  # combining double inverted breve
 _INVERTED_BREVE_BELOW: Final[str] = "̯"  # diphthong tie under o, e, etc.
 _PALATALIZATION: Final[str] = "ʲ"
+# Tie bars a keep_combining tokenizer honours: the usual one above and
+# the undertie U+035C (combining double breve below).
+_TIE_BARS: Final[frozenset[str]] = frozenset({_TIE_BAR, "\u035c"})
+
+# The length mark (U+02D0). lexpipe maps ASCII ":" onto it (R8), so it
+# is the only length mark a tokenizer config has to handle.
+LENGTH_MARK: Final[str] = "ː"
+
+# Marks that never belong to a segment: whitespace, syllable dots,
+# and stress marks (IPA primary/secondary and their ASCII stand-ins).
+NON_SEGMENTAL_MARKS: Final[frozenset[str]] = frozenset(
+    {" ", "\t", ".", "ˈ", "ˌ", "'", "`"}
+)
+
+# Unicode general categories of combining marks: non-spacing, spacing
+# and enclosing. Every IPA diacritic (U+0300-U+036F) is in "Mn".
+_COMBINING_CATEGORIES: Final[frozenset[str]] = frozenset({"Mn", "Mc", "Me"})
 
 
 @dataclass(frozen=True, slots=True)
@@ -144,8 +174,142 @@ class Segment:
 Word = tuple[Segment, ...]
 
 
-def tokenize_ipa(ipa: str) -> tuple[str, ...]:
+# ---------------------------------------------------------------------------
+# IPA tokenizer
+# ---------------------------------------------------------------------------
+
+
+class LengthHandling(StrEnum):
+    """What :func:`tokenize_ipa` does with the length mark ``ː``."""
+
+    DROP = "DROP"  # removed: the inventory has no length contrast
+    ATTACH = "ATTACH"  # ends the preceding segment's token: aː ≠ a
+    SEPARATE = "SEPARATE"  # a token of its own
+
+
+@dataclass(frozen=True, slots=True)
+class TokenizerConfig:
+    """One analysis's convention for splitting IPA into segment labels.
+
+    Fields:
+
+      - ``skip`` — single characters dropped wherever a segment could
+        start: whitespace, syllable dots, stress marks
+        (:data:`NON_SEGMENTAL_MARKS`). The length mark is not listed
+        here; ``length`` decides its fate.
+      - ``fold`` — finished token → the inventory's label for it. It
+        is looked up on whole tokens, so a key may span several code
+        points (``"t͜ʃ": "t͡ʃ"`` under ``keep_combining``); a token
+        without an entry is kept as it is.
+      - ``keep_combining`` — True: a token is a base character plus
+        every combining mark after it, and a tie bar (U+0361, or the
+        undertie U+035C) binds the next base, with its marks, into
+        the same token, so ``r̝``, ``ɪ̯``, ``r̩`` and ``t̪͡s̪`` are one
+        token each. False, the Romanian convention: a U+0361 tie bar
+        binds exactly the next code point, a single U+032F glues to
+        its base, and any other combining mark is a token of its own.
+      - ``length`` — what happens to :data:`LENGTH_MARK`; see
+        :class:`LengthHandling`. Under ``ATTACH`` a mark that follows
+        no segment (string-initial, or after a skipped character) is
+        a token of its own.
+
+    Modifier letters other than the length mark, such as ``ʲ`` and
+    ``ʰ``, are not combining marks: under every config they are tokens
+    of their own. Input is expected in NFC (lexpipe normalises IPA,
+    R8), the form inventory labels are written in.
+
+    Immutable and hashable by value: ``skip`` is stored as a frozenset
+    and ``fold`` as a read-only mapping. Construction rejects
+    multi-character ``skip`` entries, a ``skip`` that lists the length
+    mark, and empty ``fold`` keys or values.
+    """
+
+    skip: frozenset[str]
+    fold: Mapping[str, str]
+    keep_combining: bool
+    length: LengthHandling
+
+    def __hash__(self) -> int:
+        # The generated hash would fail on the read-only ``fold`` view.
+        return hash(
+            (
+                self.skip,
+                frozenset(self.fold.items()),
+                self.keep_combining,
+                self.length,
+            )
+        )
+
+    def __post_init__(self) -> None:
+        skip = frozenset(self.skip)
+        fold = MappingProxyType(dict(self.fold))
+        if any(len(ch) != 1 for ch in skip):
+            raise ValueError(
+                f"skip entries must be single characters: {sorted(skip)!r}"
+            )
+        if LENGTH_MARK in skip:
+            raise ValueError(
+                f"{LENGTH_MARK!r} is governed by `length`; drop it with "
+                "LengthHandling.DROP rather than listing it in `skip`"
+            )
+        if any(not k or not v for k, v in fold.items()):
+            raise ValueError("fold maps non-empty tokens to non-empty labels")
+        object.__setattr__(self, "skip", skip)
+        object.__setattr__(self, "fold", fold)
+        object.__setattr__(self, "length", LengthHandling(self.length))
+
+
+ROMANIAN_TOKENIZER: Final[TokenizerConfig] = TokenizerConfig(
+    skip=NON_SEGMENTAL_MARKS,
+    # Common IPA characters that lax transcriptions use for phonemes
+    # our inventory writes with a different symbol. Mapping to the
+    # inventory's canonical form lets those transcriptions still
+    # tokenise instead of falling through to "unknown segment".
+    fold={"ɛ": "e", "ɔ": "o", "g": "ɡ"},
+    keep_combining=False,
+    # Some Wiktionary transcriptions write ː, but the Romanian
+    # inventory has no length contrast.
+    length=LengthHandling.DROP,
+)
+"""The Romanian tokenizer convention: the default of :func:`tokenize_ipa`
+and of :attr:`phonology.profile.AnalysisProfile.tokenizer`."""
+
+
+def _segment_end(ipa: str, start: int, *, keep_combining: bool) -> int:
+    """Index just past the segment token that starts at ``ipa[start]``.
+
+    Length marks are not included; :func:`tokenize_ipa` handles them.
+    """
+    n = len(ipa)
+    if not keep_combining:
+        # A tie bar joins this base with the next code point.
+        if start + 2 < n and ipa[start + 1] == _TIE_BAR:
+            return start + 3
+        # The diphthong-tie U+032F glues to its base.
+        if start + 1 < n and ipa[start + 1] == _INVERTED_BREVE_BELOW:
+            return start + 2
+        return start + 1
+    end = start + 1
+    while end < n:
+        if ipa[end] in _TIE_BARS and end + 1 < n:
+            end += 2  # the tie bar and the base it binds in
+        elif unicodedata.category(ipa[end]) in _COMBINING_CATEGORIES:
+            end += 1
+        else:
+            break
+    return end
+
+
+def tokenize_ipa(
+    ipa: str,
+    *,
+    tokenizer: TokenizerConfig = ROMANIAN_TOKENIZER,
+) -> tuple[str, ...]:
     """Split an IPA string into segment-label tokens.
+
+    ``tokenizer`` is the analysis's convention (see
+    :class:`TokenizerConfig`); the default :data:`ROMANIAN_TOKENIZER`
+    gives exactly the tokens this function gave before it took one.
 
     Tie bars (U+0361) attach to the *preceding* code point and bind it
     with the following one, so ``t͡ʃ`` is a three-codepoint, one-segment
@@ -154,39 +318,30 @@ def tokenize_ipa(ipa: str) -> tuple[str, ...]:
     desyllabified glide carry no special handling — they are separate
     one-codepoint segments. Whitespace, periods, and stress marks
     (which ``normalize_ipa`` should already have stripped) are dropped
-    defensively.
+    defensively, as is the length mark under ``LengthHandling.DROP``.
     """
-    # Marks we treat as segment-neutral: stress and syllable dots, and
-    # the length mark ː that some Wiktionary transcriptions include but
-    # our inventory does not distinguish.
-    skip = {" ", "\t", ".", "ˈ", "ˌ", "'", "`", "ː"}
-    # Common IPA characters that lax transcriptions use for phonemes
-    # our inventory writes with a different symbol. Mapping to the
-    # inventory's canonical form lets those transcriptions still
-    # tokenise instead of falling through to "unknown segment".
-    fold = {"ɛ": "e", "ɔ": "o", "g": "ɡ"}
     out: list[str] = []
     i = 0
     n = len(ipa)
     while i < n:
         ch = ipa[i]
-        if ch in skip:
+        if ch in tokenizer.skip:
             i += 1
             continue
-        if ch in fold:
-            ch = fold[ch]
-        # A tie bar joins this base with the next base into one token.
-        if i + 1 < n and ipa[i + 1] == _TIE_BAR and i + 2 < n:
-            out.append(ipa[i] + _TIE_BAR + ipa[i + 2])
-            i += 3
+        if ch == LENGTH_MARK:
+            # Under ATTACH, a mark right after a segment was read with
+            # it; one that reaches here follows no segment.
+            if tokenizer.length is not LengthHandling.DROP:
+                out.append(ch)
+            i += 1
             continue
-        # The diphthong-tie U+032F glues to its base.
-        if i + 1 < n and ipa[i + 1] == _INVERTED_BREVE_BELOW:
-            out.append(ipa[i] + _INVERTED_BREVE_BELOW)
-            i += 2
-            continue
-        out.append(ch)
-        i += 1
+        end = _segment_end(ipa, i, keep_combining=tokenizer.keep_combining)
+        if tokenizer.length is LengthHandling.ATTACH:
+            while end < n and ipa[end] == LENGTH_MARK:
+                end += 1
+        token = ipa[i:end]
+        out.append(tokenizer.fold.get(token, token))
+        i = end
     return tuple(out)
 
 

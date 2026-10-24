@@ -1,0 +1,87 @@
+========================================================================
+PREDICTION 1: plural-less nouns resist palatalization in derivatives
+========================================================================
+candidates (no plural in data, has derived verb): 75; DEX/Wiktionary-confirmed no plural: 21; DEX actually lists a plural: 4
+proper names (capitalized) among candidates: 0
+
+  base class                 cls       pal -i nonpal -i -a/-ui/etc   %pal
+  no plural (confirmed)      dorsal         1         0          6  14.3%
+      pal    : nenoroc→nenoroci
+      avoid  : panică→panica, zinc→zinca, belșug→îmbelșuga, vlagă→vlăgui, caca→căca, caric→carica
+  no plural (confirmed)      coronal        0         3         10   0.0%
+      nonpal : plictis→plictisi, necinste→necinsti, forfot→forfoti
+      avoid  : tras→trasa, respect→respecta, candida→candida, orient→orienta, dezinteres→dezinteresa, dezgust→dezgusta, cobalt→cobalta, sediment→sedimenta, radiu→radia, discredit→discredita
+  alternating plural         dorsal        90         0         73  55.2%
+  alternating plural         coronal        7        17         41  10.8%
+  non-alternating plural     dorsal         8         2         37  17.0%
+  non-alternating plural     coronal        4        61        258   1.2%
+
+========================================================================
+TOP-1000 LEARNER SAMPLE (same construction as the R script)
+========================================================================
+  1000 nouns; dorsal plural evidence: {'uri': 34, 'alt': 109, 'lexical_palatal': 34}
+
+--- top-1000 ---
+  dorsal c,g before -i/-e  [plurals only]      N=  109 e=   0 θ=  23.2 → PRODUCTIVE
+  coronal t before -i     [plurals only]       N=  173 e=   0 θ=  33.6 → PRODUCTIVE
+  coronal d before -i     [plurals only]       N=   20 e=   0 θ=   6.7 → PRODUCTIVE
+  coronal s before -i     [plurals only]       N=   37 e=   0 θ=  10.2 → PRODUCTIVE
+  coronal t,d,s pooled      [plurals only]     N=  230 e=   0 θ=  42.3 → PRODUCTIVE
+  dorsal c,g before -i/-e  [plurals + -i verbs] N=  113 e=   0 θ=  23.9 → PRODUCTIVE
+  coronal t before -i     [plurals + -i verbs] N=  184 e=   9 θ=  35.3 → PRODUCTIVE   (+2 alternating stems with a non-alternating env)
+      exceptions: țintă, cotă, bată, mută, cot, poftă, ispită, scut, gat
+  coronal d before -i     [plurals + -i verbs] N=   24 e=   4 θ=   7.6 → PRODUCTIVE   (+3 alternating stems with a non-alternating env)
+      exceptions: vad, gând, undă, rudă
+  coronal s before -i     [plurals + -i verbs] N=   45 e=   8 θ=  11.8 → PRODUCTIVE   (+3 alternating stems with a non-alternating env)
+      exceptions: lipsă, sos, pedeapsă, rost, miros, folos, tuse, dos
+  coronal t,d,s pooled      [plurals + -i verbs] N=  253 e=  21 θ=  45.7 → PRODUCTIVE   (+8 alternating stems with a non-alternating env)
+      exceptions: lipsă, sos, pedeapsă, vad, gând, țintă, rost, cotă, miros, bată, undă, mută, folos, tuse, cot, dos, poftă, ispită, scut, rudă, gat
+  dorsal, excl. -ic/-ică suffix targets [pl+verbs] N=   53 e=   0 θ=  13.3 → PRODUCTIVE
+
+--- full lexicon ---
+  dorsal c,g before -i/-e  [plurals only]      N= 2822 e=  40 θ= 355.2 → PRODUCTIVE
+      exceptions: pereche, genunchi, ureche, rinichi, veghe, unchi, roche, ridiche, streche, zeghe, rărunchi, mariachi, genuchi, pezevenchi, păduche, dilimache, curechi, păreche, genunche, genuche, ghenunchi, gnochi, muche, muțunachi, măzeriche, ciurechi, pezevenghi, popenchi, potârniche, priveghe, puchi, resuche, buche, sfinghe, beicache, străunchi, tindeche, trestiche, ughi, zeche
+  coronal t before -i     [plurals only]       N= 1541 e=  10 θ= 209.9 → PRODUCTIVE
+      exceptions: tati, tanti, graffiti, tataie, yeti, morbitate, putto, tenebrozitate, uistiti, aguti
+  coronal d before -i     [plurals only]       N=  265 e=   4 θ=  47.5 → PRODUCTIVE
+      exceptions: hindi, efendi, jaguarundi, lezard
+  coronal s before -i     [plurals only]       N=  986 e=   3 θ= 143.0 → PRODUCTIVE
+      exceptions: si, psi, paradosis
+  coronal t,d,s pooled      [plurals only]     N= 2792 e=  17 θ= 351.9 → PRODUCTIVE
+      exceptions: si, tati, tanti, graffiti, psi, tataie, hindi, yeti, efendi, jaguarundi, lezard, morbitate, paradosis, putto, tenebrozitate, uistiti, aguti
+  dorsal c,g before -i/-e  [plurals + -i verbs] N= 2843 e=  41 θ= 357.5 → PRODUCTIVE
+      exceptions: pereche, genunchi, ureche, rinichi, veghe, unchi, roche, deochi, ridiche, streche, zeghe, rărunchi, mariachi, genuchi, pezevenchi, păduche, dilimache, curechi, păreche, genunche, genuche, ghenunchi, gnochi, muche, muțunachi, măzeriche, ciurechi, pezevenghi, popenchi, potârniche, priveghe, puchi, resuche, buche, sfinghe, beicache, străunchi, tindeche, trestiche, ughi, zeche
+  coronal t before -i     [plurals + -i verbs] N= 1579 e=  44 θ= 214.4 → PRODUCTIVE   (+6 alternating stems with a non-alternating env)
+      exceptions: argint, țintă, cotă, bată, mută, cot, poftă, ispită, scut, tati, gat, plat, clocot, tanti, turtă, graffiti, haită, plută, clopot, tataie, plete, trântă, boltă, forfotă, but, clint, pită, ghiont, yeti, forfot, hohot, morbitate, cită, chicot, putto, bortă, bobot, bobotă, smintă, sort, tenebrozitate, tropot, uistiti, aguti
+  coronal d before -i     [plurals + -i verbs] N=  286 e=  24 θ=  50.6 → PRODUCTIVE   (+7 alternating stems with a non-alternating env)
+      exceptions: vad, gând, undă, rudă, șold, sad, ud, pândă, trudă, hindi, bold, grădi, brod, nadă, efendi, izvod, jaguarundi, lezard, codă, prăsad, răsad, sadă, blendă, stafidă
+  coronal s before -i     [plurals + -i verbs] N= 1010 e=  27 θ= 146.0 → PRODUCTIVE   (+4 alternating stems with a non-alternating env)
+      exceptions: si, rusă, dragoste, vest, lipsă, sos, pedeapsă, rost, miros, folos, cinste, tuse, dos, vestă, psi, cosa, rast, plictis, postă, necinste, staroste, dichis, spas, parados, paradosis, ponos, ursă
+  coronal t,d,s pooled      [plurals + -i verbs] N= 2875 e=  95 θ= 361.0 → PRODUCTIVE   (+17 alternating stems with a non-alternating env)
+  dorsal, excl. -ic/-ică suffix targets [pl+verbs] N= 1707 e=  41 θ= 229.4 → PRODUCTIVE
+      exceptions: pereche, genunchi, ureche, rinichi, veghe, unchi, roche, deochi, ridiche, streche, zeghe, rărunchi, mariachi, genuchi, pezevenchi, păduche, dilimache, curechi, păreche, genunche, genuche, ghenunchi, gnochi, muche, muțunachi, măzeriche, ciurechi, pezevenghi, popenchi, potârniche, priveghe, puchi, resuche, buche, sfinghe, beicache, străunchi, tindeche, trestiche, ughi, zeche
+
+--- alternative rule carvings, top-1000, plurals only ---
+  one rule: c,g,t,d,s before -i/-e             N=  632 e= 295 θ=  98.0 → not productive
+  one rule: c,g,t,d,s before -i                N=  309 e=   2 θ=  53.9 → PRODUCTIVE
+    + dorsal-only rule before -e               N=   30 e=   0 θ=   8.8 → PRODUCTIVE
+  coronal t,d,s before -e                      N=  293 e= 293 θ=  51.6 → not productive
+
+========================================================================
+CLAIM: most prespecified dorsals select -uri and -a
+========================================================================
+
+  [top-1000] prespecified dorsals (no plural alternation): 34
+    plural -uri: 34/34 types (100.0%), 100.0% of tokens
+    verbalizers on prespecified  : n= 16  -a:8  -ui:4  -i:4   (-a 50%, -a∪-ui 75%)
+    verbalizers on underspecified: n= 42  -i:20  -a:15  -ui:2  -iza:2  -arisi:1   (-a 36%, -a∪-ui 40%)
+
+  [full lexicon] prespecified dorsals (no plural alternation): 569
+    plural -uri: 529/569 types (93.0%), 96.9% of tokens
+    non-alternating -i/-e: pereche, genunchi, ureche, rinichi, veghe, unchi, roche, ridiche, streche, zeghe, rărunchi, mariachi, genuchi, pezevenchi, păduche, dilimache, curechi, păreche, genunche, genuche, ghenunchi, gnochi, muche, muțunachi, măzeriche
+    verbalizers on prespecified  : n= 50  -a:27  -i:13  -ui:10   (-a 54%, -a∪-ui 74%)
+    verbalizers on underspecified: n=164  -i:91  -a:53  -ui:7  -ări:6  -iza:4   (-a 32%, -a∪-ui 37%)
+
+  Counterfactual (top-1000): actual dorsal domain N=109, e=0, θ=23.2
+  if the 34 -uri dorsals had taken -i/-e without alternating: N=143, e=34, θ=28.8 → NOT productive
+  break-even: palatalization survives up to 23–28 such exceptions

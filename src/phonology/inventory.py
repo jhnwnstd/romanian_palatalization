@@ -1,8 +1,8 @@
 """The feature inventory: base segments from JSON plus declared patches.
 
-The JSON at ``romanian_features.json`` is the *base*: it contains every
-surface segment of Romanian with its feature specifications. The
-analysis module declares two layers on top:
+The JSON (``romanian_features.json`` for Romanian) is the *base*: it
+contains every surface segment of the language with its feature
+specifications. The analysis module declares two layers on top:
 
   - ``FeaturePatch``: a per-segment feature override. The paper claims
     ``/i/`` is "coronal" because a high front vocoid is coronal — but
@@ -20,16 +20,46 @@ Patches and underspecifications are pure data — they sit in the
 analysis module and the inventory loader applies them without
 interpreting them. Swapping one out for another is a one-line edit in
 the analysis module, never an edit to this file or to the JSON.
+
+Inventory files are found by language name: :func:`inventory_path`
+resolves ``<name>_features.json`` in the package data directory
+:data:`INVENTORY_DIR` (``phonology/inventories/``, whose README
+documents the file format), and :func:`load_inventory_file` loads it
+with an analysis's patches. ``romanian_features.json`` predates that
+directory and stays at the repository root, where the lookup for
+``"romanian"`` falls back to it.
 """
 
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Final, Mapping, Sequence
 
 from .segments import UNSPEC, FeatureMap, FeatureValue, Segment
+
+# ---------------------------------------------------------------------------
+# Inventory files
+# ---------------------------------------------------------------------------
+
+INVENTORY_DIR: Final[Path] = Path(__file__).resolve().parent / "inventories"
+"""Package data directory holding the ``<name>_features.json`` files."""
+
+# ``*.json`` is gitignored but ``!*_features.json`` is re-included, so
+# every inventory file name ends in this suffix.
+_INVENTORY_SUFFIX: Final[str] = "_features.json"
+
+# A name is a lowercase identifier ("italian", "czech"), so the file it
+# names can't lie outside the directory it is looked up in.
+_INVENTORY_NAME: Final[re.Pattern[str]] = re.compile(r"[a-z][a-z0-9_]*")
+
+# Inventories that predate INVENTORY_DIR, at their original location.
+# The default lookup falls back to these after INVENTORY_DIR.
+_LEGACY_INVENTORY_FILES: Final[Mapping[str, Path]] = {
+    "romanian": Path(__file__).resolve().parents[2] / "romanian_features.json",
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -150,8 +180,68 @@ class FeatureInventory:
         return self.base
 
 
+def inventory_path(name: str, *, directory: Path | None = None) -> Path:
+    """Resolve the inventory file ``<name>_features.json``.
+
+    The default lookup tries :data:`INVENTORY_DIR`, then, for an
+    inventory that predates it (``"romanian"``), its original location
+    at the repository root. ``directory`` replaces that lookup with
+    the one directory given (tests pass a temporary one).
+
+    Raises :class:`ValueError` if ``name`` isn't a lowercase
+    identifier, and :class:`FileNotFoundError` naming every path tried
+    if none of them is a file.
+    """
+    if not _INVENTORY_NAME.fullmatch(name):
+        raise ValueError(
+            "inventory names are lowercase identifiers such as "
+            f"'italian'; got {name!r}"
+        )
+    filename = name + _INVENTORY_SUFFIX
+    candidates: list[Path] = []
+    if directory is not None:
+        candidates.append(Path(directory) / filename)
+    else:
+        candidates.append(INVENTORY_DIR / filename)
+        legacy = _LEGACY_INVENTORY_FILES.get(name)
+        if legacy is not None:
+            candidates.append(legacy)
+    for path in candidates:
+        if path.is_file():
+            return path
+    raise FileNotFoundError(
+        f"no inventory {filename!r}; looked for "
+        + ", ".join(str(p) for p in candidates)
+    )
+
+
+def load_inventory_file(
+    name: str,
+    patches: Sequence[FeaturePatch] = (),
+    underspec: Sequence[UnderspecifiedSegment] = (),
+    *,
+    directory: Path | None = None,
+) -> FeatureInventory:
+    """Load the inventory called ``name`` with the given patches.
+
+    Resolves the file with :func:`inventory_path` (same ``directory``
+    semantics) and loads it with :meth:`FeatureInventory.load`. An
+    analysis that also needs the path, for
+    :attr:`~phonology.profile.AnalysisProfile.inventory_json`, calls
+    :func:`inventory_path` itself.
+    """
+    return FeatureInventory.load(
+        inventory_path(name, directory=directory),
+        patches=patches,
+        underspec=underspec,
+    )
+
+
 __all__: Final[tuple[str, ...]] = (
+    "INVENTORY_DIR",
     "FeatureInventory",
     "FeaturePatch",
     "UnderspecifiedSegment",
+    "inventory_path",
+    "load_inventory_file",
 )

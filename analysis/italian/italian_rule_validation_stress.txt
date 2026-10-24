@@ -1,0 +1,70 @@
+Analysis: italian-palatalization (stress)
+Target-stem rows validated: 7,338
+BOOLEAN mutation match: 7,164/7,338  (97.63%)
+SURFACE-IPA match: 7,164/7,338  (97.63%)
+
+========================================================================
+Per (stem_final × opportunity)  bool match / mismatch / rate
+========================================================================
+  ('c', 'e'   )      3256 /      3    99.91%
+  ('c', 'i'   )      3425 /    118    96.67%
+  ('g', 'e'   )       186 /      0   100.00%
+  ('g', 'i'   ) ?     297 /     53    84.86%
+
+========================================================================
+Cluster-specific verification
+========================================================================
+  +e -fago adjective    17 /     0   100.00%
+  +e -fago animate     4 /     0   100.00%
+  +e -fago person     5 /     0   100.00%
+  +e -fago thing     6 /     0   100.00%
+  +e -logo adjective     3 /     0   100.00%
+  +e -logo thing     1 /     0   100.00%
+  +e nde:occhio    76 /     0   100.00%
+  +e root, stress unknown     1 /     0   100.00%
+  +e root, velar not post-tonic  1213 /     3    99.75%
+  +e root, velar post-tonic   642 /     0   100.00%
+  +e suffix -iaco     9 /     0   100.00%
+  +e suffix -ico  1465 /     0   100.00%
+  +i -fago adjective    17 /     1    94.44%
+  +i -fago animate     8 /     0   100.00%
+  +i -fago person    11 /     2    84.62%
+  +i -fago thing    15 /     1    93.75%
+  +i -fago unknown     1 /     1    50.00%
+  +i -logo adjective     0 /     3     0.00%
+  +i -logo person    66 /     5    92.96%
+  +i -logo thing     0 /     9     0.00%
+  +i -logo unknown     0 /     1     0.00%
+  +i -urgo person     9 /     5    64.29%
+  +i nde:occhio   131 /     0   100.00%
+  +i nde:psiche     2 /     1    66.67%
+  +i root, stress unknown     0 /     2     0.00%
+  +i root, velar not post-tonic  1132 /    70    94.18%
+  +i root, velar post-tonic   763 /    48    94.08%
+  +i suffix -iaco    13 /     0   100.00%
+  +i suffix -ico  1554 /    22    98.60%
+
+========================================================================
+Refined mismatch breakdown (NORM_* = data-side transcription noise; RULE_FAILURE = residual)
+========================================================================
+
+  [RULE_FAILURE]  n = 174
+    abaco              → abachi              (c, opp=i)  rules→T, data→F
+      predicted='abat͡ʃi'              attested='ˈa.ba.ki'             d=1.8
+    acaico             → acaici              (c, opp=i)  rules→F, data→T
+      predicted='akajki'               attested='aˈkaj.t͡ʃi'           d=1.8
+    acneico            → acneici             (c, opp=i)  rules→F, data→T
+      predicted='aknɛjki'              attested='akˈnɛj.t͡ʃi'          d=1.8
+    amico              → amici               (c, opp=i)  rules→F, data→T
+      predicted='amiki'                attested='aˈmi.t͡ʃi'            d=1.8
+    amico              → amici               (c, opp=i)  rules→F, data→T
+      predicted='amiki'                attested='aˈmi.t͡ʃi'            d=1.8
+    analogo            → analoghi            (g, opp=i)  rules→T, data→F
+      predicted='analod͡ʒi'            attested='aˈna.lo.ɡi'           d=1.8
+    ... and 168 more
+
+========================================================================
+Distance-to-working histogram
+========================================================================
+  1.0–2.0 (a few features off)        n=  151  ( 86.8%)  ex: buzzico
+  2.0–4.0 (structural gap)            n=   23  ( 13.2%)  ex: anatossico

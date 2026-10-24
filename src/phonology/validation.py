@@ -21,6 +21,13 @@ Public surface:
 Nothing here calls ``print``; nothing here reads ``sys.argv``. A
 notebook or another script gets exactly the same data as the demo
 driver.
+
+Language-specific steps go through the profile's hooks (see
+:mod:`phonology.profile`): ``ur_builder`` builds each UR,
+``normalisers`` is the comparison convention, ``tokenizer`` splits
+attested IPA for the distance metric, ``categoriser`` names
+mismatches, ``cluster_key`` picks the cluster-report bucket, and
+``trace_lemmas`` reads the CSV with ``row_factory``.
 """
 
 from __future__ import annotations
@@ -32,12 +39,7 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Final, Iterable, Mapping, Sequence
 
-from .analyses.romanian_palatalization import AnalysisProfile
-from .diagnostics.categorise import (
-    Categorisation,
-    RefinedCategory,
-    refine_category,
-)
+from .diagnostics.categorise import Categorisation, RefinedCategory
 from .diagnostics.compare import (
     CompareStatus,
     compare_ipa,
@@ -56,9 +58,9 @@ from .diagnostics.perturb import (
     PerturbationReport,
     search_perturbations_for,
 )
-from .g2p import build_ur
 from .lexicon import ClusterTag, LexRow, iter_lexicon_rows
 from .pipeline import Derivation, RulePipeline
+from .profile import AnalysisProfile
 from .segments import Word, segments_to_ipa
 
 # ---------------------------------------------------------------------------
@@ -87,7 +89,7 @@ class RowResult:
     """Everything the validator learned about one row."""
 
     row: LexRow
-    ur: Word | None  # None when build_ur failed
+    ur: Word | None  # None when the profile's ur_builder failed
     derivation: Derivation | None
     predicted_sr: str  # rendered IPA; "" if UR failed
     attested_first: str  # first non-foreign variant
@@ -96,6 +98,7 @@ class RowResult:
     ipa_match: bool  # SR matches any attested variant
     categorisation: Categorisation
     distance: DistanceScore | None  # None when derivation is None
+    cluster_key: str | None = None  # profile.cluster_key(row)
 
 
 @dataclass(frozen=True, slots=True)
@@ -127,24 +130,6 @@ class ValidationReport:
     by_cell: Mapping[tuple[str, str], Counter[str]]
     by_cluster: Mapping[str, Counter[str]]
     by_category: Mapping[RefinedCategory, tuple[RowResult, ...]]
-
-
-# ---------------------------------------------------------------------------
-# Cluster → report-bucket key
-# ---------------------------------------------------------------------------
-
-
-_CLUSTER_KEYS: Final[Mapping[tuple[ClusterTag, str], str]] = {
-    (ClusterTag.SC, "e"): "sc(ă)+e",
-    (ClusterTag.SC, "i"): "sc(ă)+i",
-    (ClusterTag.CT, "e"): "ct(ă)+e",
-    (ClusterTag.CT, "i"): "ct(ă)+i",
-    (ClusterTag.ST, "i"): "st(ă)+i",
-}
-
-
-def _cluster_key(row: LexRow) -> str | None:
-    return _CLUSTER_KEYS.get((row.cluster, row.opportunity))
 
 
 # ---------------------------------------------------------------------------
@@ -181,13 +166,8 @@ def evaluate_row(
     already loaded on the profile.
     """
     inv = profile.inventory
-    ur = build_ur(
-        row.ipa_lemma,
-        row.opportunity,
-        inv,
-        stem_final=row.stem_final,
-        lemma=row.lemma,
-    )
+    ur = profile.ur_builder(row, inv)
+    cluster_key = profile.cluster_key(row)
 
     variants = split_variants(row.ipa_pl)
     attested_first = variants[0] if variants else ""
@@ -196,12 +176,13 @@ def evaluate_row(
         # Can't derive an SR — use the analysis-declared oracle.
         predicted = profile.fallback_predict(row)
         boolean_match = predicted == row.mutation
-        cat = refine_category(
+        cat = profile.categoriser(
             row,
             "",
             row.ipa_pl,
             predicted,
             ur_built=False,
+            normalisers=profile.normalisers,
         )
         return RowResult(
             row=row,
@@ -214,6 +195,7 @@ def evaluate_row(
             ipa_match=boolean_match,  # can't compare IPA — accept boolean
             categorisation=cat,
             distance=None,
+            cluster_key=cluster_key,
         )
 
     pipeline = RulePipeline(
@@ -229,21 +211,24 @@ def evaluate_row(
     )
     boolean_match = boolean_predicted == row.mutation
 
-    if match_mode is MatchMode.STRICT:
-        cmp = compare_ipa(predicted_sr, row.ipa_pl, strict=True)
-    else:
-        cmp = compare_ipa(predicted_sr, row.ipa_pl)
+    cmp = compare_ipa(
+        predicted_sr,
+        row.ipa_pl,
+        strict=match_mode is MatchMode.STRICT,
+        normalisers=profile.normalisers,
+    )
     if cmp.status is CompareStatus.EMPTY_ATTESTED:
         ipa_match = boolean_match  # no data to compare against
     else:
         ipa_match = cmp.matched
 
-    cat = refine_category(
+    cat = profile.categoriser(
         row,
         predicted_sr,
         row.ipa_pl,
         boolean_predicted,
         ur_built=True,
+        normalisers=profile.normalisers,
     )
     dist = distance_score(
         predicted_sr=predicted_sr,
@@ -252,6 +237,8 @@ def evaluate_row(
         expected_fired=profile.expected_firings(row),
         inventory=inv,
         palatalization_rules=profile.palatalization_rule_names,
+        normalisers=profile.normalisers,
+        tokenizer=profile.tokenizer,
     )
     return RowResult(
         row=row,
@@ -264,6 +251,7 @@ def evaluate_row(
         ipa_match=ipa_match,
         categorisation=cat,
         distance=dist,
+        cluster_key=cluster_key,
     )
 
 
@@ -304,7 +292,7 @@ def run_validation(
             ipa_m += 1
         if not (res.boolean_match and res.ipa_match):
             by_cat[res.categorisation.category].append(res)
-        ck = _cluster_key(row)
+        ck = res.cluster_key
         if ck is not None:
             per_cluster[ck]["match" if res.boolean_match else "mismatch"] += 1
 
@@ -346,6 +334,7 @@ def trace_lemmas(
 
     Lemmas not found in the target-stem-filtered lexicon get a
     :class:`TraceResult` with ``found=False`` and default fields.
+    The CSV is read with ``profile.row_factory``.
     """
     wanted = list(lemmas)
     wanted_set = set(wanted)
@@ -359,6 +348,7 @@ def trace_lemmas(
     for row in iter_lexicon_rows(
         csv_path,
         target_stems=profile.target_stems,
+        row_factory=profile.row_factory,
     ):
         if row.lemma not in wanted_set:
             continue
@@ -737,7 +727,7 @@ def write_mismatch_csv(
                     d.feature_edit if d else "",
                     d.rule_edit if d else "",
                     d.total if d else "",
-                    _cluster_key(res.row) or "",
+                    res.cluster_key or "",
                 ]
             )
             n += 1

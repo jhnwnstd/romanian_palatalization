@@ -83,6 +83,80 @@ python scripts/attach_frequencies.py
 Rscript analysis/analyze_romanian_palatalization.R
 ```
 
+## Multilingual pipelines
+
+A second pipeline (`src/lexpipe/`, design in
+[`docs/multilingual_design.md`](docs/multilingual_design.md)) builds
+Italian and Czech lexicons from kaikki.org's wiktextract dumps and
+recounts Romanian (read-only) with the same code. The three languages'
+Tolerance Principle tables, learner simulations, co-variation
+statistics and -log tables therefore come from one implementation, and
+a final step joins them into one cross-language report.
+
+**Start with the results:**
+[`analysis/comparison/README.md`](analysis/comparison/README.md) holds
+the cross-language report. It has the comparison tables and a check of
+the draft's learnability paragraph (Inkelas criterion, plural-less
+nouns, the Tolerance Principle, allomorph selection, Krämer's
+speakers) against all three languages.
+
+### Running
+
+```bash
+python scripts/lang_pipeline.py --lang it            # Italian: all stages
+python scripts/lang_pipeline.py --lang cs            # Czech: all stages
+python scripts/lang_pipeline.py --lang ro            # Romanian comparison only
+PYTHONPATH=src python -m lexpipe.compare             # cross-language summary
+PYTHONPATH=src python -m lexpipe.compare --check     # exit 1 if it is stale
+python scripts/lang_pipeline.py --lang cs --list     # list a language's stages
+python scripts/lang_pipeline.py --lang cs --force tp --param workers=4 tp
+```
+
+The Romanian pipeline above is untouched: the comparison only reads its
+outputs and writes `analysis/comparison/` and `data/romanian_compare/`.
+
+- **Stages.** Each stage is skipped while its manifest (inputs,
+  parameters, outputs) matches; `--force STAGE` re-runs one. Run the
+  three languages first and `lexpipe.compare` last: it reads only their
+  tracked outputs and takes about a second.
+- **Sources.** The Italian and Czech data layers need the pinned source
+  files under `data/sources/` (`fetch`, `verify-sources`; see
+  [`docs/runbooks.md`](docs/runbooks.md)). The analysis stages take a
+  few minutes per language.
+- **Statistics.** The R23 logistic models need the optional statistics
+  extra (`pip install -e '.[stats]'`, statsmodels); without it the
+  reports say so.
+
+### Outputs and where the results are
+
+| what | where |
+|---|---|
+| cross-language report and tables | `analysis/comparison/README.md`, `analysis/comparison/crosslang_summary.csv` |
+| Romanian harmonized recount | `analysis/comparison/romanian_*` (section at the end of the comparison README) |
+| Italian results | `analysis/italian/` (TP long table, learners, summaries, reports); method and findings in `docs/italian/README.md` |
+| Czech results | `analysis/czech/` (same layout); `docs/czech/README.md` |
+| Logical Phonology analyses | `src/phonology/analyses/{italian,czech}_palatalization.py`; `docs/<language>/phonology.md`; validator reports `analysis/<language>/*_rule_validation*.txt` |
+| column definitions | `docs/italian/data_dict.md`, `docs/czech/data_dict.md`, the docstring of `src/lexpipe/compare.py` |
+| tracked raw lexicons (lean) | `data/italian/italian_lexicon_raw.csv`, `data/czech/czech_lexicon_raw.csv` |
+| hand decisions | `curated/<language>/` |
+
+Tracked files hold aggregates and Wiktionary-derived columns only. The
+full stage tables, per-word corpus counts and everything derived from
+CC BY-NC-SA sources stay in the gitignored `data/<language>/`
+(`data/<language>/nc/` for the NC ones).
+
+Shared modules every language uses:
+
+- `lexpipe.tp`: TP rows;
+- `lexpipe.learners`: simulated learners, every cell on the same draws;
+- `lexpipe.attest`: corpus thresholds τ;
+- `lexpipe.stats`: odds ratios, Mantel–Haenszel, permutations, the R23
+  model;
+- `lexpipe.etymology`: Wiktionary etymology templates and the R22
+  stratum;
+- `lexpipe.suffixoids`: the R27 -log/-fag/-urg classifiers;
+- `lexpipe.compare`: the cross-language join.
+
 ## Repository Structure
 
 ```text
@@ -94,16 +168,25 @@ romanian_palatalization/
 │   ├── download_leipzig.py
 │   ├── dex_qc_main_csv.py
 │   ├── romanian_processor_main.py
-│   └── attach_frequencies.py
+│   ├── attach_frequencies.py
+│   └── lang_pipeline.py         # Italian / Czech / Romanian comparison
 ├── src/                         # library modules
 │   ├── romanian_processor_lib.py
 │   ├── wiktionary_normalizer.py
-│   └── dex_utils.py
+│   ├── dex_utils.py
+│   └── lexpipe/                 # shared multilingual core + plugins
+│       ├── compare.py           # cross-language summary (python -m lexpipe.compare)
+│       └── langs/{italian,czech,romanian_compare}/
 ├── analysis/                    # R scripts for statistical analysis
-│   └── analyze_romanian_palatalization.R
+│   ├── analyze_romanian_palatalization.R
+│   └── {italian,czech,comparison}/   # tracked multilingual aggregates
+├── curated/                     # hand decisions (per language)
 ├── docs/
-│   └── data_dict.md             # field definitions & derivation logic
-└── data/                        # CSVs and caches (gitignored)
+│   ├── data_dict.md             # field definitions & derivation logic
+│   ├── multilingual_design.md   # design of the multilingual extension
+│   └── {italian,czech}/         # data dictionaries and notes
+└── data/                        # CSVs and caches (gitignored, except
+                                 #   the raw lexicons)
 ```
 
 ## Requirements
@@ -118,6 +201,41 @@ Python dependencies are defined in [`pyproject.toml`](pyproject.toml).
 ## License
 
 This project is licensed under the MIT License. See [`LICENSE`](LICENSE) for details.
+
+## Data sources and licences
+
+The MIT License covers the code only. The data come from the sources
+below. [`DATA_LICENSE.md`](DATA_LICENSE.md) (a draft for the authors)
+gives the details, and `src/lexpipe/licensing.py` keeps data that may
+not be redistributed out of tracked files.
+
+| Source | Used for | Licence | In tracked files |
+|---|---|---|---|
+| Wiktionary (en, ro, it, cs) | lexicons, IPA, etymology | CC BY-SA 4.0 + GFDL | yes |
+| Morph-it! 0.4.8 | Italian QC | CC BY-SA 2.0 / LGPL | yes |
+| ČNK SYN2015 frequency lists | Czech frequency cross-check | CC BY 4.0 | yes |
+| MorfFlex CZ 2.1, DeriNet 2.3, Czech Etymological Lexicon 1.0 | Czech QC, derivations, etymology | CC BY-NC-SA 4.0 | no (`data/czech/nc/`) |
+| Leipzig Corpora Collection | corpus frequencies | terms not yet verified | no |
+
+If you use the data, please also cite:
+
+- Ylonen (2022), *Wiktextract: Wiktionary as Machine-Readable Structured
+  Data*, LREC 2022: the Italian and Czech lexicons (via kaikki.org).
+- Zanchetta & Baroni (2005), *Morph-it! A free corpus-based
+  morphological resource for the Italian language*, Corpus Linguistics
+  2005.
+- Hajič, Hlaváčová, Mikulová, Straka & Štěpánková (2024), *MorfFlex CZ
+  2.1*, LINDAT/CLARIAH-CZ (reference paper: Hlaváčová et al. 2026,
+  LREC 2026).
+- Olbrich et al. (2025), *DeriNet 2.3*, LINDAT/CLARIAH-CZ (format paper:
+  Vidra et al. 2019, DeriMo 2019).
+- Rejzek, Papáček, Brezinová & Žabokrtský (2025), *Czech Etymological
+  Lexicon 1.0*, LINDAT/CLARIAH-CZ.
+- Křen et al. (2015), *SYN2015: reprezentativní korpus psané češtiny*,
+  and *Srovnávací frekvenční seznamy* (ÚČNK, 2016).
+- Goldhahn, Eckart & Quasthoff (2012), *Building Large Monolingual
+  Dictionaries at the Leipzig Corpora Collection: From 100 to 200
+  Languages*, LREC 2012.
 
 ## Citation
 

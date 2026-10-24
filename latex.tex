@@ -1,0 +1,615 @@
+\documentclass[11pt,letterpaper]{article}
+\usepackage[hmargin=1in,top=1in,bottom=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{multirow}
+\usepackage{libertinus}
+\usepackage{natbib}
+
+\usepackage{authblk}
+\usepackage{booktabs}
+\usepackage{dirtytalk}
+\usepackage[hidelinks]{hyperref}
+\usepackage{microtype}
+\usepackage{multicol}
+\usepackage{pifont}
+\usepackage{simplex}
+\usepackage{setspace} 
+\usepackage{tikz}
+\usepackage{url}
+
+\bibpunct[: ]{(}{)}{;}{a}{}{,}
+\usetikzlibrary{matrix}
+
+\newcommand{\concat}{\ensuremath{\mathord{\smallfrown}}}
+\newcommand{\gap}{\rule{1em}{0.5pt}}
+\newcommand{\word}[1]{\textit{#1}}
+\newcommand{\term}[1]{\textit{#1}}
+\newcommand{\feature}[1]{\textsc{#1}}
+\newcommand{\featspec}[2]{\ensuremath{#1}\textsc{#2}}
+\newcommand{\y}{\ding{51}}
+\newcommand{\n}{\ding{55}}
+\newcommand*\circled[1]{\tikz[baseline=(char.base)]{
+            \node[shape=circle,draw,inner sep=2pt] (char) {#1};}}
+\newcommand{\writing}[1]{\ensuremath{\langle}#1\ensuremath{\rangle}}
+
+% I am using this for anonymization.
+\newif\ifanon
+\anonfalse
+
+% This name is sort of lame but I don't have anything clever yet.
+
+\ifanon
+\else
+\title{Romanian palatalization without tears} 
+\author{Kyle Gorman \& John Winstead}
+\affil{CUNY Graduate Center, New York}
+\date{}
+\fi
+
+\begin{document}
+\pagestyle{empty}
+\thispagestyle{empty}
+
+\ifanon
+\begin{center}
+\textbf{
+Romanian palatalization without tears
+}
+\end{center}
+\else
+\maketitle
+\fi
+
+In Romanian, coronal and dorsal obstruents become palatalized when followed by certain suffixes beginning with a front vowel, such as noun plurals in \word{-i}
+(NB: /i/ $\rightsquigarrow$ [ʲ] word-finally).
+\vspace{-\topsep}
+% Get rid of z examples...
+\begin{unlabeledexample}
+\begin{tabular}{lll l lll l lll}
+ru{s}   & ru{ʃ}ʲ   & `Russian(s)'  && bra{d}    & bra{z}ʲ   & `fir(s)'
+                                    && mun{t}e & mun{ts}ʲ & `mountain(s)' \\
+pro{s}t & pro{ʃ}tʲ & `fool(s)'     && miloɡ & milo{dʒ}ʲ & `beggar(s)'
+                                    && pisi{k}ə  & pisi{tʃ}ʲ & `cat(s)' \\
+\end{tabular}
+\label{e:noun-plurals}
+\end{unlabeledexample}
+
+\noindent
+These \term{palatalization} mutations are straightforwardly handled by a series of ordinary phonological rules or constraints.
+However, additional observations have led some \citep[e.g.,][]{Chitoran:01} to posit that palatalization is morphophonological in part.
+Palatalization exhibits \term{non-derived environment blocking} (NDEB):
+it does not apply when the obstruent target and front vowel trigger are underlyingly adjacent and tautomorphemic;
+e.g., [{ki}loɡram] `kilogram', [{ɡi}mpe] `thorn'.
+% I am not sure if we want to consider these problematic for NDEB or not.
+%However, there are a few nouns which end in /i/ in both the citation form
+%(the nom.sg.~indef.)~and plural, and these also do not palatalize; e.g.,
+%[privegʲ] `wake(s)', [triuŋgʲ] `triangle(s)', [uŋkʲ] `uncle(s)',
+%[pəduke, pədukʲ] `louse--lice'.
+But there are also some derived exceptions,
+%While the exact analysis of these nouns is unclear, there are other
+%derivational exceptions, 
+such as some agent nominals in \word{-ist};
+e.g., [fok-ist] `stoker', [taŋk-ist] `tank driver', [droɡ-ist] `druggist', [joɡ-ist] `yogi';
+cf.~the palatalization observed in [kajak, kajatʃ-ist] `kayak(er)', [stɨŋɡ, stɨŋdʒ-ist] `left(ist)'.
+\citet{Steriade:08} further claims that nouns that select plural allomorphs which trigger palatalization (e.g., \word{-i}) tend to select palatalizing allomorphs of derivational suffixes%
+---like the homophonous \word{-i} verbalizer as in (\ref{e:steriade}a)---%
+and nouns which select non-palatalizing plural allomorphs (e.g., \word{-uri}) tend to select non-palatalizing verbalizer allomorphs (e.g., \word{-a} or \word{-ui}) as in (\ref{e:steriade}b),
+though there are exceptions to this generalization as in (\ref{e:steriade}c).
+
+\begin{unlabeledexample}
+\begin{tabular}{l lll ll}
+a. & kola{k}  & kola{tʃ}ʲ & `kalach(es)' & ɨŋkola{tʃ}ʲ & `to coil' \\
+   & verde    & verzʲ     & `green(s)'   & ɨnverzʲ     & `to become green' \\
+b. & fok      & fokurʲ    & `fire(s)'    & ɨnfoka      & `to fire up' \\
+   & tɨrɡ     & tɨrɡurʲ   & `market(s)'  & tɨrɡui      & `to go shopping' \\
+c. & buluk    & bulukurʲ  & `crowd(s)'   & bulutʃʲ     & `to crowd (together)' \\
+   & klopo{t} & klopo{t}e & `bell(s)'    & klopo{ts}ʲ  & `to ring a bell' \\
+%- <oțet, oțeturi> `vinegar' but <oțeti> `to make into vinegar'
+%- <scut, scuturi> `shield' but <scuti> `to exonerate'
+%d. & pro{s}t  & pro{ʃ}tʲ  & `fool(s)'    & prostʲ      & `to fool' \\
+\end{tabular}
+\label{e:steriade}
+\end{unlabeledexample}
+
+We first consider the productivity of the different forms of palatalization.
+Productivity analyses are conducted using a lexicon extracted from Wiktionary and the \emph{Dicționarul explicativ al limbii române} \citep[DEX;][]{DEX}
+filtered by frequency \citep{LCC} to simulate realistic lexical knowledge \citep[e.g.,][]{Kodner:19}.
+Below we give the type frequencies of noun plural palatalization ($n$: \# of stems eligible for palatalization,
+$e$: \# of stems which are exceptions to palatalization) for the 1,000 most common nouns in our sample, 
+with majority-rules \citep[14]{Nida:49} and Tolerance Principle \citep{Yang:05,Yang:16} calculations,
+showing all coronal- and dorsal-obstruent-final stems when followed by heterosyllabic \word{i} or \word{e}.
+Under both thresholds, there is productive palatalization of \word{c} and \word{g} before \word{i} and \word{e},
+and of \word{t}, \word{d}, and \word{s} before \word{i}.
+
+\begin{unlabeledexample}
+\begin{tabular}{lrrll lrrll}
+ & $n$ & $e$ & majority? & tolerated?
+ & & $n$ & $e$ & majority? & tolerated? \\
+\midrule
+\ldots\word{c}-\word{i}\ldots  &  28 &   0 & \y & \y
+ & \ldots\word{c}-\word{e}\ldots  &  14 &   0 & \y & \y \\
+\ldots\word{g}-\word{i}\ldots  &  17 &   0 & \y & \y
+ & \ldots\word{g}-\word{e}\ldots  &   3 &   0 & \y & \y \\
+\ldots\word{t}-\word{i}\ldots  & 207 &   0 & \y & \y
+ & \ldots\word{t}-\word{e}\ldots  & 229 & 229 & \n & \n \\
+\ldots\word{d}-\word{i}\ldots  &  23 &   0 & \y & \y
+ & \ldots\word{d}-\word{e}\ldots  &  36 &  36 & \n & \n \\
+\ldots\word{s}-\word{i}\ldots  &  11 &   0 & \y & \y
+ & \ldots\word{s}-\word{e}\ldots  &  44 &  44 & \n & \n \\
+\ldots\word{z}-\word{i}\ldots  &   2 &   1 & (n.a.) & (n.a.)
+ & \ldots\word{z}-\word{e}\ldots  &  48 &  48 & \n & \n \\
+\ldots\word{st}-\word{i}\ldots &   4 &   0 & \y & \y
+ & \ldots\word{st}-\word{e}\ldots &   0 &   0 & (n.a.) & (n.a.) \\
+\ldots\word{ct}-\word{i}\ldots &   3 &   0 & \y & \y
+ & \ldots\word{ct}-\word{e}\ldots &  22 &  22 & \n & \n \\
+\end{tabular}
+\label{e:productivity}
+\end{unlabeledexample}
+
+We argue that the \say{morphological} effect observed by \citet{Steriade:08} can, instead, be derived within the narrow phonology without reference to morphological structure.
+Both NDEB effects and apparent exceptions like the \word{-ist} class stem from coronal and dorsal obstruents which are prespecified and therefore inalterable,
+whereas palatalizing obstruents are underspecified---echoing the notion of \term{inalterability as prespecification}
+\citep[e.g.,][]{Inkelas:Cho:93,Kiparsky:93,Buckley:94,Inkelas:95,Inkelas:EtAl:97,Inkelas:00,Inkelas:14,Gorman:26}.
+\citet{Rasin:25} provides an analysis of Romanian NDEB in this vein:
+segments which undergo palatalization are underspecified and thus mutable w.r.t.~feature-filling palatalization rules,
+but prespecified segments are inalterable w.r.t.~these rules.
+To implement the desired feature-filling behavior, we use unification rules \citep{Bale:EtAl:14},
+formalized in Logical Phonology
+\citep[e.g.,][]{Bale:Reiss:18,Bale:EtAl:20,Reiss:21,Dabbous:EtAl:24,Leduc:EtAl:24,Reiss:24,Gorman:Reiss:25:Metaphony}.
+
+Specifically, the dorsals /K/ and /G/ are underspecified for \feature{Coronal} and palatalize before any \featspec{+}{front} vowel,
+while /k/ and /g/ are prespecified \featspec{-}{Coronal} and therefore inalterable.
+Rules (\ref{e:velar-pal}--\ref{e:default}) map underspecified /K, G/ to [tʃ, dʒ] (resp.)~before front vowels and to [k, ɡ] elsewhere.
+While these rules intensionally target many segments,
+unification is defined so that it does not overwrite existing feature specifications,
+so prespecified segments like /k, ɡ/ are inalterable w.r.t.~both rules.
+The coronals /T/, /D/, and /S/ palatalize only before /i/, with complementary underspecification:
+/T/ and /D/ lack \feature{strident} and \feature{Continuant},
+while /S/ lacks \feature{anterior} and \feature{distributed}.
+Fully specified /z/ is inalterable in all contexts.
+
+The tendency for plural and verbalizer allomorph selection to co-vary follows directly from the same feature specifications that drive inalterability.
+The non-palatalizing allomorphs (\textit{-uri}, \textit{-a}, \textit{-ui}) select for roots specified
+[\featspec{-}{Coronal}, \featspec{+}{Dorsal}, \featspec{-}{Continuant}]---the very specification that renders prespecified obstruents inalterable to palatalization---while the palatalizing allomorphs (\textit{-i}, \textit{-e}) are defaults bled by more specific---in the Pāṇinian sense---phonological rules.
+Since spell-out is inside-out \citep{Bobaljik:00},
+\textsc{Num} and \textit{v} are spelled out after the root,
+giving them access to its underlying form.
+The phonologically null \textit{n} head in
+[\textsc{NumP} [\textit{n}P $\surd$\textsc{root} \textit{n}] \textsc{Num}[\textsc{pl}]]
+and [\textit{v}P [\textit{n}P $\surd$\textsc{root} \textit{n}] \textit{v}] is \say{pruned} \citep{Embick:03} and therefore transparent,
+so no intervening head blocks this visibility.
+The co-variation \citeauthor{Steriade:08} attributes to paradigm consultation is thus epiphenomenal:
+both the plural allomorph and the verbalizer allomorph are conditioned by the same underlying root specification, with no reference to inflectional identity required.
+The formal spell-out rules and a sample derivation are given below.
+
+\noindent
+\begin{minipage}[t]{.6\textwidth}
+\begin{example}[Dorsal palatalization]
+$\begin{bmatrix} 
+\featspec{-}{Syllabic} \\ 
+\featspec{+}{Consonantal} \\
+\featspec{-}{Sonorant} \\ 
+\featspec{-}{Approximant} \\
+\featspec{-}{Nasal} \\ 
+\ldots 
+\end{bmatrix}~\sqcup~\begin{Bmatrix}
+\featspec{+}{Coronal} \\ 
+\featspec{-}{Dorsal} \\
+\featspec{-}{Anterior} \\ 
+\featspec{+}{Distributed} \\
+\featspec{+}{Strident} 
+\end{Bmatrix}~\gap~/~\begin{bmatrix}
+\featspec{+}{Syllabic} \\ 
+\featspec{+}{Front} 
+\end{bmatrix}$
+\label{e:velar-pal}
+\end{example}
+\end{minipage}%
+~%
+\begin{minipage}[t]{.35\textwidth}
+\begin{example}[Dorsal default fill-in]
+$\begin{bmatrix}
+\featspec{-}{Syllabic} \\ 
+\featspec{+}{Consonantal} \\
+\featspec{-}{Sonorant} \\ 
+\featspec{-}{Approximant} \\
+\featspec{-}{Nasal} \\ 
+\ldots 
+\end{bmatrix}~\sqcup~\begin{Bmatrix}
+\featspec{-}{Coronal} \\ 
+\featspec{+}{Dorsal} \\
+\featspec{-}{Continuant} 
+\end{Bmatrix}$
+\label{e:default}
+\end{example}
+\end{minipage}
+\vspace{\baselineskip}
+
+\begin{multicols}{2}
+\begin{unlabeledexample}
+$\text{Num}[\feature{Pl}]~\Longleftrightarrow~
+\begin{cases}
+\textrm{/-uri/} & \begin{bmatrix}
+    \featspec{-}{Coronal} \\
+    \featspec{+}{Dorsal} \\
+    \featspec{-}{Continuant}
+\end{bmatrix}~\gap \\[3pt]
+\textrm{/-i/} & \textrm{elsewhere}
+\end{cases}$
+\label{e:plural-spellout}
+\end{unlabeledexample}
+
+\begin{unlabeledexample}
+$\word{v}~\Longleftrightarrow~
+\begin{cases}
+\textrm{/-a/} & \begin{bmatrix}
+    \featspec{-}{Coronal} \\
+    \featspec{+}{Dorsal} \\
+    \featspec{-}{Continuant}
+\end{bmatrix}~\gap \\[3pt]
+\textrm{/-i/} & \textrm{elsewhere}
+\end{cases}$
+\label{e:velar-spellout}
+\end{unlabeledexample}
+\end{multicols}
+
+\noindent
+The interaction between allomorph selection and palatalization is illustrated in the derivations below,
+which begin immediately after root spell-out.
+
+\begin{unlabeledexample}
+\begin{tabular}{l llllll}
+UR: & fok & fok$\concat\feature{Num}[\feature{Pl}]$
+    & koloK & koloK$\concat\feature{Num}[\feature{Pl}]$
+    & miloG & miloG$\concat v$ \\
+\midrule
+Rule (\ref{e:plural-spellout}): &     & fokuri &       & koloKi  &       &         \\
+Rule (\ref{e:velar-spellout}):  &     &        &       &         &       & miloGi  \\
+Rule (\ref{e:velar-pal}):       &     &        &       & kolatʃi &       & milodʒi \\
+Rule (\ref{e:default}):         &     &        & kolak &         & miloɡ &         \\
+Desyllabification:              &     & fokurʲ &       & kolatʃʲ &       & milodʒʲ \\
+\midrule
+SR: & fok & fokurʲ & kolak & kolatʃʲ & miloɡ & milodʒʲ \\
+\end{tabular}
+\label{e:derivation}
+\end{unlabeledexample}
+
+\newpage
+
+\bigskip\noindent
+The coronals show the same split as the dorsals, two mutations before \word{-i} that apply to some segments and skip others, and the skipping again follows from the root.
+The prespecified segments carry the value a mutation would supply and so resist it, while their underspecified counterparts, lacking that value, undergo.
+The specifications are given in (\ref{e:cor-inventory}); /T, D/ and /S, Z/ are the underspecified stops and fricatives, /t, d/ and /s, z/ the prespecified ones.
+
+\begin{unlabeledexample}
+\small
+\begin{tabular}{l cccccc}
+          & /t, d/ & /T/ & /D/ & /s, z/ & /S, Z/ \\
+\midrule
+\feature{Coronal}    & $+$ & $+$ & $+$ & $+$ & $+$ \\
+\feature{Anterior}   & $+$ & $+$ & $+$ & $+$ &     \\
+\feature{Strident}   & $-$ &     &     & $+$ & $+$ \\
+\feature{Continuant} & $-$ & $-$ &     & $+$ & $+$ \\
+\end{tabular}
+\label{e:cor-inventory}
+\end{unlabeledexample}
+
+\noindent
+The one asymmetry to note now is that /T/ is prespecified \featspec{-}{Continuant} while /D/ is open for \feature{Continuant}, which later splits [ts] from [z].
+
+\bigskip\noindent
+Before \word{-i}, the strident fricatives shift to postalveolar, /s, z/ surfacing as [ʃ, ʒ].
+\term{S-palatalization} (\ref{e:s-pal}) unifies postalveolar place into the coronal stridents, so underspecified /S, Z/ take it and prespecified /s, z/, already \featspec{+}{Anterior}, resist.
+The target locates /i/ by a rightward SEARCH terminating on the first [\featspec{+}{High}, \featspec{+}{Front}] segment \citep{Dabbous:EtAl:21,Dabbous:EtAl:24,Azadegan:26}.
+Since only the vowel terminates the scan, an intervening stop is passed over, and /S/ palatalizes across it in \word{prost}.
+
+\begin{unlabeledexample}
+\small\hfill$\displaystyle
+\begin{bmatrix}
+\featspec{+}{Coronal}\\
+\featspec{+}{Strident}\\
+\featspec{+}{Continuant}
+\end{bmatrix}
+~\sqcup~
+\begin{Bmatrix}
+\featspec{-}{Anterior}\\
+\featspec{+}{Distributed}
+\end{Bmatrix}
+\;/\;\gap~
+\begin{bmatrix}
+\featspec{+}{High}\\
+\featspec{+}{Front}
+\end{bmatrix}
+$\hfill\null
+\label{e:s-pal}
+\end{unlabeledexample}
+
+\noindent
+In an \word{st} cluster the stop is protected, so \word{prost} gives [proʃt] and not *[proʃts].
+A bleeding rule (\ref{e:bleed}) delinks \feature{Strident} from the stop after the derived postalveolar, so the following assibilation finds nothing to strengthen.
+The protection must be its own rule, since assibilation searches rightward to its trigger and cannot see the postalveolar lying to the stop's left.
+The environment uses circle notation, \circled{S} denoting the natural class whose bundle is a superset of the derived postalveolar's, located here by a leftward SEARCH.
+
+\begin{unlabeledexample}
+\small\hfill$\displaystyle
+\begin{bmatrix}
+\featspec{+}{Coronal}
+\end{bmatrix}
+~\setminus~
+\begin{Bmatrix}
+\featspec{+}{Strident}
+\end{Bmatrix}
+\;/\;
+\begin{bmatrix}
+\circled{S}
+\end{bmatrix}
+~\gap
+$\hfill\null
+\label{e:bleed}
+\end{unlabeledexample}
+
+\noindent
+Before \word{-i}, the coronal stops also assibilate to affricates.
+\term{Assibilation} (\ref{e:assib}) unifies \featspec{+}{Strident} into an anterior coronal stop, so underspecified /T, D/ assibilate and prespecified /t, d/, already \featspec{-}{Strident}, resist, as does any stop the bleed (\ref{e:bleed}) has already cleared.
+
+\begin{unlabeledexample}
+\small\hfill$\displaystyle
+\begin{bmatrix}
+\featspec{+}{Coronal}\\
+\featspec{+}{Anterior}
+\end{bmatrix}
+~\sqcup~
+\begin{Bmatrix}
+\featspec{+}{Strident}
+\end{Bmatrix}
+\;/\;\gap~
+\begin{bmatrix}
+\featspec{+}{High}\\
+\featspec{+}{Front}
+\end{bmatrix}
+$\hfill\null
+\label{e:assib}
+\end{unlabeledexample}
+
+\noindent
+Late default fill-ins (\ref{e:cor-default}), three context-free rules stated together for space, supply the unmarked values to whatever the mutations left open.
+Unmutated stops surface as [t, d] and unmutated fricatives as [s, z].
+The third rule fills \featspec{+}{Continuant} on assibilated stops, and here the /T/--/D/ asymmetry surfaces, /D/ spirantizes to [z] because it has no \feature{Continuant} value to block the fill, while prespecified /T/ stays [ts].
+Romanian has no voiced coronal affricate, a gap that follows directly, since the only segment that could surface as [dz] is exactly the one the default spirantizes.
+
+\begin{unlabeledexample}
+\small\hfill$\displaystyle
+\begin{bmatrix}
+\featspec{+}{Coronal}
+\end{bmatrix}
+~\sqcup~
+\begin{Bmatrix}
+\featspec{-}{Strident}
+\end{Bmatrix},~
+\begin{bmatrix}
+\featspec{+}{Coronal}
+\end{bmatrix}
+~\sqcup~
+\begin{Bmatrix}
+\featspec{+}{Anterior}\\
+\featspec{-}{Distributed}
+\end{Bmatrix},~
+\begin{bmatrix}
+\featspec{+}{Coronal}\\
+\featspec{+}{Strident}
+\end{bmatrix}
+~\sqcup~
+\begin{Bmatrix}
+\featspec{+}{Continuant}
+\end{Bmatrix}
+$\hfill\null
+\label{e:cor-default}
+\end{unlabeledexample}
+
+\noindent
+A final rule (\ref{e:glide}) desyllabifies a word-final /i/ after a consonant, stripping \featspec{+}{Syllabic} so it surfaces as secondary palatalization on the preceding consonant.
+It applies after the mutations, which are triggered by /i/ as a vowel, so the glide plays no role in conditioning them.
+
+\begin{unlabeledexample}
+\small\hfill$\displaystyle
+\text{i}~\setminus~
+\begin{Bmatrix}
+\featspec{+}{Syllabic}
+\end{Bmatrix}
+~\sqcup~
+\begin{Bmatrix}
+\featspec{-}{Syllabic}
+\end{Bmatrix}
+\;/\;
+\begin{bmatrix}
+\featspec{+}{Consonantal}
+\end{bmatrix}
+~\gap~\#
+$\hfill\null
+\label{e:glide}
+\end{unlabeledexample}
+
+\bigskip\noindent
+The same contrast conditions the spell-out of the plural and verbalizer suffixes, just as it did for the dorsals.
+Let \textsc{p} abbreviate the prespecified obstruent context, the disjunction of the three inalterability conditions, one per mutation:
+\[
+\textsc{p} \;=\;
+\begin{bmatrix}
+\featspec{-}{Coronal}\\
+\featspec{+}{Dorsal}\\
+\featspec{-}{Continuant}
+\end{bmatrix}
+\;\textrm{or}\;
+\begin{bmatrix}
+\featspec{+}{Coronal}\\
+\featspec{-}{Strident}
+\end{bmatrix}
+\;\textrm{or}\;
+\begin{bmatrix}
+\featspec{+}{Coronal}\\
+\featspec{+}{Anterior}\\
+\featspec{+}{Strident}
+\end{bmatrix}
+\]
+
+\begin{multicols}{2}
+\begin{unlabeledexample}
+$\text{Num}[\feature{Pl}]~
+\Longleftrightarrow~
+\begin{cases}
+\textrm{/-uri/} & /~
+\textsc{p} \\[3pt]
+\textrm{/-i/} & 
+\textrm{elsewhere}
+\end{cases}$
+\label{e:plural-spellout}
+\end{unlabeledexample}
+
+\begin{unlabeledexample}
+$\word{v}~\Longleftrightarrow~
+\begin{cases}
+\textrm{/-a/} & /~\textsc{p} \\[3pt]
+\textrm{/-i/} & \textrm{elsewhere}
+\end{cases}$
+\label{e:verb-spellout}
+\end{unlabeledexample}
+\end{multicols}
+
+\noindent
+The dorsal disjunct is the one from the earlier spell-out; the two coronal disjuncts are the inalterability conditions of assibilation (\ref{e:assib}) and S-palatalization (\ref{e:s-pal}).
+The exponents thus select the non-palatalizing allomorph for exactly the roots the phonology leaves unpalatalized, now at every place of articulation.
+
+\begin{unlabeledexample}
+\begin{tabular}{l lllll}
+UR: & ruS-\feature{Num}[\feature{Pl}]
+    & proST-\feature{Num}[\feature{Pl}]
+    & braD-\feature{Num}[\feature{Pl}]
+    & skut-\feature{Num}[\feature{Pl}]
+    & klopoT-\word{v} \\
+\midrule
+Rule (\ref{e:plural-spellout}):  & ruSi  & proSTi  & braDi  & skuturi  &          \\
+Rule (\ref{e:verb-spellout}):    &       &         &        &          & klopoTi  \\
+Rule (\ref{e:s-pal}):            & ruʃi  & proʃTi  &        &          &          \\
+Rule (\ref{e:bleed}):            &       & proʃTi  &        &          &          \\
+Rule (\ref{e:assib}):            &       &         & braDzi &          & klopotsi \\
+Rule (\ref{e:cor-default}):      &       &         & brazi  &          &          \\
+Rule (\ref{e:glide}):            & ruʃj  & proʃtj  & brazj  & skuturj  & klopotsj \\
+\midrule
+SR: & ruʃʲ & proʃtʲ & brazʲ & skuturʲ & klopotsʲ \\
+\end{tabular}
+\label{e:coronal-derivation}
+\end{unlabeledexample}
+
+%New stuff I'm working through. Not super relevant to the prespecification analysis proper.
+
+\bigskip\noindent
+The rules so far derive palatalization before \word{-i}.
+Two further facts push the same rules to more general forms, the categorical \word{sc} alternation before \word{-e} and the non-palatalizing \word{ct} loans.
+
+\bigskip\noindent
+\word{sc}-final stems palatalize categorically before \word{-e}, and the whole cluster mutates, /sk/ surfacing as [ʃt] (e.g., [muskə, muʃte] `fly(ies)', [broaskə, broaʃte] `frog(s)').
+Two things about this are strange.
+First, it looks like metathesis, since the places seem reordered, [ʃ] before [t] where the underlying cluster has /s/ before /k/.
+Second, an expected segment disappears.
+Palatalizing the /s/ gives [ʃ] and palatalizing the /k/ before \word{-e} gives the affricate [tʃ], so the expected output is *[muʃtʃe], with two postalveolars, yet only one surfaces.
+The account reads the cluster left to right.
+The /s/ is not adjacent to the vowel, so it cannot take place from /e/ directly; the /k/ between them is adjacent, and the vowel palatalizes it to [tʃ].
+That derived [tʃ] is then what gives the /s/ its postalveolar place, yielding [ʃ].
+The bleeding rule clears the [tʃ] back to a plain stop, so the cluster surfaces as [ʃt] with no affricate left.
+The affricate exists only to carry palatal place leftward from the /k/ to the /s/, then is erased, which is why the missing postalveolar and the apparent metathesis are one fact seen twice.
+
+\bigskip\noindent
+This derivation locates the S-palatalization trigger in place, not height.
+The basic rule fires on a [\featspec{+}{High}, \featspec{+}{Front}] vowel, but neither /e/ nor the [tʃ] derived from /k/ is \featspec{+}{High}, so that rule would leave the /s/ untouched.
+What the /s/ reaches for is the postalveolar place of the [tʃ], so the revised trigger is the postalveolar class [\featspec{+}{Coronal}, \featspec{-}{Anterior}, \featspec{+}{Distributed}] (\ref{e:s-pal-rev}), and the /s/ searches rightward to the first segment bearing it.
+
+\begin{unlabeledexample}
+\small\hfill$\displaystyle
+\begin{bmatrix}
+\featspec{+}{Coronal}\\
+\featspec{+}{Strident}\\
+\featspec{+}{Continuant}
+\end{bmatrix}
+~\sqcup~
+\begin{Bmatrix}
+\featspec{-}{Anterior}\\
+\featspec{+}{Distributed}
+\end{Bmatrix}
+\;/\;\gap~
+\begin{bmatrix}
+\featspec{+}{Coronal}\\
+\featspec{-}{Anterior}\\
+\featspec{+}{Distributed}
+\end{bmatrix}
+$\hfill\null
+\label{e:s-pal-rev}
+\end{unlabeledexample}
+
+\noindent
+One trigger is meant to cover both environments, since the plain \word{-i} forms and the \word{sc}-\word{e} forms present the /s/ with the same postalveolar place, only on different segments.
+In the plain forms the terminator is /i/ itself, a high front vocoid and so coronal, which bears the place inherently and halts the scan while still a vowel; desyllabification (\ref{e:glide}) applies later, as before.
+In the \word{sc} forms the terminator is instead the derived [tʃ], so the derivation runs in an order, the dorsal rule palatalizes /k/ first and thereby feeds S-palatalization the postalveolar it searches for.
+The vowel /e/ never terminates the scan on its own, being \featspec{+}{Anterior} and so outside the place class, which is why the /s/ in \word{muskə} takes its place from the [tʃ] to its right and not from the /e/ two segments over.
+The asymmetry the basic rule drew from vowel height thus reduces to place, and /i/ was arguably a place trigger from the start, its height incidental to a front vocoid already being coronal.
+
+\bigskip\noindent
+The feeding relies on the dorsal rule firing in \word{muskə}, where the segment after /k/ is the vowel /e/.
+That the same rule does \emph{not} fire in the \word{ct} loans, where a consonant follows the dorsal, is the subject of the next revision, and the two cases turn on that one difference in what sits to the dorsal's right.
+
+\bigskip\noindent
+The \word{sc} case also stretches the bleed rule.
+Subtracting \feature{Strident} alone protects the \word{st} stop, which is already plain in place, but it cannot clean up \word{sc}, where the segment to clear is the derived [tʃ] with a full postalveolar specification, so \word{muskə} would still surface as *[muʃtʃe].
+The bleed must strip the whole postalveolar place, \feature{Anterior}, \feature{Distributed}, and \feature{Strident}, and confine itself to consonants so it leaves the suffix vowel alone (\ref{e:bleed-rev}); the coronal default then refills the plain stop.
+
+\begin{unlabeledexample}
+\small\hfill$\displaystyle
+\begin{bmatrix}
+\featspec{+}{Coronal}\\
+\featspec{+}{Consonantal}
+\end{bmatrix}
+~\setminus~
+\begin{Bmatrix}
+\text{Anterior}\\
+\text{Distributed}\\
+\text{Strident}
+\end{Bmatrix}
+\;/\;
+\begin{bmatrix}
+\circled{S}
+\end{bmatrix}
+~\gap
+$\hfill\null
+\label{e:bleed-rev}
+\end{unlabeledexample}
+
+\noindent
+The subtrahend removes each feature at whatever value it carries, and \circled{S} is the postalveolar environment of the basic bleed.
+One rule now handles both clusters, clearing the derived [tʃ] in \word{sc} and stripping the /T/'s \featspec{+}{Anterior} in \word{st} so assibilation can no longer reach it; either way the default supplies [t].
+
+\bigskip\noindent
+The \word{ct} loans bear on the dorsal rule instead.
+Latinate stems in \word{ct} leave the dorsal unpalatalized before \word{-e} (e.g., [punkt, punkte] `point(s)'), yet a plain search for a front vowel would wrongly palatalize /K/ across the intervening /T/.
+The block falls out once the dorsal rule carries a broad terminator, halting on the very next segment, with the bracket in (\ref{e:velar-pal}) a condition on that segment rather than a terminator class.
+In \word{musk-e} the segment after /K/ is /e/, which meets [\featspec{+}{Syllabic}, \featspec{+}{Front}], so /K/ palatalizes; in \word{punkt-e} it is /T/, which halts the scan and fails the condition, so /K/ is blocked.
+This is the terminator-versus-condition distinction of \citet{Dabbous:EtAl:21,Dabbous:EtAl:24}, a narrow terminator letting interveners through, a broad terminator with a condition making them block.
+
+\begin{unlabeledexample}
+\begin{tabular}{l ll}
+UR:                         & muSKe   & punKTe \\
+\midrule
+Rule (\ref{e:velar-pal}):   & mustʃe  & punkte \\
+Rule (\ref{e:s-pal-rev}):   & muʃtʃe  &        \\
+Rule (\ref{e:bleed-rev}):   & muʃTe   &        \\
+Rule (\ref{e:cor-default}): & muʃte   &        \\
+\midrule
+SR:                         & muʃte   & punkte \\
+\end{tabular}
+\label{e:cluster-derivation}
+\end{unlabeledexample}
+
+\bigskip\noindent
+The two palatalizations locate their triggers the same way, by SEARCH, and differ in one setting, how broad the terminator is.
+The dorsal rule stops at the next segment, so any intervening consonant blocks.
+S-palatalization stops only at a postalveolar, so a non-postalveolar in between is not a stopping point at all.
+That single difference is the whole of locality here, and it means S-palatalization needs no locality setting of its own, applying adjacently in \word{rus} and across the stop in \word{prost}, local on one stem and long-distance on another, with the difference lying entirely in what intervenes.
